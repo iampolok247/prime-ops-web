@@ -12,9 +12,6 @@ npm install -g pm2
 
 # Optional: export PM2_HOME=/home/jenkins/.pm2
 
-pm2 delete all
-
-
 pm2 delete prime.client || true
 pm2 start npm --name prime.client -- run serve --no-clipboard
 pm2 save
