@@ -40,6 +40,7 @@ export default function Login() {
           {loading ? 'Signing in…' : 'Sign In'}
         </button>
         <p className="mt-3 text-xs text-royal/70">Default password for seeded users: <b>password123</b></p>
+        <h1 className='font-bold text-5xl'>cicd checking by euhan</h1>
       </form>
     </div>
   );
