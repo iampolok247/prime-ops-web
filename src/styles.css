@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --navy: #053867;
+  --royal: #253985;
+  --gold: #F7BA23;
+  --lightgold: #F3CE49;
+}
+
+* { font-family: 'Poppins', sans-serif; }
+
+/* Mobile-specific optimizations */
+@media (max-width: 768px) {
+  /* Prevent horizontal scroll */
+  body {
+    overflow-x: hidden;
+  }
+  
+  /* Make tables more mobile-friendly */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Ensure modals fit on mobile */
+  .modal-mobile {
+    margin: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
+}
+/* Cache bust: Sun Nov  2 23:45:33 +06 2025 */

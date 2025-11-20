@@ -1,0 +1,34 @@
+/* groovylint-disable-next-line CompileStatic */
+pipeline {
+    agent any
+
+    tools {
+        nodejs "NodeJS 18.x"  // MUST match the name from Global Tool Configuration
+    }
+
+    environment {
+        CI = 'true'
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                sh 'npm install'
+            }
+        }
+
+        // stage('Test') {
+        //     steps {
+        //         sh 'chmod +x ./jenkins/scripts/test.sh'
+        //         sh './jenkins/scripts/test.sh'
+        //     }
+        // }
+
+        stage('Deliver') {
+            steps {
+                sh 'chmod +x ./jenkins/scripts/deliver.sh'
+                sh './jenkins/scripts/deliver.sh'
+            }
+        }
+    }
+}
