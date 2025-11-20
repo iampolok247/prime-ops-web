@@ -62,6 +62,7 @@ export default function Login() {
         <p className="mt-3 text-xs text-royal/70">
           Default password for seeded users: <b>password123</b>
         </p>
+        <h1>hello world</h1>
       </form>
     </div>
   );
