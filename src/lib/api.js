@@ -12,6 +12,7 @@ const getApiBase = () => {
 
   // For development, use localhost
   console.log("[API] Development mode - using localhost");
+  return "http://31.97.228.226:5000";
   // return 'http://localhost:5000';
 };
 
