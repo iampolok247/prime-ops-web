@@ -10,6 +10,8 @@ export default function Employees() {
   const [form, setForm] = useState({ name:'', email:'', role:'Admission', department:'', designation:'', phone:'', avatar:'' });
   const [err, setErr] = useState(null);
   const [ok, setOk] = useState(null);
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const [reorderMode, setReorderMode] = useState(false);
 
   const canEdit = user?.role === 'Admin'; // SuperAdmin view-only
 
@@ -21,42 +23,18 @@ export default function Employees() {
   };
   useEffect(() => { load(); }, []);
 
-  // Sort users by seniority hierarchy
+  // Sort users by displayOrder (lower numbers first), then by name
   const sortedList = useMemo(() => {
-    const seniorityOrder = {
-      // Top Level (Highest Seniority)
-      'CEO': 1,
-      'Chief Operating Officer': 2,
-      'Director Of Operations': 3,
-      'Director Of Partnerships': 4,
-      'Director (Academic Strategy and Growth)': 5,
-      'Head of Marketing': 6,
-      // Upper-Mid Level
-      'Operations Manager': 7,
-      'Public Relations Manager': 8,
-      'Business Development Manager': 9,
-      'Academic Co-Ordinator': 10,
-      'Assistant Manager': 11,
-      // Mid Level
-      'Sr. Business Development Executive': 12,
-      'Business Development Executive': 13,
-      'Sr.Admissions Executive': 14,
-      // Entry Level (Lowest Seniority)
-      'Admissions Executive': 15,
-      'Digital Marketing Executive': 16,
-      'Motion Graphics Designer': 17
-    };
-
     return [...list].sort((a, b) => {
-      const rankA = seniorityOrder[a.designation] || 999;
-      const rankB = seniorityOrder[b.designation] || 999;
+      const orderA = a.displayOrder || 0;
+      const orderB = b.displayOrder || 0;
       
-      // If same rank, sort by name
-      if (rankA === rankB) {
+      // If same order, sort by name
+      if (orderA === orderB) {
         return (a.name || '').localeCompare(b.name || '');
       }
       
-      return rankA - rankB;
+      return orderA - orderB;
     });
   }, [list]);
 
@@ -105,20 +83,82 @@ export default function Employees() {
     } catch (e) { setErr(e?.message || 'Delete failed'); }
   };
 
+  const handleDragStart = (e, index) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (e, dropIndex) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === dropIndex) return;
+
+    // Reorder the list
+    const newList = [...sortedList];
+    const [draggedItem] = newList.splice(draggedIndex, 1);
+    newList.splice(dropIndex, 0, draggedItem);
+
+    // Update displayOrder for all items
+    const orders = newList.map((user, index) => ({
+      id: user._id,
+      displayOrder: index + 1
+    }));
+
+    try {
+      await api.reorderUsers(orders);
+      setOk('Employee order updated');
+      load();
+    } catch (e) {
+      setErr(e?.message || 'Reorder failed');
+    }
+
+    setDraggedIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
+  const toggleReorderMode = () => {
+    setReorderMode(!reorderMode);
+    setErr(null);
+    setOk(null);
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
         <h1 className="text-2xl font-bold text-navy">Employee List</h1>
-        {canEdit && <button onClick={startAdd} className="bg-gold text-navy rounded-xl px-4 py-2 font-semibold hover:bg-lightgold">+ Add Employee</button>}
+        <div className="flex gap-2">
+          {canEdit && (
+            <>
+              <button 
+                onClick={toggleReorderMode} 
+                className={`rounded-xl px-4 py-2 font-semibold ${reorderMode ? 'bg-royal text-white' : 'bg-gray-200 text-navy hover:bg-gray-300'}`}
+              >
+                {reorderMode ? '✓ Done Reordering' : '⇅ Reorder'}
+              </button>
+              <button onClick={startAdd} className="bg-gold text-navy rounded-xl px-4 py-2 font-semibold hover:bg-lightgold">+ Add Employee</button>
+            </>
+          )}
+        </div>
       </div>
 
       {ok && <div className="mb-2 text-green-700">{ok}</div>}
       {err && <div className="mb-2 text-red-600">{err}</div>}
+      {reorderMode && <div className="mb-2 p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-700">
+        <strong>Reorder Mode:</strong> Drag and drop rows to change employee order
+      </div>}
 
       <div className="bg-white rounded-2xl shadow-soft overflow-auto">
         <table className="min-w-full text-sm">
           <thead className="bg-[#f3f6ff] text-royal">
             <tr>
+              {reorderMode && canEdit && <th className="text-left p-3">⇅</th>}
               <th className="text-left p-3">#</th>
               <th className="text-left p-3">Name</th>
               <th className="text-left p-3">Role</th>
@@ -126,15 +166,30 @@ export default function Employees() {
               <th className="text-left p-3">Designation</th>
               <th className="text-left p-3">Email</th>
               <th className="text-left p-3">Phone</th>
-              {canEdit && <th className="text-left p-3">Action</th>}
+              {canEdit && !reorderMode && <th className="text-left p-3">Action</th>}
             </tr>
           </thead>
           <tbody>
             {sortedList.map((u, index) => (
-              <tr key={u._id} className="border-t">
+              <tr 
+                key={u._id} 
+                className={`border-t ${reorderMode && canEdit ? 'cursor-move hover:bg-gray-50' : ''} ${draggedIndex === index ? 'opacity-50' : ''}`}
+                draggable={reorderMode && canEdit}
+                onDragStart={(e) => handleDragStart(e, index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDrop={(e) => handleDrop(e, index)}
+                onDragEnd={handleDragEnd}
+              >
+                {reorderMode && canEdit && (
+                  <td className="p-3 text-gray-400">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"/>
+                    </svg>
+                  </td>
+                )}
                 <td className="p-3 text-royal font-semibold">{index + 1}</td>
                 <td className="p-3 flex items-center gap-2">
-                  <img src={u.avatar} className="w-8 h-8 rounded-full border" />
+                  <img src={u.avatar} className="w-8 h-8 rounded-full border" alt={u.name} />
                   <div>
                     <div className="font-semibold text-navy">{u.name}</div>
                   </div>
@@ -144,7 +199,7 @@ export default function Employees() {
                 <td className="p-3">{u.designation || '-'}</td>
                 <td className="p-3">{u.email}</td>
                 <td className="p-3">{u.phone || '-'}</td>
-                {canEdit && (
+                {canEdit && !reorderMode && (
                   <td className="p-3">
                     <button onClick={()=>startEdit(u)} className="px-3 py-1 rounded-lg border mr-2">Edit</button>
                     {u.role !== 'SuperAdmin' && <button onClick={()=>remove(u._id)} className="px-3 py-1 rounded-lg border hover:bg-red-50">Delete</button>}
@@ -153,7 +208,7 @@ export default function Employees() {
               </tr>
             ))}
             {sortedList.length === 0 && (
-              <tr><td className="p-4 text-royal/70" colSpan={canEdit ? 8 : 7}>No employees</td></tr>
+              <tr><td className="p-4 text-royal/70" colSpan={reorderMode && canEdit ? 9 : (canEdit ? 8 : 7)}>No employees</td></tr>
             )}
           </tbody>
         </table>
