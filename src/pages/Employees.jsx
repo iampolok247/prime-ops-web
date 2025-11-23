@@ -12,6 +12,9 @@ export default function Employees() {
   const [ok, setOk] = useState(null);
 
   const canEdit = user?.role === 'Admin' || user?.role === 'SuperAdmin'; // Admin and SuperAdmin can edit
+  
+  console.log('DEBUG Employee Page - User:', user);
+  console.log('DEBUG Employee Page - canEdit:', canEdit);
 
   const load = async () => {
     try {
