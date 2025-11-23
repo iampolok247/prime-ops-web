@@ -38,7 +38,7 @@ export default function Employees() {
 
   const startAdd = () => {
     setEditId(null);
-    setForm({ name:'', email:'', role:'Admission', department:'', designation:'', phone:'', avatar:'', displayOrder:0 });
+    setForm({ name:'', email:'', role:'Admission', department:'', designation:'', phone:'', avatar:'', displayOrder:0, isSuperAdmin:false });
     setOpen(true);
   };
 
@@ -52,7 +52,8 @@ export default function Employees() {
       designation: u.designation || '',
       phone: u.phone || '',
       avatar: u.avatar || '',
-      displayOrder: u.displayOrder || 0
+      displayOrder: u.displayOrder || 0,
+      isSuperAdmin: u.role === 'SuperAdmin'
     });
     setOpen(true);
   };
@@ -62,7 +63,12 @@ export default function Employees() {
     setErr(null); setOk(null);
     try {
       if (editId) {
-        await api.updateUser(editId, { ...form });
+        // For SuperAdmin, only send displayOrder
+        const payload = form.isSuperAdmin 
+          ? { displayOrder: form.displayOrder }
+          : { ...form };
+        delete payload.isSuperAdmin; // Remove this flag before sending
+        await api.updateUser(editId, payload);
         setOk('Employee updated');
       } else {
         await api.createUser({ ...form, password: 'password123' });
@@ -96,7 +102,6 @@ export default function Employees() {
         <table className="min-w-full text-sm">
           <thead className="bg-[#f3f6ff] text-royal">
             <tr>
-              <th className="text-left p-3">#</th>
               <th className="text-left p-3">Order</th>
               <th className="text-left p-3">Name</th>
               <th className="text-left p-3">Role</th>
@@ -110,7 +115,6 @@ export default function Employees() {
           <tbody>
             {sortedList.map((u, index) => (
               <tr key={u._id} className="border-t">
-                <td className="p-3 text-royal font-semibold">{index + 1}</td>
                 <td className="p-3 text-navy font-semibold">{u.displayOrder || 0}</td>
                 <td className="p-3 flex items-center gap-2">
                   <img src={u.avatar} className="w-8 h-8 rounded-full border" alt={u.name} />
@@ -132,7 +136,7 @@ export default function Employees() {
               </tr>
             ))}
             {sortedList.length === 0 && (
-              <tr><td className="p-4 text-royal/70" colSpan={canEdit ? 9 : 8}>No employees</td></tr>
+              <tr><td className="p-4 text-royal/70" colSpan={canEdit ? 8 : 7}>No employees</td></tr>
             )}
           </tbody>
         </table>
@@ -142,38 +146,12 @@ export default function Employees() {
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-4">
           <form onSubmit={submit} className="bg-white rounded-2xl shadow-soft p-4 w-full max-w-xl">
             <h2 className="text-xl font-bold text-navy mb-3">{editId ? 'Edit Employee' : 'Add Employee'}</h2>
+            {form.isSuperAdmin && (
+              <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-yellow-700 text-sm">
+                <strong>Note:</strong> Only Display Order can be changed for Super Admin accounts.
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm text-royal mb-1">Name *</label>
-                <input className="w-full border rounded-xl px-3 py-2" required value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}/>
-              </div>
-              <div>
-                <label className="block text-sm text-royal mb-1">Email *</label>
-                <input className="w-full border rounded-xl px-3 py-2" required type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))}/>
-              </div>
-              <div>
-                <label className="block text-sm text-royal mb-1">Role *</label>
-                <select className="w-full border rounded-xl px-3 py-2" value={form.role} onChange={e=>setForm(f=>({...f,role:e.target.value}))}>
-                  <option>Admin</option>
-                  <option>Accountant</option>
-                  <option>Admission</option>
-                  <option>Recruitment</option>
-                  <option>DigitalMarketing</option>
-                  <option>MotionGraphics</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-royal mb-1">Department</label>
-                <input className="w-full border rounded-xl px-3 py-2" value={form.department} onChange={e=>setForm(f=>({...f,department:e.target.value}))}/>
-              </div>
-              <div>
-                <label className="block text-sm text-royal mb-1">Designation</label>
-                <input className="w-full border rounded-xl px-3 py-2" value={form.designation} onChange={e=>setForm(f=>({...f,designation:e.target.value}))}/>
-              </div>
-              <div>
-                <label className="block text-sm text-royal mb-1">Phone</label>
-                <input className="w-full border rounded-xl px-3 py-2" value={form.phone} onChange={e=>setForm(f=>({...f,phone:e.target.value}))}/>
-              </div>
               <div>
                 <label className="block text-sm text-royal mb-1">Display Order *</label>
                 <input 
@@ -187,11 +165,48 @@ export default function Employees() {
                 />
                 <p className="text-xs text-gray-500 mt-1">Lower numbers appear first (1, 2, 3...)</p>
               </div>
+              {!form.isSuperAdmin && (
+                <>
+                  <div>
+                    <label className="block text-sm text-royal mb-1">Name *</label>
+                    <input className="w-full border rounded-xl px-3 py-2" required value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}/>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-royal mb-1">Email *</label>
+                    <input className="w-full border rounded-xl px-3 py-2" required type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))}/>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-royal mb-1">Role *</label>
+                    <select className="w-full border rounded-xl px-3 py-2" value={form.role} onChange={e=>setForm(f=>({...f,role:e.target.value}))}>
+                      <option>Admin</option>
+                      <option>Accountant</option>
+                      <option>Admission</option>
+                      <option>Recruitment</option>
+                      <option>DigitalMarketing</option>
+                      <option>MotionGraphics</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-royal mb-1">Department</label>
+                    <input className="w-full border rounded-xl px-3 py-2" value={form.department} onChange={e=>setForm(f=>({...f,department:e.target.value}))}/>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-royal mb-1">Designation</label>
+                    <input className="w-full border rounded-xl px-3 py-2" value={form.designation} onChange={e=>setForm(f=>({...f,designation:e.target.value}))}/>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-royal mb-1">Phone</label>
+                    <input className="w-full border rounded-xl px-3 py-2" value={form.phone} onChange={e=>setForm(f=>({...f,phone:e.target.value}))}/>
+                  </div>
+                </>
+              )}
             </div>
-            <div className="mt-3">
-              <label className="block text-sm text-royal mb-1">Avatar URL</label>
-              <input className="w-full border rounded-xl px-3 py-2" value={form.avatar} onChange={e=>setForm(f=>({...f,avatar:e.target.value}))}/>
-            </div>
+            {!form.isSuperAdmin && (
+              <div className="mt-3">
+                <label className="block text-sm text-royal mb-1">Avatar URL</label>
+                <input className="w-full border rounded-xl px-3 py-2" value={form.avatar} onChange={e=>setForm(f=>({...f,avatar:e.target.value}))}/>
+              </div>
+            )}
             <div className="mt-4 flex items-center justify-end gap-2">
               <button type="button" onClick={()=>setOpen(false)} className="px-4 py-2 rounded-xl border">Cancel</button>
               {canEdit && <button className="px-4 py-2 rounded-xl bg-gold text-navy font-semibold hover:bg-lightgold">{editId?'Save':'Create'}</button>}
