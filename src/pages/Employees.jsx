@@ -64,14 +64,18 @@ export default function Employees() {
     try {
       if (editId) {
         // For SuperAdmin, only send displayOrder
-        const payload = form.isSuperAdmin 
-          ? { displayOrder: form.displayOrder }
-          : { ...form };
-        delete payload.isSuperAdmin; // Remove this flag before sending
+        let payload;
+        if (form.isSuperAdmin) {
+          payload = { displayOrder: form.displayOrder };
+        } else {
+          const { isSuperAdmin, ...rest } = form;
+          payload = rest;
+        }
         await api.updateUser(editId, payload);
         setOk('Employee updated');
       } else {
-        await api.createUser({ ...form, password: 'password123' });
+        const { isSuperAdmin, ...rest } = form;
+        await api.createUser({ ...rest, password: 'password123' });
         setOk('Employee created (default password: password123)');
       }
       setOpen(false);
