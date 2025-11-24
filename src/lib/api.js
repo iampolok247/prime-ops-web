@@ -192,6 +192,14 @@ export const api = {
     });
     return handleJson(res, "Delete user failed");
   },
+  async reorderUsers(orders) {
+    const res = await authFetch(`${getApiBase()}/api/users/reorder`, {
+      method: 'PUT', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orders })
+    });
+    return handleJson(res, 'Reorder users failed');
+  },
 
   // ---- Tasks ----
   async listAllTasks(status) {

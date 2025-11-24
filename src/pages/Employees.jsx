@@ -7,11 +7,14 @@ export default function Employees() {
   const [list, setList] = useState([]);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ name:'', email:'', role:'Admission', department:'', designation:'', phone:'', avatar:'' });
+  const [form, setForm] = useState({ name:'', email:'', role:'Admission', department:'', designation:'', phone:'', avatar:'', displayOrder:0 });
   const [err, setErr] = useState(null);
   const [ok, setOk] = useState(null);
 
-  const canEdit = user?.role === 'Admin'; // SuperAdmin view-only
+  const canEdit = user?.role === 'Admin' || user?.role === 'SuperAdmin'; // Admin and SuperAdmin can edit
+  
+  console.log('DEBUG Employee Page - User:', user);
+  console.log('DEBUG Employee Page - canEdit:', canEdit);
 
   const load = async () => {
     try {
@@ -21,48 +24,24 @@ export default function Employees() {
   };
   useEffect(() => { load(); }, []);
 
-  // Sort users by seniority hierarchy
+  // Sort users by displayOrder (lower numbers first), then by name
   const sortedList = useMemo(() => {
-    const seniorityOrder = {
-      // Top Level (Highest Seniority)
-      'CEO': 1,
-      'Chief Operating Officer': 2,
-      'Director Of Operations': 3,
-      'Director Of Partnerships': 4,
-      'Director (Academic Strategy and Growth)': 5,
-      'Head of Marketing': 6,
-      // Upper-Mid Level
-      'Operations Manager': 7,
-      'Public Relations Manager': 8,
-      'Business Development Manager': 9,
-      'Academic Co-Ordinator': 10,
-      'Assistant Manager': 11,
-      // Mid Level
-      'Sr. Business Development Executive': 12,
-      'Business Development Executive': 13,
-      'Sr.Admissions Executive': 14,
-      // Entry Level (Lowest Seniority)
-      'Admissions Executive': 15,
-      'Digital Marketing Executive': 16,
-      'Motion Graphics Designer': 17
-    };
-
     return [...list].sort((a, b) => {
-      const rankA = seniorityOrder[a.designation] || 999;
-      const rankB = seniorityOrder[b.designation] || 999;
+      const orderA = a.displayOrder || 0;
+      const orderB = b.displayOrder || 0;
       
-      // If same rank, sort by name
-      if (rankA === rankB) {
+      // If same order, sort by name
+      if (orderA === orderB) {
         return (a.name || '').localeCompare(b.name || '');
       }
       
-      return rankA - rankB;
+      return orderA - orderB;
     });
   }, [list]);
 
   const startAdd = () => {
     setEditId(null);
-    setForm({ name:'', email:'', role:'Admission', department:'', designation:'', phone:'', avatar:'' });
+    setForm({ name:'', email:'', role:'Admission', department:'', designation:'', phone:'', avatar:'', displayOrder:0 });
     setOpen(true);
   };
 
@@ -75,7 +54,8 @@ export default function Employees() {
       department: u.department || '',
       designation: u.designation || '',
       phone: u.phone || '',
-      avatar: u.avatar || ''
+      avatar: u.avatar || '',
+      displayOrder: u.displayOrder || 0
     });
     setOpen(true);
   };
@@ -85,7 +65,7 @@ export default function Employees() {
     setErr(null); setOk(null);
     try {
       if (editId) {
-        await api.updateUser(editId, { ...form });
+        await api.updateUser(editId, form);
         setOk('Employee updated');
       } else {
         await api.createUser({ ...form, password: 'password123' });
@@ -119,7 +99,7 @@ export default function Employees() {
         <table className="min-w-full text-sm">
           <thead className="bg-[#f3f6ff] text-royal">
             <tr>
-              <th className="text-left p-3">#</th>
+              <th className="text-left p-3">Order</th>
               <th className="text-left p-3">Name</th>
               <th className="text-left p-3">Role</th>
               <th className="text-left p-3">Department</th>
@@ -132,9 +112,9 @@ export default function Employees() {
           <tbody>
             {sortedList.map((u, index) => (
               <tr key={u._id} className="border-t">
-                <td className="p-3 text-royal font-semibold">{index + 1}</td>
+                <td className="p-3 text-navy font-semibold">{u.displayOrder || 0}</td>
                 <td className="p-3 flex items-center gap-2">
-                  <img src={u.avatar} className="w-8 h-8 rounded-full border" />
+                  <img src={u.avatar} className="w-8 h-8 rounded-full border" alt={u.name} />
                   <div>
                     <div className="font-semibold text-navy">{u.name}</div>
                   </div>
@@ -147,7 +127,9 @@ export default function Employees() {
                 {canEdit && (
                   <td className="p-3">
                     <button onClick={()=>startEdit(u)} className="px-3 py-1 rounded-lg border mr-2">Edit</button>
-                    {u.role !== 'SuperAdmin' && <button onClick={()=>remove(u._id)} className="px-3 py-1 rounded-lg border hover:bg-red-50">Delete</button>}
+                    {(user?.role === 'SuperAdmin' || u.role !== 'SuperAdmin') && (
+                      <button onClick={()=>remove(u._id)} className="px-3 py-1 rounded-lg border hover:bg-red-50">Delete</button>
+                    )}
                   </td>
                 )}
               </tr>
@@ -165,6 +147,19 @@ export default function Employees() {
             <h2 className="text-xl font-bold text-navy mb-3">{editId ? 'Edit Employee' : 'Add Employee'}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
+                <label className="block text-sm text-royal mb-1">Display Order *</label>
+                <input 
+                  className="w-full border rounded-xl px-3 py-2" 
+                  type="number" 
+                  min="0"
+                  required
+                  value={form.displayOrder} 
+                  onChange={e=>setForm(f=>({...f,displayOrder:parseInt(e.target.value) || 0}))}
+                  placeholder="e.g., 1, 2, 3..."
+                />
+                <p className="text-xs text-gray-500 mt-1">Lower numbers appear first (1, 2, 3...)</p>
+              </div>
+              <div>
                 <label className="block text-sm text-royal mb-1">Name *</label>
                 <input className="w-full border rounded-xl px-3 py-2" required value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}/>
               </div>
@@ -175,12 +170,14 @@ export default function Employees() {
               <div>
                 <label className="block text-sm text-royal mb-1">Role *</label>
                 <select className="w-full border rounded-xl px-3 py-2" value={form.role} onChange={e=>setForm(f=>({...f,role:e.target.value}))}>
+                  {user?.role === 'SuperAdmin' && <option>SuperAdmin</option>}
                   <option>Admin</option>
                   <option>Accountant</option>
                   <option>Admission</option>
                   <option>Recruitment</option>
                   <option>DigitalMarketing</option>
                   <option>MotionGraphics</option>
+                  <option>Coordinator</option>
                 </select>
               </div>
               <div>
