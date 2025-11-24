@@ -59,9 +59,6 @@ export default function Login() {
         >
           {loading ? "Signing in…" : "Sign In"}
         </button>
-        <p className="mt-3 text-xs text-royal/70">
-          Default password for seeded users: <b>password123</b>
-        </p>
       </form>
     </div>
   );
