@@ -16,6 +16,7 @@ export default function AssignTasks() {
   const [status, setStatus] = useState('InProgress');
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ title:'', description:'', category:'', assignedTo:'', deadline: todayPlusDays(3) });
+  const [editingTask, setEditingTask] = useState(null);
   const [err, setErr] = useState(null);
   const [ok, setOk] = useState(null);
 
@@ -43,12 +44,48 @@ export default function AssignTasks() {
     e.preventDefault();
     setErr(null); setOk(null);
     try {
-      await api.assignTask({ ...form });
+      if (editingTask) {
+        // Update existing task
+        await api.updateTask(editingTask._id, { ...form });
+        setOk('Task updated');
+      } else {
+        // Create new task
+        await api.assignTask({ ...form });
+        setOk('Task assigned');
+      }
       setOpen(false);
+      setEditingTask(null);
       setForm({ title:'', description:'', category:'', assignedTo:'', deadline: todayPlusDays(3) });
-      setOk('Task assigned');
       loadTasks();
-    } catch (e) { setErr(e?.message || 'Failed to assign'); }
+    } catch (e) { setErr(e?.message || 'Failed to save task'); }
+  };
+
+  const handleEdit = (task) => {
+    setEditingTask(task);
+    setForm({
+      title: task.title,
+      description: task.description || '',
+      category: task.category || '',
+      assignedTo: Array.isArray(task.assignedTo) ? task.assignedTo[0]?._id : task.assignedTo?._id || '',
+      deadline: task.dueDate ? fmtDateInput(task.dueDate) : todayPlusDays(3)
+    });
+    setOpen(true);
+  };
+
+  const handleDelete = async (taskId) => {
+    if (!confirm('Are you sure you want to delete this task?')) return;
+    setErr(null); setOk(null);
+    try {
+      await api.deleteTask(taskId);
+      setOk('Task deleted');
+      loadTasks();
+    } catch (e) { setErr(e?.message || 'Failed to delete task'); }
+  };
+
+  const handleCloseModal = () => {
+    setOpen(false);
+    setEditingTask(null);
+    setForm({ title:'', description:'', category:'', assignedTo:'', deadline: todayPlusDays(3) });
   };
 
   if (!canAssign) return <div className="text-royal">You do not have permission to view this page.</div>;
@@ -75,27 +112,64 @@ export default function AssignTasks() {
       <tr>
         <th className="text-left p-3">Task</th>
         <th className="text-left p-3">Assignee</th>
-        <th className="text-left p-3">Assigned By</th> {/* ✅ new column */}
+        <th className="text-left p-3">Assigned By</th>
         <th className="text-left p-3">Status</th>
         <th className="text-left p-3">Deadline</th>
+        <th className="text-center p-3">Actions</th>
       </tr>
     </thead>
     <tbody>
-      {tasks.map(t => (
-        <tr key={t._id} className="border-t">
-          <td className="p-3">
-            <div className="font-semibold text-navy">{t.title}</div>
-            {t.description && <div className="text-royal/80">{t.description}</div>}
-            {t.category && <div className="text-xs text-royal/70 mt-1">Category: {t.category}</div>}
-          </td>
-          <td className="p-3">{t.assignedTo?.name} <span className="text-xs text-royal/70">({t.assignedTo?.role})</span></td>
-          <td className="p-3">{t.assignedBy?.name} <span className="text-xs text-royal/70">({t.assignedBy?.role})</span></td> {/* ✅ show assigned by */}
-          <td className="p-3">{t.status === 'InProgress' ? 'In Progress' : 'Completed'}</td>
-          <td className="p-3">{new Date(t.deadline).toLocaleString()}</td>
-        </tr>
-      ))}
+      {tasks.map(t => {
+        // Check if current user is the one who assigned this task
+        const canEditDelete = t.assignedBy?._id === user?.id;
+        
+        return (
+          <tr key={t._id} className="border-t">
+            <td className="p-3">
+              <div className="font-semibold text-navy">{t.title}</div>
+              {t.description && <div className="text-royal/80">{t.description}</div>}
+              {t.category && <div className="text-xs text-royal/70 mt-1">Category: {t.category}</div>}
+            </td>
+            <td className="p-3">
+              {Array.isArray(t.assignedTo) 
+                ? t.assignedTo.map(u => u.name).join(', ')
+                : t.assignedTo?.name
+              }
+              {' '}
+              <span className="text-xs text-royal/70">
+                ({Array.isArray(t.assignedTo) ? t.assignedTo[0]?.role : t.assignedTo?.role})
+              </span>
+            </td>
+            <td className="p-3">{t.assignedBy?.name} <span className="text-xs text-royal/70">({t.assignedBy?.role})</span></td>
+            <td className="p-3">{t.status === 'InProgress' || t.status === 'In Progress' ? 'In Progress' : t.status === 'Completed' ? 'Completed' : t.status}</td>
+            <td className="p-3">{t.dueDate ? new Date(t.dueDate).toLocaleString() : t.deadline ? new Date(t.deadline).toLocaleString() : '-'}</td>
+            <td className="p-3 text-center">
+              {canEditDelete ? (
+                <div className="flex items-center justify-center gap-2">
+                  <button
+                    onClick={() => handleEdit(t)}
+                    className="text-blue-600 hover:text-blue-800 px-2 py-1 hover:bg-blue-50 rounded transition-colors text-xs font-medium"
+                    title="Edit Task"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(t._id)}
+                    className="text-red-600 hover:text-red-800 px-2 py-1 hover:bg-red-50 rounded transition-colors text-xs font-medium"
+                    title="Delete Task"
+                  >
+                    Delete
+                  </button>
+                </div>
+              ) : (
+                <span className="text-xs text-gray-400">-</span>
+              )}
+            </td>
+          </tr>
+        );
+      })}
       {tasks.length === 0 && (
-        <tr><td className="p-4 text-royal/70" colSpan="5">No tasks</td></tr>
+        <tr><td className="p-4 text-royal/70" colSpan="6">No tasks</td></tr>
       )}
     </tbody>
   </table>
@@ -103,9 +177,11 @@ export default function AssignTasks() {
 
 
       {open && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-4 z-50">
           <form onSubmit={submit} className="bg-white rounded-2xl shadow-soft p-4 w-full max-w-xl">
-            <h2 className="text-xl font-bold text-navy mb-3">Assign Task</h2>
+            <h2 className="text-xl font-bold text-navy mb-3">
+              {editingTask ? 'Edit Task' : 'Assign Task'}
+            </h2>
             <label className="block text-sm text-royal mb-1">Title *</label>
             <input className="w-full border rounded-xl px-3 py-2 mb-3" value={form.title} onChange={e=>setForm(f=>({ ...f, title: e.target.value }))} required/>
 
@@ -134,8 +210,10 @@ export default function AssignTasks() {
             </div>
 
             <div className="mt-4 flex items-center justify-end gap-2">
-              <button type="button" onClick={()=>setOpen(false)} className="px-4 py-2 rounded-xl border">Cancel</button>
-              <button className="px-4 py-2 rounded-xl bg-gold text-navy font-semibold hover:bg-lightgold">Assign</button>
+              <button type="button" onClick={handleCloseModal} className="px-4 py-2 rounded-xl border hover:bg-gray-50">Cancel</button>
+              <button className="px-4 py-2 rounded-xl bg-gold text-navy font-semibold hover:bg-lightgold">
+                {editingTask ? 'Update' : 'Assign'}
+              </button>
             </div>
           </form>
         </div>
