@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { api } from '../lib/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { 
@@ -25,16 +25,59 @@ export default function LeadEntry() {
   const [err, setErr] = useState(null);
   const [fileErr, setFileErr] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [courses, setCourses] = useState([]);
+  const [editingLeadId, setEditingLeadId] = useState(null);
 
   const isDM = user?.role === 'DigitalMarketing';
+
+  useEffect(() => {
+    // Load courses
+    const loadCourses = async () => {
+      try {
+        const coursesResp = await api.listCourses();
+        setCourses(coursesResp?.courses || []);
+      } catch (e) {
+        console.error('Failed to load courses:', e);
+      }
+    };
+    loadCourses();
+
+    // Check if we're editing a lead
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('edit')) {
+      const editId = params.get('edit');
+      const editLead = sessionStorage.getItem('editLead');
+      if (editLead) {
+        const lead = JSON.parse(editLead);
+        setForm({
+          name: lead.name || '',
+          phone: lead.phone || '',
+          email: lead.email || '',
+          interestedCourse: lead.interestedCourse || '',
+          source: lead.source || 'Manually Generated Lead'
+        });
+        setEditingLeadId(editId);
+      }
+    }
+  }, []);
 
   const submitSingle = async (e) => {
     e.preventDefault();
     setMsg(null); setErr(null); setLoading(true);
     try {
-      await api.createLead(form);
-      setMsg('Lead added successfully! 🎉');
-      setForm({ name:'', phone:'', email:'', interestedCourse:'', source:'Manually Generated Lead' });
+      if (editingLeadId) {
+        // Update existing lead
+        await api.updateLead(editingLeadId, form);
+        setMsg('Lead updated successfully! 🎉');
+        setTimeout(() => {
+          window.location.href = '/leads-center';
+        }, 1500);
+      } else {
+        // Create new lead
+        await api.createLead(form);
+        setMsg('Lead added successfully! 🎉');
+        setForm({ name:'', phone:'', email:'', interestedCourse:'', source:'Manually Generated Lead' });
+      }
     } catch (e) { 
       setErr(e.message); 
     } finally {
@@ -46,8 +89,12 @@ export default function LeadEntry() {
     e.preventDefault();
     setMsg(null); setErr(null); setLoading(true);
     try {
-      const { created, skipped } = await api.bulkUploadLeads(csv);
-      setMsg(`Bulk upload completed! ✓ Created: ${created} leads | ⊗ Skipped: ${skipped} duplicates/invalid`);
+      const { created, skipped, errors } = await api.bulkUploadLeads(csv);
+      let msgText = `Bulk upload completed! ✓ Created: ${created} leads | ⊗ Skipped: ${skipped}`;
+      if (errors && errors.length > 0) {
+        msgText += `\n\nErrors:\n${errors.join('\n')}`;
+      }
+      setMsg(msgText);
       setCsv('');
     } catch (e) { 
       setErr(e.message); 
@@ -79,9 +126,13 @@ export default function LeadEntry() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-          Lead Entry
+          {editingLeadId ? '✎ Edit Lead' : 'Lead Entry'}
         </h1>
-        <p className="text-gray-600 mt-1">Add new leads individually or upload in bulk via CSV</p>
+        <p className="text-gray-600 mt-1">
+          {editingLeadId 
+            ? 'Update lead details' 
+            : 'Add new leads individually or upload in bulk via CSV'}
+        </p>
       </div>
 
       {/* Global Messages */}
@@ -106,14 +157,14 @@ export default function LeadEntry() {
         {/* Single Lead Form */}
         <form onSubmit={submitSingle} className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-5">
+          <div className={`bg-gradient-to-r ${editingLeadId ? 'from-green-500 to-teal-600' : 'from-blue-500 to-purple-600'} p-5`}>
             <div className="flex items-center gap-3 text-white">
               <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                <UserPlus className="w-6 h-6" />
+                {editingLeadId ? <Edit3 className="w-6 h-6" /> : <UserPlus className="w-6 h-6" />}
               </div>
               <div>
-                <h2 className="text-xl font-bold">Add Single Lead</h2>
-                <p className="text-sm text-white/80">Enter lead details manually</p>
+                <h2 className="text-xl font-bold">{editingLeadId ? 'Update Lead' : 'Add Single Lead'}</h2>
+                <p className="text-sm text-white/80">{editingLeadId ? 'Modify lead details' : 'Enter lead details manually'}</p>
               </div>
             </div>
           </div>
@@ -171,13 +222,22 @@ export default function LeadEntry() {
                 <BookOpen className="w-4 h-4 text-orange-600" />
                 Interested Course
               </label>
-              <input 
-                type="text"
-                className="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 focus:border-blue-500 focus:outline-none transition-colors" 
-                placeholder="e.g., Graphic Design, Web Development"
-                value={form.interestedCourse} 
-                onChange={e=>setForm(f=>({...f,interestedCourse:e.target.value}))}
-              />
+              <div className="relative">
+                <select 
+                  className="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 focus:border-blue-500 focus:outline-none transition-colors appearance-none bg-white pr-10"
+                  value={form.interestedCourse} 
+                  onChange={e=>setForm(f=>({...f,interestedCourse:e.target.value}))}
+                >
+                  <option value="">Select a course</option>
+                  {courses.map(course => (
+                    <option key={course._id} value={course.name}>{course.name}</option>
+                  ))}
+                </select>
+                <BookOpen className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+              </div>
+              {courses.length === 0 && (
+                <p className="text-xs text-orange-600 mt-1">⚠️ No courses available. Contact admin.</p>
+              )}
             </div>
 
             {/* Source Field */}
@@ -207,24 +267,34 @@ export default function LeadEntry() {
             <button 
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg px-6 py-3 font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`w-full bg-gradient-to-r ${editingLeadId ? 'from-green-500 to-teal-600' : 'from-blue-500 to-purple-600'} text-white rounded-lg px-6 py-3 font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {loading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Adding Lead...
+                  {editingLeadId ? 'Updating Lead...' : 'Adding Lead...'}
                 </>
               ) : (
                 <>
-                  <UserPlus className="w-5 h-5" />
-                  Add Lead
+                  {editingLeadId ? (
+                    <>
+                      <Edit3 className="w-5 h-5" />
+                      Update Lead
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-5 h-5" />
+                      Add Lead
+                    </>
+                  )}
                 </>
               )}
             </button>
           </div>
         </form>
 
-        {/* Bulk CSV Upload */}
+        {/* Bulk CSV Upload - Only show if not editing */}
+        {!editingLeadId && (
         <form onSubmit={submitBulk} className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-orange-500 to-pink-600 p-5">
@@ -345,6 +415,7 @@ export default function LeadEntry() {
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>
   );

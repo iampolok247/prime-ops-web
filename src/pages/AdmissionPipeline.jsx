@@ -70,11 +70,31 @@ function PipelineTable({ status, canAct }) {
   const [courses, setCourses] = useState([]);
   const [batches, setBatches] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(false);
+  const [feeStatus, setFeeStatus] = useState(null);
+  const [checkingFeeStatus, setCheckingFeeStatus] = useState(false);
+  const [showFeesModal, setShowFeesModal] = useState(false);
+  const [currentLeadForFee, setCurrentLeadForFee] = useState(null);
+  const [feeForm, setFeeForm] = useState({
+    leadId: '', courseName:'', totalAmount:'', nowPaying:'', method:'Bkash',
+    paymentDate: new Date().toISOString().slice(0,10), nextPaymentDate:'', note:''
+  });
+  const [feeMsg, setFeeMsg] = useState(null);
+  const [feeErr, setFeeErr] = useState(null);
+  const [feeLoading, setFeeLoading] = useState(false);
+  
+  // Filter states
+  const [selectedCourseFilter, setSelectedCourseFilter] = useState('');
+  const [followUpDateFilter, setFollowUpDateFilter] = useState('all'); // 'all', 'today', 'yesterday', 'nextday', 'bydate'
+  const [followUpCustomDate, setFollowUpCustomDate] = useState('');
+  const [availableCourses, setAvailableCourses] = useState([]);
 
   const load = async () => {
     try {
       const { leads } = await api.listAdmissionLeads(status);
       setRows(leads || []);
+      // Extract unique courses from leads
+      const coursesSet = new Set(leads?.filter(l => l.interestedCourse).map(l => l.interestedCourse) || []);
+      setAvailableCourses(Array.from(coursesSet).sort());
       setErr(null);
     } catch (e) { setErr(e.message); }
   };
@@ -116,23 +136,125 @@ function PipelineTable({ status, canAct }) {
     setAdmitTarget(rowId);
     setSelectedCourse('');
     setSelectedBatch('');
+    setFeeStatus(null);
     setShowAdmitModal(true);
     loadCourses();
+    checkFeeStatus(rowId);
   };
 
-  // Filter rows based on search term
+  const checkFeeStatus = async (leadId) => {
+    setCheckingFeeStatus(true);
+    try {
+      const result = await api.checkAdmissionFeeStatus(leadId);
+      setFeeStatus(result);
+    } catch (e) {
+      console.error('Failed to check fee status:', e);
+      setFeeStatus({ hasApprovedFee: false, message: e.message });
+    } finally {
+      setCheckingFeeStatus(false);
+    }
+  };
+
+  const openFeesModal = (lead) => {
+    setCurrentLeadForFee(lead);
+    setFeeForm({
+      leadId: lead._id,
+      courseName: lead.interestedCourse || '',
+      totalAmount: '',
+      nowPaying: '',
+      method: 'Bkash',
+      paymentDate: new Date().toISOString().slice(0,10),
+      nextPaymentDate: '',
+      note: ''
+    });
+    setFeeMsg(null);
+    setFeeErr(null);
+    setShowFeesModal(true);
+  };
+
+  const submitFee = async (e) => {
+    e.preventDefault();
+    setFeeMsg(null);
+    setFeeErr(null);
+    setFeeLoading(true);
+    try {
+      const totalAmt = Number(feeForm.totalAmount) || 0;
+      const nowPay = Number(feeForm.nowPaying) || 0;
+      const payload = {
+        ...feeForm,
+        amount: nowPay,
+        totalAmount: totalAmt,
+        dueAmount: totalAmt - nowPay
+      };
+      await api.createAdmissionFee(payload);
+      setFeeMsg('Fee submitted for review');
+      setTimeout(() => {
+        setShowFeesModal(false);
+        setCurrentLeadForFee(null);
+        setFeeForm({ leadId:'', courseName:'', totalAmount:'', nowPaying:'', method:'Bkash', paymentDate:new Date().toISOString().slice(0,10), nextPaymentDate:'', note:'' });
+        setFeeMsg(null);
+      }, 1500);
+    } catch (e) { 
+      setFeeErr(e.message); 
+    } finally {
+      setFeeLoading(false);
+    }
+  };
+
+  // Filter rows based on search term, course, and follow-up dates
   const filteredRows = useMemo(() => {
-    if (!searchTerm.trim()) return rows;
-    const search = searchTerm.toLowerCase();
-    return rows.filter(row => 
-      row.leadId?.toLowerCase().includes(search) ||
-      row.name?.toLowerCase().includes(search) ||
-      row.phone?.includes(search) ||
-      row.email?.toLowerCase().includes(search) ||
-      row.interestedCourse?.toLowerCase().includes(search) ||
-      row.assignedTo?.name?.toLowerCase().includes(search)
-    );
-  }, [rows, searchTerm]);
+    let filtered = rows;
+    
+    // Search term filter
+    if (searchTerm.trim()) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(row => 
+        row.leadId?.toLowerCase().includes(search) ||
+        row.name?.toLowerCase().includes(search) ||
+        row.phone?.includes(search) ||
+        row.email?.toLowerCase().includes(search) ||
+        row.interestedCourse?.toLowerCase().includes(search) ||
+        row.assignedTo?.name?.toLowerCase().includes(search)
+      );
+    }
+    
+    // Course filter
+    if (selectedCourseFilter) {
+      filtered = filtered.filter(row => row.interestedCourse === selectedCourseFilter);
+    }
+    
+    // Follow-up date filter (only for 'In Follow Up' status)
+    if (status === 'In Follow Up' && followUpDateFilter !== 'all') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      filtered = filtered.filter(row => {
+        if (!row.followUps || row.followUps.length === 0) return false;
+        const lastFollowUp = row.followUps[row.followUps.length - 1];
+        const nextDate = lastFollowUp.nextFollowUpDate ? new Date(lastFollowUp.nextFollowUpDate) : null;
+        if (!nextDate) return false;
+        nextDate.setHours(0, 0, 0, 0);
+        
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        const nextDay = new Date(today);
+        nextDay.setDate(nextDay.getDate() + 1);
+        
+        if (followUpDateFilter === 'today') return nextDate.getTime() === today.getTime();
+        if (followUpDateFilter === 'yesterday') return nextDate.getTime() === yesterday.getTime();
+        if (followUpDateFilter === 'nextday') return nextDate.getTime() === nextDay.getTime();
+        if (followUpDateFilter === 'bydate' && followUpCustomDate) {
+          const customDate = new Date(followUpCustomDate);
+          customDate.setHours(0, 0, 0, 0);
+          return nextDate.getTime() === customDate.getTime();
+        }
+        return false;
+      });
+    }
+    
+    return filtered;
+  }, [rows, searchTerm, selectedCourseFilter, status, followUpDateFilter, followUpCustomDate]);
 
   const actions = (row) => {
     if (!canAct) return null;
@@ -185,6 +307,72 @@ function PipelineTable({ status, canAct }) {
       {msg && <div className="mb-2 text-green-700">{msg}</div>}
       {err && <div className="mb-2 text-red-600">{err}</div>}
       
+      {/* Filters Section */}
+      <div className="mb-4 bg-white rounded-xl shadow-soft p-4 flex flex-wrap gap-3 items-center">
+        {/* Course Filter */}
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-gray-700">Course:</label>
+          <select 
+            value={selectedCourseFilter}
+            onChange={e => setSelectedCourseFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          >
+            <option value="">All Courses</option>
+            {availableCourses.map(course => (
+              <option key={course} value={course}>{course}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Follow-Up Date Filter (only for In Follow Up status) */}
+        {status === 'In Follow Up' && (
+          <>
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">Follow-up Date:</label>
+              <select 
+                value={followUpDateFilter}
+                onChange={e => {
+                  setFollowUpDateFilter(e.target.value);
+                  if (e.target.value !== 'bydate') setFollowUpCustomDate('');
+                }}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              >
+                <option value="all">All Dates</option>
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="nextday">Next Day</option>
+                <option value="bydate">By Date</option>
+              </select>
+            </div>
+            
+            {followUpDateFilter === 'bydate' && (
+              <div className="flex items-center gap-2">
+                <input 
+                  type="date"
+                  value={followUpCustomDate}
+                  onChange={e => setFollowUpCustomDate(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+              </div>
+            )}
+          </>
+        )}
+        
+        {/* Reset Filters Button */}
+        {(selectedCourseFilter || followUpDateFilter !== 'all' || followUpCustomDate) && (
+          <button 
+            onClick={() => {
+              setSelectedCourseFilter('');
+              setFollowUpDateFilter('all');
+              setFollowUpCustomDate('');
+            }}
+            className="ml-auto px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+          >
+            Reset Filters
+          </button>
+        )}
+      </div>
+      
       {/* Search Bar */}
       <div className="mb-4 bg-white rounded-xl shadow-soft p-4">
         <div className="relative">
@@ -223,6 +411,47 @@ function PipelineTable({ status, canAct }) {
           <div className="bg-white rounded-xl p-6 z-10 w-full max-w-md shadow-lg">
             <h3 className="text-xl font-bold text-navy mb-4">Admit Student</h3>
             
+            {/* Fee Status Check */}
+            {checkingFeeStatus ? (
+              <div className="mb-4 p-4 bg-blue-50 rounded-lg">
+                <div className="text-center">
+                  <div className="inline-block animate-spin">⏳</div>
+                  <p className="text-sm text-blue-700 ml-2">Checking admission fees...</p>
+                </div>
+              </div>
+            ) : !feeStatus?.hasApprovedFee ? (
+              <div className="mb-4 p-4 bg-red-50 rounded-lg border-l-4 border-red-500">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">❌</span>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-red-800 mb-1">Admission Fees Not Collected or Not Approved</h4>
+                    <p className="text-sm text-red-700 mb-3">Please collect and get approval for admission fees before marking student as admitted.</p>
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        setShowAdmitModal(false);
+                        const leadForFee = rows.find(r => r._id === admitTarget);
+                        if (leadForFee) openFeesModal(leadForFee);
+                      }}
+                      className="inline-block px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition"
+                    >
+                      � Collect Admission Fees
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="mb-4 p-4 bg-green-50 rounded-lg border-l-4 border-green-500">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">✅</span>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-green-800">Admission Fees Approved</h4>
+                    <p className="text-sm text-green-700">You can proceed with admission.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -232,7 +461,7 @@ function PipelineTable({ status, canAct }) {
                   value={selectedCourse}
                   onChange={e=>setSelectedCourse(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold"
-                  disabled={coursesLoading}
+                  disabled={coursesLoading || !feeStatus?.hasApprovedFee}
                   required
                 >
                   <option value="">{coursesLoading ? 'Loading...' : 'Select a course'}</option>
@@ -253,7 +482,7 @@ function PipelineTable({ status, canAct }) {
                   value={selectedBatch}
                   onChange={e=>setSelectedBatch(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold"
-                  disabled={coursesLoading}
+                  disabled={coursesLoading || !feeStatus?.hasApprovedFee}
                   required
                 >
                   <option value="">{coursesLoading ? 'Loading...' : 'Select a batch'}</option>
@@ -272,7 +501,7 @@ function PipelineTable({ status, canAct }) {
             <div className="flex justify-end gap-2 mt-6">
               <button 
                 type="button" 
-                onClick={()=>{ setShowAdmitModal(false); setAdmitTarget(null); setSelectedCourse(''); setSelectedBatch(''); }} 
+                onClick={()=>{ setShowAdmitModal(false); setAdmitTarget(null); setSelectedCourse(''); setSelectedBatch(''); setFeeStatus(null); }} 
                 className="px-4 py-2 rounded-xl border border-gray-300 hover:bg-gray-50 transition-colors"
               >
                 Cancel
@@ -281,12 +510,152 @@ function PipelineTable({ status, canAct }) {
                 type="button" 
                 onClick={()=>act(admitTarget,'Admitted','', selectedCourse, selectedBatch)} 
                 className="px-4 py-2 rounded-xl bg-gold text-navy font-semibold hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!selectedCourse || !selectedBatch || coursesLoading}
+                disabled={!selectedCourse || !selectedBatch || coursesLoading || !feeStatus?.hasApprovedFee}
               >
                 Confirm Admission
               </button>
             </div>
           </div>
+        </div>
+      )}
+      {showFeesModal && currentLeadForFee && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <form onSubmit={submitFee} className="bg-white rounded-2xl shadow-2xl p-5 w-full max-w-lg transform transition-all max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-gray-200 pb-3 mb-4">
+              <div>
+                <h3 className="text-xl font-bold text-[#053867]">Collect Admission Fees</h3>
+                <p className="text-xs text-gray-500 mt-1">Student: <span className="font-semibold">{currentLeadForFee.name}</span> ({currentLeadForFee.leadId})</p>
+              </div>
+              <button type="button" onClick={()=>{ setShowFeesModal(false); setCurrentLeadForFee(null); }} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {feeMsg && <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">✅ {feeMsg}</div>}
+            {feeErr && <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">❌ {feeErr}</div>}
+
+            <div className="space-y-3">
+              <div>
+                <label className="block">
+                  <span className="text-xs font-semibold text-[#053867] mb-1.5 block">Lead ID</span>
+                  <input type="text" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-gray-50" 
+                    value={currentLeadForFee.leadId} disabled/>
+                </label>
+              </div>
+
+              <div>
+                <label className="block">
+                  <span className="text-xs font-semibold text-[#053867] mb-1.5 block">Student Name</span>
+                  <input type="text" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-gray-50" 
+                    value={currentLeadForFee.name} disabled/>
+                </label>
+              </div>
+
+              <div>
+                <label className="block">
+                  <span className="text-xs font-semibold text-[#053867] mb-1.5 block">Course Name *</span>
+                  <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" 
+                    required placeholder="e.g., Graphics Design Professional"
+                    value={feeForm.courseName} onChange={e=>setFeeForm(f=>({...f,courseName:e.target.value}))}/>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block">
+                    <span className="text-xs font-semibold text-[#053867] mb-1.5 block">Total Amount *</span>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">৳</span>
+                      <input type="number" className="w-full border border-green-300 rounded-lg pl-7 pr-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-green-400 bg-green-50" 
+                        required placeholder="0" min="0"
+                        value={feeForm.totalAmount || ''} onChange={e=>setFeeForm(f=>({...f,totalAmount:e.target.value}))}/>
+                    </div>
+                  </label>
+                </div>
+
+                <div>
+                  <label className="block">
+                    <span className="text-xs font-semibold text-[#053867] mb-1.5 block">Now Paying *</span>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">৳</span>
+                      <input type="number" className="w-full border border-orange-300 rounded-lg pl-7 pr-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-orange-400 bg-orange-50" 
+                        required placeholder="0" min="0"
+                        value={feeForm.nowPaying || ''} onChange={e=>setFeeForm(f=>({...f,nowPaying:e.target.value}))}/>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block">
+                    <span className="text-xs font-semibold text-[#053867] mb-1.5 block">Payment Method *</span>
+                    <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white" 
+                      value={feeForm.method} onChange={e=>setFeeForm(f=>({...f,method:e.target.value}))}>
+                      <option>Bkash</option>
+                      <option>Nagad</option>
+                      <option>Rocket</option>
+                      <option>Bank Transfer</option>
+                      <option>Cash on Hand</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div>
+                  <label className="block">
+                    <span className="text-xs font-semibold text-[#053867] mb-1.5 block">Payment Date *</span>
+                    <input type="date" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" 
+                      required
+                      value={feeForm.paymentDate} onChange={e=>setFeeForm(f=>({...f,paymentDate:e.target.value}))}/>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block">
+                  <span className="text-xs font-semibold text-[#053867] mb-1.5 block">Next Payment Date (Optional)</span>
+                  <input type="date" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" 
+                    value={feeForm.nextPaymentDate || ''} onChange={e=>setFeeForm(f=>({...f,nextPaymentDate:e.target.value}))}/>
+                </label>
+              </div>
+
+              <div>
+                <label className="block">
+                  <span className="text-xs font-semibold text-[#053867] mb-1.5 block">Additional Note</span>
+                  <textarea rows="2" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+                    placeholder="Add any additional information..."
+                    value={feeForm.note || ''} onChange={e=>setFeeForm(f=>({...f,note:e.target.value}))}/>
+                </label>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-4 mt-4 border-t border-gray-200">
+              <button type="button" onClick={()=>{ setShowFeesModal(false); setCurrentLeadForFee(null); }} 
+                className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 transition-colors" disabled={feeLoading}>
+                Cancel
+              </button>
+              <button type="submit" disabled={feeLoading}
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#F7BA23] to-[#f5a623] text-[#053867] text-sm font-bold hover:shadow-lg transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                {feeLoading ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Submit Fee
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
         </div>
       )}
       {showFollowModal && (
@@ -369,6 +738,7 @@ function PipelineTable({ status, canAct }) {
           {status === 'Assigned' && <th className="p-3 text-left">Assigned At</th>}
           {status === 'Counseling' && <th className="p-3 text-left">Counseling At</th>}
           {status === 'In Follow Up' && <th className="p-3 text-left">Follow-Ups</th>}
+          {status === 'In Follow Up' && <th className="p-3 text-left">Next Follow-Up Date</th>}
           {status === 'Admitted' && <th className="p-3 text-left">Admitted At</th>}
             <th className="p-3 text-left">Action</th>
             </tr>
@@ -406,16 +776,40 @@ function PipelineTable({ status, canAct }) {
                     </div>
                   )}
                 </td>}
+                {status === 'In Follow Up' && <td className="p-3">
+                  {((r.followUps||[]).length === 0) ? (
+                    <div className="text-royal/70 text-xs">-</div>
+                  ) : (
+                    <div className={`text-sm font-semibold px-2 py-1 rounded-lg ${
+                      (() => {
+                        const lastFollowUp = r.followUps[r.followUps.length - 1];
+                        if (!lastFollowUp.nextFollowUpDate) return 'text-gray-600 bg-gray-50';
+                        const nextDate = new Date(lastFollowUp.nextFollowUpDate);
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        nextDate.setHours(0, 0, 0, 0);
+                        if (nextDate.getTime() < today.getTime()) return 'text-red-700 bg-red-50';
+                        if (nextDate.getTime() === today.getTime()) return 'text-orange-700 bg-orange-50';
+                        return 'text-green-700 bg-green-50';
+                      })()
+                    }`}>
+                      {r.followUps[r.followUps.length - 1].nextFollowUpDate ? 
+                        new Date(r.followUps[r.followUps.length - 1].nextFollowUpDate).toLocaleDateString() 
+                        : '-'
+                      }
+                    </div>
+                  )}
+                </td>}
                 {status === 'Admitted' && <td className="p-3">{fmtDT(r.admittedAt || r.updatedAt)}</td>}
                 <td className="p-3">{actions(r)}</td>
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td className="p-4 text-royal/70" colSpan="7">No leads</td></tr>
+              <tr><td className="p-4 text-royal/70" colSpan={status === 'In Follow Up' ? '9' : '8'}>No leads</td></tr>
             )}
             {rows.length > 0 && filteredRows.length === 0 && (
-              <tr><td className="p-4 text-royal/70 text-center" colSpan="7">
-                No leads found matching "{searchTerm}"
+              <tr><td className="p-4 text-royal/70 text-center" colSpan={status === 'In Follow Up' ? '9' : '8'}>
+                No leads found matching your filters
               </td></tr>
             )}
           </tbody>

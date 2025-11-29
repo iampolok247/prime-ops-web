@@ -21,6 +21,8 @@ export default function LeadsCenter() {
   const [bulkAssignTo, setBulkAssignTo] = useState('');
   const [todayAssignments, setTodayAssignments] = useState(null);
   const [todayTotal, setTodayTotal] = useState(0);
+  const [distributeSelectedMembers, setDistributeSelectedMembers] = useState([]);
+  const [showDistributeModal, setShowDistributeModal] = useState(false);
 
   const canAssign = user?.role === 'DigitalMarketing';
 
@@ -75,6 +77,68 @@ export default function LeadsCenter() {
       setMsg('Lead assigned');
       load();
     } catch (e) { setErr(e.message); }
+  };
+
+  const editLead = (lead) => {
+    // Store the lead to edit in sessionStorage so LeadEntry can access it
+    sessionStorage.setItem('editLead', JSON.stringify(lead));
+    window.location.href = '/lead-entry?edit=' + lead._id;
+  };
+
+  const deleteLead = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this lead? This action cannot be undone.')) {
+      return;
+    }
+    setMsg(null); setErr(null);
+    try {
+      await api.deleteLead(id);
+      setMsg('Lead deleted successfully');
+      load();
+    } catch (e) { setErr(e.message); }
+  };
+
+  const distributeEquallyBulk = async () => {
+    if (selectedLeads.length === 0 || distributeSelectedMembers.length === 0) {
+      alert('Please select leads and at least one member');
+      return;
+    }
+
+    setMsg(null); setErr(null);
+    setBulkAssigning(true);
+    try {
+      // Calculate how many leads per member
+      const leadsPerMember = Math.floor(selectedLeads.length / distributeSelectedMembers.length);
+      const remainder = selectedLeads.length % distributeSelectedMembers.length;
+
+      let leadIndex = 0;
+      let assignmentPromises = [];
+
+      for (let i = 0; i < distributeSelectedMembers.length; i++) {
+        const memberId = distributeSelectedMembers[i];
+        // First members get the base amount + 1 if there's a remainder
+        const leadsForThisMember = leadsPerMember + (i < remainder ? 1 : 0);
+        const leadsToAssign = selectedLeads.slice(leadIndex, leadIndex + leadsForThisMember);
+        
+        if (leadsToAssign.length > 0) {
+          assignmentPromises.push(
+            api.bulkAssignLeads(leadsToAssign, memberId)
+          );
+        }
+        leadIndex += leadsForThisMember;
+      }
+
+      await Promise.all(assignmentPromises);
+      
+      setMsg(`✓ Successfully distributed ${selectedLeads.length} leads among ${distributeSelectedMembers.length} members equally${remainder > 0 ? ` (${remainder} remainder lead(s))` : ''}`);
+      setDistributeSelectedMembers([]);
+      setSelectedLeads([]);
+      setShowDistributeModal(false);
+      load();
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setBulkAssigning(false);
+    }
   };
 
   const bulkAssign = async () => {
@@ -261,31 +325,104 @@ export default function LeadsCenter() {
 
       {/* Bulk Assign Bar */}
       {canAssign && selectedLeads.length > 0 && (
-        <div className="mb-3 p-3 bg-blue-50 rounded-xl flex items-center gap-3">
-          <span className="font-medium text-blue-900">{selectedLeads.length} lead(s) selected</span>
-          <select 
-            value={bulkAssignTo} 
-            onChange={e=>setBulkAssignTo(e.target.value)} 
-            className="border rounded-xl px-3 py-2"
-          >
-            <option value="">Select Admission Member</option>
-            {admissions.map(a => (
-              <option key={a._id} value={a._id}>{a.name}</option>
-            ))}
-          </select>
-          <button 
-            onClick={bulkAssign}
-            disabled={bulkAssigning || !bulkAssignTo}
-            className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {bulkAssigning ? 'Assigning...' : 'Bulk Assign'}
-          </button>
-          <button 
-            onClick={() => setSelectedLeads([])}
-            className="px-3 py-2 text-royal hover:text-red-600"
-          >
-            Clear Selection
-          </button>
+        <div className="mb-3 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200 space-y-3">
+          <div className="flex items-center gap-3">
+            <span className="font-medium text-blue-900">{selectedLeads.length} lead(s) selected</span>
+            <select 
+              value={bulkAssignTo} 
+              onChange={e=>setBulkAssignTo(e.target.value)} 
+              className="border rounded-xl px-3 py-2"
+            >
+              <option value="">Select Admission Member</option>
+              {admissions.map(a => (
+                <option key={a._id} value={a._id}>{a.name}</option>
+              ))}
+            </select>
+            <button 
+              onClick={bulkAssign}
+              disabled={bulkAssigning || !bulkAssignTo}
+              className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            >
+              {bulkAssigning ? 'Assigning...' : 'Assign to One'}
+            </button>
+            <button 
+              onClick={() => setShowDistributeModal(true)}
+              className="px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 font-medium"
+              title="Distribute leads equally among selected members"
+            >
+              📊 Distribute Equally
+            </button>
+            <button 
+              onClick={() => setSelectedLeads([])}
+              className="px-3 py-2 text-royal hover:text-red-600"
+            >
+              Clear Selection
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Distribute Equally Modal */}
+      {showDistributeModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-black opacity-30" onClick={() => setShowDistributeModal(false)} />
+          <div className="bg-white rounded-2xl p-6 z-10 w-full max-w-md shadow-lg">
+            <h3 className="text-xl font-bold text-navy mb-4">📊 Distribute {selectedLeads.length} Leads Equally</h3>
+            <p className="text-gray-600 mb-4">Select admission members to distribute leads equally among them</p>
+            
+            <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
+              {admissions.map(member => (
+                <label key={member._id} className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer">
+                  <input 
+                    type="checkbox"
+                    checked={distributeSelectedMembers.includes(member._id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setDistributeSelectedMembers([...distributeSelectedMembers, member._id]);
+                      } else {
+                        setDistributeSelectedMembers(distributeSelectedMembers.filter(id => id !== member._id));
+                      }
+                    }}
+                    className="w-4 h-4 cursor-pointer"
+                  />
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-800">{member.name}</div>
+                    <div className="text-xs text-gray-500">{member.email}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            {distributeSelectedMembers.length > 0 && (
+              <div className="bg-blue-50 rounded-lg p-3 mb-4">
+                <div className="text-sm text-blue-900 font-medium">
+                  Distribution plan:
+                </div>
+                <div className="text-xs text-blue-700 mt-1">
+                  {Math.floor(selectedLeads.length / distributeSelectedMembers.length)} leads per member
+                  {selectedLeads.length % distributeSelectedMembers.length > 0 && (
+                    ` + ${selectedLeads.length % distributeSelectedMembers.length} remainder`
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setShowDistributeModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={distributeEquallyBulk}
+                disabled={distributeSelectedMembers.length === 0 || bulkAssigning}
+                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                {bulkAssigning ? 'Distributing...' : 'Confirm Distribution'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -381,11 +518,35 @@ export default function LeadsCenter() {
                 )}
                 {canAssign && (
                   <td className="p-3">
-                    <AssignDropdown
-                      current={l.assignedTo?._id || ''}
-                      options={admissions}
-                      onChange={(val) => assign(l._id, val)}
-                    />
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {/* Edit/Delete buttons - always show for DM's leads */}
+                      <button
+                        onClick={() => editLead(l)}
+                        className="px-2 py-1 text-sm rounded-lg border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 transition"
+                        title="Edit lead"
+                      >
+                        ✎ Edit
+                      </button>
+                      <button
+                        onClick={() => deleteLead(l._id)}
+                        className="px-2 py-1 text-sm rounded-lg border border-red-300 bg-red-50 text-red-700 hover:bg-red-100 transition"
+                        title="Delete lead"
+                      >
+                        🗑 Delete
+                      </button>
+                      {/* Assign dropdown - show only if not already assigned */}
+                      {!l.assignedTo ? (
+                        <AssignDropdown
+                          current={''}
+                          options={admissions}
+                          onChange={(val) => assign(l._id, val)}
+                        />
+                      ) : (
+                        <span className="text-sm px-2 py-1 rounded-lg bg-green-50 text-green-700 font-medium whitespace-nowrap">
+                          ✓ Assigned to {l.assignedTo?.name}
+                        </span>
+                      )}
+                    </div>
                   </td>
                 )}
               </tr>

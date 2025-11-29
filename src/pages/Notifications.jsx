@@ -17,10 +17,11 @@ import {
 export default function Notifications() {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
+  const [urgentTasks, setUrgentTasks] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, unread, read
-  const [typeFilter, setTypeFilter] = useState('all'); // all, leave, tada, handover, task
+  const [typeFilter, setTypeFilter] = useState('all'); // all, leave, tada, handover, task, urgent
   const [msg, setMsg] = useState(null);
   const [err, setErr] = useState(null);
 
@@ -31,9 +32,25 @@ export default function Notifications() {
   const loadNotifications = async () => {
     try {
       setLoading(true);
+      
+      // Load system notifications
       const data = await api.getNotifications(undefined, 100); // Get last 100 notifications
       setNotifications(data.notifications || []);
       setUnreadCount(data.unreadCount || 0);
+      
+      // Load urgent tasks
+      try {
+        const tasksData = await api.listMyTasks();
+        const tasks = (tasksData.tasks || []).filter(t => {
+          if (t.status === 'Completed') return false;
+          const now = new Date();
+          const due = new Date(t.dueDate);
+          return due < now; // Only past due dates
+        });
+        setUrgentTasks(tasks);
+      } catch (e) {
+        console.log('Could not load urgent tasks:', e.message);
+      }
     } catch (e) {
       setErr(e.message);
     } finally {
@@ -102,6 +119,7 @@ export default function Notifications() {
     if (typeFilter === 'tada' && !n.type.startsWith('TADA_')) return false;
     if (typeFilter === 'handover' && !n.type.includes('HANDOVER')) return false;
     if (typeFilter === 'task' && !n.type.startsWith('TASK_')) return false;
+    if (typeFilter === 'urgent') return false; // Urgent tasks are shown separately
 
     return true;
   });
@@ -170,6 +188,7 @@ export default function Notifications() {
             className="px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none text-sm"
           >
             <option value="all">All Types</option>
+            <option value="urgent">Urgent Tasks</option>
             <option value="leave">Leave Applications</option>
             <option value="tada">TA/DA Applications</option>
             <option value="handover">Handover Requests</option>
@@ -198,91 +217,150 @@ export default function Notifications() {
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent mx-auto"></div>
           <p className="text-gray-500 mt-4">Loading notifications...</p>
         </div>
-      ) : filteredNotifications.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-2xl">
-          <Bell size={48} className="mx-auto text-gray-300 mb-4" />
-          <p className="text-gray-500 text-lg">No notifications found</p>
-          <p className="text-gray-400 text-sm mt-2">Try adjusting your filters</p>
-        </div>
       ) : (
-        <div className="space-y-3">
-          {filteredNotifications.map(notif => {
-            const isHandoverRequest = notif.type === 'LEAVE_HANDOVER_REQUEST';
-            
-            return (
-              <div
-                key={notif._id}
-                onClick={() => handleNotificationClick(notif)}
-                className={`p-4 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md ${
-                  !notif.isRead 
-                    ? getNotificationColor(notif.type) + ' border-l-4' 
-                    : 'bg-white border-gray-200'
-                }`}
-              >
-                <div className="flex items-start gap-4">
-                  {/* Icon */}
-                  <div className={`p-2 rounded-lg ${!notif.isRead ? 'bg-white' : 'bg-gray-100'}`}>
-                    {getNotificationIcon(notif.type)}
+        <div className="space-y-6">
+          {/* Urgent Tasks Section */}
+          {typeFilter === 'all' || typeFilter === 'urgent' ? (
+            urgentTasks.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-2 bg-blue-50 rounded-lg">
+                    <Calendar className="w-5 h-5 text-blue-600" />
                   </div>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1">
-                        <h3 className={`text-base ${!notif.isRead ? 'font-semibold text-navy' : 'font-medium text-gray-700'}`}>
-                          {notif.title}
-                          {isHandoverRequest && !notif.isRead && (
-                            <span className="ml-2 text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full">
-                              Action Required
-                            </span>
-                          )}
-                          {!notif.isRead && !isHandoverRequest && (
-                            <span className="ml-2 inline-block w-2 h-2 bg-indigo-500 rounded-full"></span>
-                          )}
-                        </h3>
-                        <p className="text-sm text-gray-600 mt-1">{notif.message}</p>
-                        
-                        {/* Sender info */}
-                        {notif.sender && (
-                          <div className="flex items-center gap-2 mt-2">
-                            <img 
-                              src={notif.sender.avatar} 
-                              alt={notif.sender.name}
-                              className="w-5 h-5 rounded-full"
-                            />
-                            <span className="text-xs text-gray-500">
-                              from {notif.sender.name}
-                            </span>
+                  <h2 className="text-lg font-bold text-navy">Urgent Tasks ({urgentTasks.length})</h2>
+                </div>
+                <div className="space-y-3">
+                  {urgentTasks.map(task => (
+                    <div
+                      key={task._id}
+                      onClick={() => navigate('/tasks')}
+                      className="p-4 rounded-xl border-2 border-red-200 bg-red-50 cursor-pointer hover:shadow-md transition-all"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="p-2 rounded-lg bg-white">
+                          <AlertCircle className="w-5 h-5 text-red-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <h3 className="text-base font-semibold text-navy">{task.title}</h3>
+                              <p className="text-sm text-gray-600 mt-1">{task.description || 'No description'}</p>
+                            </div>
+                            <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-700 font-medium">Overdue</span>
                           </div>
-                        )}
+                          <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                            <Calendar size={12} />
+                            Due: {new Date(task.dueDate).toLocaleDateString('en-GB')}
+                          </div>
+                        </div>
                       </div>
-
-                      {/* Delete button */}
-                      <button
-                        onClick={(e) => deleteNotification(notif._id, e)}
-                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                        title="Delete notification"
-                      >
-                        <Trash2 size={16} />
-                      </button>
                     </div>
-
-                    {/* Timestamp */}
-                    <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
-                      <Clock size={12} />
-                      {new Date(notif.createdAt).toLocaleString('en-GB', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
-            );
-          })}
+            )
+          ) : null}
+
+          {/* System Notifications */}
+          {filteredNotifications.length === 0 && urgentTasks.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 rounded-2xl">
+              <Bell size={48} className="mx-auto text-gray-300 mb-4" />
+              <p className="text-gray-500 text-lg">No notifications found</p>
+              <p className="text-gray-400 text-sm mt-2">Try adjusting your filters</p>
+            </div>
+          ) : null}
+
+          {filteredNotifications.length > 0 && (
+            <div>
+              {urgentTasks.length > 0 && typeFilter === 'all' && (
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-2 bg-indigo-50 rounded-lg">
+                    <Bell className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <h2 className="text-lg font-bold text-navy">System Notifications ({filteredNotifications.length})</h2>
+                </div>
+              )}
+              <div className="space-y-3">
+                {filteredNotifications.map(notif => {
+                  const isHandoverRequest = notif.type === 'LEAVE_HANDOVER_REQUEST';
+                  
+                  return (
+                    <div
+                      key={notif._id}
+                      onClick={() => handleNotificationClick(notif)}
+                      className={`p-4 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md ${
+                        !notif.isRead 
+                          ? getNotificationColor(notif.type) + ' border-l-4' 
+                          : 'bg-white border-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-start gap-4">
+                        {/* Icon */}
+                        <div className={`p-2 rounded-lg ${!notif.isRead ? 'bg-white' : 'bg-gray-100'}`}>
+                          {getNotificationIcon(notif.type)}
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <h3 className={`text-base ${!notif.isRead ? 'font-semibold text-navy' : 'font-medium text-gray-700'}`}>
+                                {notif.title}
+                                {isHandoverRequest && !notif.isRead && (
+                                  <span className="ml-2 text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full">
+                                    Action Required
+                                  </span>
+                                )}
+                                {!notif.isRead && !isHandoverRequest && (
+                                  <span className="ml-2 inline-block w-2 h-2 bg-indigo-500 rounded-full"></span>
+                                )}
+                              </h3>
+                              <p className="text-sm text-gray-600 mt-1">{notif.message}</p>
+                              
+                              {/* Sender info */}
+                              {notif.sender && (
+                                <div className="flex items-center gap-2 mt-2">
+                                  <img 
+                                    src={notif.sender.avatar} 
+                                    alt={notif.sender.name}
+                                    className="w-5 h-5 rounded-full"
+                                  />
+                                  <span className="text-xs text-gray-500">
+                                    from {notif.sender.name}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Delete button */}
+                            <button
+                              onClick={(e) => deleteNotification(notif._id, e)}
+                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                              title="Delete notification"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+
+                          {/* Timestamp */}
+                          <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+                            <Clock size={12} />
+                            {new Date(notif.createdAt).toLocaleString('en-GB', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

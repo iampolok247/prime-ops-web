@@ -72,9 +72,12 @@ function getDeadlineColor(dueDate, status) {
   return { bg: 'bg-gray-50', text: 'text-gray-600', icon: 'text-gray-500', label: null };
 }
 
-function TaskCard({ task, onClick, isDragging }) {
+function TaskCard({ task, onClick, isDragging, onStatusChange, onDeadlineRequest }) {
   // Add safety check for task
   if (!task) return null;
+
+  const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
 
   const {
     attributes,
@@ -99,20 +102,52 @@ function TaskCard({ task, onClick, isDragging }) {
     ? `${task.checklist.filter(item => item.completed).length}/${task.checklist.length}`
     : null;
 
+  const nextStatuses = {
+    'Backlog': ['To Do'],
+    'To Do': ['In Progress', 'Completed'],
+    'In Progress': ['In Review', 'Completed'],
+    'In Review': ['Completed', 'To Do'],
+    'Completed': ['To Do', 'In Progress']
+  };
+
+  const availableNextStatuses = nextStatuses[task.status] || [];
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
-      onClick={onClick}
-      className={`bg-white rounded-lg shadow-md border-l-4 ${priorityColor?.dot?.replace('bg-', 'border-') || 'border-gray-400'} p-3 mb-2.5 cursor-grab active:cursor-grabbing hover:shadow-lg transition-all hover:scale-[1.01]`}
+      className={`bg-white rounded-lg shadow-md border-l-4 ${priorityColor?.dot?.replace('bg-', 'border-') || 'border-gray-400'} p-4 mb-2.5 hover:shadow-lg transition-all cursor-pointer group`}
     >
       {/* Header: Priority & Status */}
       <div className="flex items-center justify-between mb-3">
         <span className={`text-xs px-2.5 py-1 rounded-full ${priorityColor?.bg || 'bg-gray-100'} ${priorityColor?.text || 'text-gray-700'} font-bold uppercase tracking-wide`}>
           {task.priority || 'Medium'}
         </span>
+        <div className="relative">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowMoreOptions(!showMoreOptions);
+            }}
+            className="p-1.5 opacity-0 group-hover:opacity-100 hover:bg-gray-100 rounded-lg transition"
+          >
+            <MoreVertical size={16} className="text-gray-600" />
+          </button>
+          {showMoreOptions && (
+            <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeadlineRequest?.();
+                  setShowMoreOptions(false);
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                📅 Request Deadline Change
+              </button>
+            </div>
+          )}
+        </div>
         {isOverdue && (
           <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-600 font-semibold flex items-center gap-1 animate-pulse">
             <AlertCircle size={12} /> Overdue
@@ -121,7 +156,12 @@ function TaskCard({ task, onClick, isDragging }) {
       </div>
 
       {/* Title */}
-      <h3 className="font-bold text-navy mb-3 text-sm leading-tight">{task.title}</h3>
+      <h3 
+        className="font-bold text-navy mb-3 text-sm leading-tight cursor-pointer hover:text-blue-600"
+        onClick={onClick}
+      >
+        {task.title}
+      </h3>
 
       {/* Assignment Info - More Prominent */}
       <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-2.5 mb-3 space-y-1.5">
@@ -201,8 +241,12 @@ function TaskCard({ task, onClick, isDragging }) {
               </div>
             )}
 
-            {/* Comments Count */}
-            <div className="flex items-center gap-1.5 px-2 py-1 bg-white rounded border border-blue-200" title="Comments">
+            {/* Comments Count - Clickable */}
+            <div 
+              className="flex items-center gap-1.5 px-2 py-1 bg-white rounded border border-blue-200 cursor-pointer hover:bg-blue-50 transition"
+              onClick={onClick}
+              title="Click to view comments"
+            >
               <MessageSquare size={13} className="text-blue-600" />
               <span className="font-semibold text-blue-700">{task.comments?.length || 0}</span>
             </div>
@@ -216,12 +260,44 @@ function TaskCard({ task, onClick, isDragging }) {
             )}
           </div>
         </div>
+
+        {/* Status Change Dropdown */}
+        <div className="relative">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowStatusMenu(!showStatusMenu);
+            }}
+            className={`w-full py-2.5 px-3 rounded-lg font-semibold text-sm border-2 transition-all flex items-center justify-between ${statusColor?.bg} ${statusColor?.text} ${statusColor?.border}`}
+          >
+            <span>Status: {task.status}</span>
+            <span className="text-lg">▼</span>
+          </button>
+
+          {showStatusMenu && (
+            <div className="absolute bottom-full left-0 right-0 mb-2 bg-white border-2 border-gray-300 rounded-lg shadow-lg z-50">
+              {availableNextStatuses.map(status => (
+                <button
+                  key={status}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStatusChange?.(task._id, status);
+                    setShowStatusMenu(false);
+                  }}
+                  className={`w-full text-left px-4 py-2.5 text-sm font-semibold border-b border-gray-200 hover:${STATUS_COLORS[status]?.bg} transition ${STATUS_COLORS[status]?.text}`}
+                >
+                  ✓ Move to {status}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-function KanbanColumn({ column, tasks, onCardClick, onAddTask, activeId, isAdmin }) {
+function KanbanColumn({ column, tasks, onCardClick, onAddTask, activeId, isAdmin, onStatusChange, onDeadlineRequest }) {
   const columnTasks = tasks.filter(t => t.boardColumn === column);
   const taskCount = columnTasks.length;
   const taskIds = columnTasks.map(t => t._id);
@@ -270,6 +346,8 @@ function KanbanColumn({ column, tasks, onCardClick, onAddTask, activeId, isAdmin
               task={task} 
               onClick={(e) => onCardClick(task, e)}
               isDragging={activeId === task._id}
+              onStatusChange={onStatusChange}
+              onDeadlineRequest={onDeadlineRequest}
             />
           ))}
           {taskCount === 0 && (
@@ -383,6 +461,24 @@ export default function TasksKanban() {
     // Prevent opening modal when dragging
     if (e?.defaultPrevented) return;
     setSelectedTask(task);
+  };
+
+  const handleStatusChange = async (taskId, newStatus) => {
+    try {
+      await api.updateTaskStatus(taskId, newStatus);
+      await loadTasks();
+    } catch (error) {
+      console.error('Error updating task status:', error);
+      alert('Failed to update task status');
+    }
+  };
+
+  const handleDeadlineRequest = () => {
+    // For now, just open the task modal where deadline change can be requested
+    const task = tasks.find(t => t._id === selectedTask?._id);
+    if (task) {
+      setSelectedTask(task);
+    }
   };
 
   const handleAddTask = (column) => {
@@ -587,6 +683,8 @@ export default function TasksKanban() {
                   onAddTask={handleAddTask}
                   activeId={activeId}
                   isAdmin={['SuperAdmin', 'Admin'].includes(user?.role)}
+                  onStatusChange={handleStatusChange}
+                  onDeadlineRequest={handleDeadlineRequest}
                 />
               ))}
             </div>
@@ -599,6 +697,8 @@ export default function TasksKanban() {
               task={tasks.find(t => t._id === activeId)} 
               onClick={() => {}}
               isDragging={true}
+              onStatusChange={handleStatusChange}
+              onDeadlineRequest={() => handleDeadlineRequest()}
             />
           ) : null}
         </DragOverlay>

@@ -518,7 +518,7 @@ export default function Topbar({ onMenuClick }) {
                         System Notifications ({systemNotifications.length})
                       </h4>
                     </div>
-                    <div className="divide-y max-h-64 overflow-y-auto">
+                    <div className="divide-y max-h-96 overflow-y-auto">
                       {systemNotifications.map(notif => {
                         const isHandoverRequest = notif.type === 'LEAVE_HANDOVER_REQUEST';
                         

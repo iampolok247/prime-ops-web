@@ -7,13 +7,11 @@ const getApiBase = () => {
   if (import.meta.env.PROD) {
     console.log("[API] Production build - using production API");
     return "http://31.97.228.226:5000";
-    // return "http://localhost:5000";
   }
 
   // For development, use localhost
   console.log("[API] Development mode - using localhost");
-  return "http://31.97.228.226:5000";
-  // return 'http://localhost:5000';
+  return "http://localhost:5001";
 };
 
 // Wrapper fetch that automatically includes auth token
@@ -391,6 +389,22 @@ export const api = {
     });
     return handleJson(res, "Bulk upload failed");
   },
+  async updateLead(id, payload) {
+    const res = await authFetch(`${getApiBase()}/api/leads/${id}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return handleJson(res, "Update lead failed");
+  },
+  async deleteLead(id) {
+    const res = await authFetch(`${getApiBase()}/api/leads/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    return handleJson(res, "Delete lead failed");
+  },
 
   // ---- Admission pipeline ----
   async listAdmissionLeads(status) {
@@ -436,6 +450,12 @@ export const api = {
       credentials: "include",
     });
     return handleJson(res, "Load fees failed");
+  },
+  async checkAdmissionFeeStatus(leadId) {
+    const res = await authFetch(`${getApiBase()}/api/admission/fees/status/${leadId}`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Check fee status failed");
   },
   async createAdmissionFee(payload) {
     const res = await authFetch(`${getApiBase()}/api/admission/fees`, {
