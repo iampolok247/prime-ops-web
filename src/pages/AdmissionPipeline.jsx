@@ -86,6 +86,7 @@ function PipelineTable({ status, canAct }) {
   const [selectedCourseFilter, setSelectedCourseFilter] = useState('');
   const [followUpDateFilter, setFollowUpDateFilter] = useState('all'); // 'all', 'today', 'yesterday', 'nextday', 'bydate'
   const [followUpCustomDate, setFollowUpCustomDate] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('all');
   const [availableCourses, setAvailableCourses] = useState([]);
 
   const load = async () => {
@@ -223,6 +224,11 @@ function PipelineTable({ status, canAct }) {
       filtered = filtered.filter(row => row.interestedCourse === selectedCourseFilter);
     }
     
+    // Priority filter
+    if (priorityFilter !== 'all') {
+      filtered = filtered.filter(row => row.priority === priorityFilter);
+    }
+    
     // Follow-up date filter (only for 'In Follow Up' status)
     if (status === 'In Follow Up' && followUpDateFilter !== 'all') {
       const today = new Date();
@@ -252,7 +258,7 @@ function PipelineTable({ status, canAct }) {
     }
     
     return filtered;
-  }, [rows, searchTerm, selectedCourseFilter, status, followUpDateFilter, followUpCustomDate]);
+  }, [rows, searchTerm, selectedCourseFilter, priorityFilter, status, followUpDateFilter, followUpCustomDate]);
 
   const actions = (row) => {
     if (!canAct) return null;
@@ -322,6 +328,24 @@ function PipelineTable({ status, canAct }) {
           </select>
         </div>
 
+        {/* Priority Filter (only for In Follow Up status) */}
+        {status === 'In Follow Up' && (
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700">Priority:</label>
+            <select 
+              value={priorityFilter}
+              onChange={e => setPriorityFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            >
+              <option value="all">All Priorities</option>
+              <option value="Very Interested">Very Interested</option>
+              <option value="Interested">Interested</option>
+              <option value="Few Interested">Few Interested</option>
+              <option value="Not Interested">Not Interested</option>
+            </select>
+          </div>
+        )}
+
         {/* Follow-Up Date Filter (only for In Follow Up status) */}
         {status === 'In Follow Up' && (
           <>
@@ -357,10 +381,11 @@ function PipelineTable({ status, canAct }) {
         )}
         
         {/* Reset Filters Button */}
-        {(selectedCourseFilter || followUpDateFilter !== 'all' || followUpCustomDate) && (
+        {(selectedCourseFilter || priorityFilter !== 'all' || followUpDateFilter !== 'all' || followUpCustomDate) && (
           <button 
             onClick={() => {
               setSelectedCourseFilter('');
+              setPriorityFilter('all');
               setFollowUpDateFilter('all');
               setFollowUpCustomDate('');
             }}
@@ -792,6 +817,7 @@ function PipelineTable({ status, canAct }) {
           {status === 'Assigned' && <th className="p-3 text-left">Assigned At</th>}
           {status === 'Counseling' && <th className="p-3 text-left">Counseling At</th>}
           {status === 'In Follow Up' && <th className="p-3 text-left">Follow-Ups</th>}
+          {status === 'In Follow Up' && <th className="p-3 text-left">Priority</th>}
           {status === 'In Follow Up' && <th className="p-3 text-left">Next Follow-Up Date</th>}
           {status === 'Admitted' && <th className="p-3 text-left">Admitted At</th>}
             <th className="p-3 text-left">Action</th>
@@ -831,6 +857,17 @@ function PipelineTable({ status, canAct }) {
                   )}
                 </td>}
                 {status === 'In Follow Up' && <td className="p-3">
+                  <div className={`text-xs font-semibold px-2 py-1 rounded-lg inline-block ${
+                    r.priority === 'Very Interested' ? 'text-green-800 bg-green-100' :
+                    r.priority === 'Interested' ? 'text-blue-800 bg-blue-100' :
+                    r.priority === 'Few Interested' ? 'text-yellow-800 bg-yellow-100' :
+                    r.priority === 'Not Interested' ? 'text-red-800 bg-red-100' :
+                    'text-gray-800 bg-gray-100'
+                  }`}>
+                    {r.priority || 'Interested'}
+                  </div>
+                </td>}
+                {status === 'In Follow Up' && <td className="p-3">
                   {!r.nextFollowUpDate ? (
                     <div className="text-royal/70 text-xs">-</div>
                   ) : (
@@ -855,10 +892,10 @@ function PipelineTable({ status, canAct }) {
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td className="p-4 text-royal/70" colSpan={status === 'In Follow Up' ? '9' : '8'}>No leads</td></tr>
+              <tr><td className="p-4 text-royal/70" colSpan={status === 'In Follow Up' ? '10' : '8'}>No leads</td></tr>
             )}
             {rows.length > 0 && filteredRows.length === 0 && (
-              <tr><td className="p-4 text-royal/70 text-center" colSpan={status === 'In Follow Up' ? '9' : '8'}>
+              <tr><td className="p-4 text-royal/70 text-center" colSpan={status === 'In Follow Up' ? '10' : '8'}>
                 No leads found matching your filters
               </td></tr>
             )}

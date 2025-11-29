@@ -22,6 +22,7 @@ export default function LeadHistoryModal({ lead, onClose, onUpdate }) {
   const { user } = useAuth();
   const [followUpNote, setFollowUpNote] = useState('');
   const [nextFollowUpDate, setNextFollowUpDate] = useState('');
+  const [priority, setPriority] = useState(lead?.priority || 'Interested');
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
   const [err, setErr] = useState(null);
@@ -40,7 +41,8 @@ export default function LeadHistoryModal({ lead, onClose, onUpdate }) {
       setErr(null);
       await api.addLeadFollowUp(lead._id, {
         note: followUpNote.trim(),
-        nextFollowUpDate: nextFollowUpDate || undefined
+        nextFollowUpDate: nextFollowUpDate || undefined,
+        priority: priority
       });
       setMsg('Follow-up added successfully');
       setFollowUpNote('');
@@ -193,16 +195,33 @@ export default function LeadHistoryModal({ lead, onClose, onUpdate }) {
               rows={3}
               placeholder="Enter follow-up note..."
             />
-            <div className="mb-3">
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Next Follow-up Date (Optional)
-              </label>
-              <input
-                type="date"
-                value={nextFollowUpDate}
-                onChange={(e) => setNextFollowUpDate(e.target.value)}
-                className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Next Follow-up Date (Optional)
+                </label>
+                <input
+                  type="date"
+                  value={nextFollowUpDate}
+                  onChange={(e) => setNextFollowUpDate(e.target.value)}
+                  className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Priority
+                </label>
+                <select
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value)}
+                  className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="Very Interested">Very Interested</option>
+                  <option value="Interested">Interested</option>
+                  <option value="Few Interested">Few Interested</option>
+                  <option value="Not Interested">Not Interested</option>
+                </select>
+              </div>
             </div>
             <button
               onClick={handleAddFollowUp}
