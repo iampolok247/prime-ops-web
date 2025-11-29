@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../lib/api.js';
-import { Target, Plus, Trash2, Calendar, TrendingUp } from 'lucide-react';
+import { useAuth } from '../context/AuthContext.jsx';
+import { Target, Plus, Trash2, Calendar, TrendingUp, User, Users } from 'lucide-react';
 
 export default function AdmissionTargets() {
+  const { user } = useAuth();
   const [courses, setCourses] = useState([]);
   const [targets, setTargets] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState('');
@@ -141,13 +143,14 @@ export default function AdmissionTargets() {
         </div>
       )}
 
-      {/* Set Target Form */}
-      <div className="bg-white rounded-xl shadow-sm border p-6">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <Plus size={20} />
-          Set New Target
-        </h2>
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Set Target Form - Only for Admin/SuperAdmin */}
+      {(user?.role === 'Admin' || user?.role === 'SuperAdmin') && (
+        <div className="bg-white rounded-xl shadow-sm border p-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <Plus size={20} />
+            Set New Target
+          </h2>
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Course {courses.length > 0 && <span className="text-xs text-gray-500">({courses.length} available)</span>}
@@ -202,7 +205,8 @@ export default function AdmissionTargets() {
             </button>
           </div>
         </form>
-      </div>
+        </div>
+      )}
 
       {/* View Targets by Month */}
       <div className="bg-white rounded-xl shadow-sm border p-6">
@@ -235,15 +239,36 @@ export default function AdmissionTargets() {
                 <tr className="border-b bg-gray-50">
                   <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Course Name</th>
                   <th className="text-center px-4 py-3 text-sm font-semibold text-gray-700">Target</th>
-                  <th className="text-center px-4 py-3 text-sm font-semibold text-gray-700">Achieved</th>
+                  {user?.role === 'Admission' ? (
+                    <>
+                      <th className="text-center px-4 py-3 text-sm font-semibold text-gray-700">
+                        <div className="flex items-center justify-center gap-1">
+                          <User size={14} />
+                          My Achievement
+                        </div>
+                      </th>
+                      <th className="text-center px-4 py-3 text-sm font-semibold text-gray-700">
+                        <div className="flex items-center justify-center gap-1">
+                          <Users size={14} />
+                          Team Achievement
+                        </div>
+                      </th>
+                    </>
+                  ) : (
+                    <th className="text-center px-4 py-3 text-sm font-semibold text-gray-700">Achieved</th>
+                  )}
                   <th className="text-center px-4 py-3 text-sm font-semibold text-gray-700">Progress</th>
-                  <th className="text-center px-4 py-3 text-sm font-semibold text-gray-700">Actions</th>
+                  {(user?.role === 'Admin' || user?.role === 'SuperAdmin') && (
+                    <th className="text-center px-4 py-3 text-sm font-semibold text-gray-700">Actions</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {targets.map((t) => {
                   const percentage = t.percentage || 0;
+                  const teamPercentage = t.teamPercentage || 0;
                   const color = percentage >= 100 ? 'green' : percentage >= 75 ? 'blue' : percentage >= 50 ? 'yellow' : 'red';
+                  const teamColor = teamPercentage >= 100 ? 'green' : teamPercentage >= 75 ? 'blue' : teamPercentage >= 50 ? 'yellow' : 'red';
                   
                   return (
                     <tr key={t._id} className="border-b hover:bg-gray-50">
@@ -253,31 +278,75 @@ export default function AdmissionTargets() {
                       <td className="px-4 py-3 text-center text-sm font-semibold text-gray-700">
                         {t.target}
                       </td>
-                      <td className="px-4 py-3 text-center text-sm font-semibold text-gray-700">
-                        {t.achieved}
-                      </td>
+                      {user?.role === 'Admission' ? (
+                        <>
+                          <td className="px-4 py-3 text-center">
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="text-sm font-semibold text-gray-700">{t.achieved}</span>
+                              <span className={`text-xs font-semibold text-${color}-600`}>{percentage}%</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="text-sm font-semibold text-gray-700">{t.teamAchieved || 0}</span>
+                              <span className={`text-xs font-semibold text-${teamColor}-600`}>{teamPercentage}%</span>
+                            </div>
+                          </td>
+                        </>
+                      ) : (
+                        <td className="px-4 py-3 text-center text-sm font-semibold text-gray-700">
+                          {t.achieved}
+                        </td>
+                      )}
                       <td className="px-4 py-3">
-                        <div className="flex items-center justify-center gap-2">
-                          <div className="flex-1 max-w-xs bg-gray-200 rounded-full h-2.5">
-                            <div
-                              className={`h-2.5 rounded-full bg-${color}-500`}
-                              style={{ width: `${Math.min(percentage, 100)}%` }}
-                            />
+                        {user?.role === 'Admission' ? (
+                          <div className="flex flex-col gap-2">
+                            {/* My Progress */}
+                            <div className="flex items-center gap-2">
+                              <User size={12} className="text-gray-500" />
+                              <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                <div
+                                  className={`h-2 rounded-full bg-${color}-500`}
+                                  style={{ width: `${Math.min(percentage, 100)}%` }}
+                                />
+                              </div>
+                            </div>
+                            {/* Team Progress */}
+                            <div className="flex items-center gap-2">
+                              <Users size={12} className="text-gray-500" />
+                              <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                <div
+                                  className={`h-2 rounded-full bg-${teamColor}-500`}
+                                  style={{ width: `${Math.min(teamPercentage, 100)}%` }}
+                                />
+                              </div>
+                            </div>
                           </div>
-                          <span className={`text-sm font-semibold text-${color}-600`}>
-                            {percentage}%
-                          </span>
-                        </div>
+                        ) : (
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="flex-1 max-w-xs bg-gray-200 rounded-full h-2.5">
+                              <div
+                                className={`h-2.5 rounded-full bg-${color}-500`}
+                                style={{ width: `${Math.min(percentage, 100)}%` }}
+                              />
+                            </div>
+                            <span className={`text-sm font-semibold text-${color}-600`}>
+                              {percentage}%
+                            </span>
+                          </div>
+                        )}
                       </td>
-                      <td className="px-4 py-3 text-center">
-                        <button
-                          onClick={() => handleDelete(t._id)}
-                          className="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete Target"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </td>
+                      {(user?.role === 'Admin' || user?.role === 'SuperAdmin') && (
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            onClick={() => handleDelete(t._id)}
+                            className="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete Target"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
