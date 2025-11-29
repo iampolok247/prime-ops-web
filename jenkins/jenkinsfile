@@ -3,7 +3,7 @@ pipeline {
     agent any
 
     tools {
-        nodejs "NodeJS 18.x"  // MUST match the name from Global Tool Configuration
+        nodejs 'NodeJS 20.x'
     }
 
     environment {
