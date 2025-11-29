@@ -63,10 +63,17 @@ export default function Notifications() {
       if (user && ['Admission', 'Admin', 'SuperAdmin'].includes(user.role)) {
         try {
           const followUpData = await api.getAdmissionFollowUpNotifications();
+          console.log('Follow-up data received:', followUpData);
+          
           const today = new Date();
           today.setHours(0, 0, 0, 0);
           
-          const urgent = (followUpData.leads || []).map(lead => {
+          // Backend returns { notifications } not { leads }
+          const leads = followUpData.notifications || followUpData.leads || [];
+          console.log('Processing follow-up leads:', leads.length);
+          
+          const urgent = leads.map(lead => {
+            if (!lead.nextFollowUpDate) return { ...lead, isOverdue: false };
             const nextDate = new Date(lead.nextFollowUpDate);
             nextDate.setHours(0, 0, 0, 0);
             const isOverdue = nextDate < today;
@@ -74,7 +81,9 @@ export default function Notifications() {
           });
           
           setFollowUpNotifications(urgent);
+          console.log('Set follow-up notifications:', urgent.length);
         } catch (e) {
+          console.error('Could not load follow-up notifications:', e);
           console.log('Could not load follow-up notifications:', e.message);
         }
       }
