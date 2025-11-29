@@ -59,7 +59,6 @@ export default function Login() {
         >
           {loading ? "Signing in…" : "Sign In"}
         </button>
-       <h1 className="font-bold text-5xl"> jenkins testing? </h1>
       </form>
     </div>
   );
