@@ -18,12 +18,15 @@ export default function Notifications() {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [urgentTasks, setUrgentTasks] = useState([]);
+  const [followUpNotifications, setFollowUpNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, unread, read
-  const [typeFilter, setTypeFilter] = useState('all'); // all, leave, tada, handover, task, urgent
+  const [typeFilter, setTypeFilter] = useState('all'); // all, leave, tada, handover, task, urgent, followup
   const [msg, setMsg] = useState(null);
   const [err, setErr] = useState(null);
+  const [showLeadHistory, setShowLeadHistory] = useState(false);
+  const [selectedLead, setSelectedLead] = useState(null);
 
   useEffect(() => {
     loadNotifications();
@@ -50,6 +53,24 @@ export default function Notifications() {
         setUrgentTasks(tasks);
       } catch (e) {
         console.log('Could not load urgent tasks:', e.message);
+      }
+
+      // Load follow-up notifications (for Admission/Admin/SuperAdmin)
+      try {
+        const followUpData = await api.getAdmissionFollowUpNotifications();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const urgent = (followUpData.leads || []).map(lead => {
+          const nextDate = new Date(lead.nextFollowUpDate);
+          nextDate.setHours(0, 0, 0, 0);
+          const isOverdue = nextDate < today;
+          return { ...lead, isOverdue };
+        });
+        
+        setFollowUpNotifications(urgent);
+      } catch (e) {
+        console.log('Could not load follow-up notifications:', e.message);
       }
     } catch (e) {
       setErr(e.message);
@@ -108,6 +129,32 @@ export default function Notifications() {
     }
   };
 
+  const handleFollowUpClick = async (lead) => {
+    try {
+      // Fetch full lead details with populated fields
+      const response = await api.getLeadHistory(lead._id);
+      setSelectedLead(response.lead || response);
+      setShowLeadHistory(true);
+    } catch (e) {
+      setErr('Failed to load lead details: ' + e.message);
+    }
+  };
+
+  const fmtDT = (d) => { 
+    if (!d) return '-'; 
+    try { 
+      return new Date(d).toLocaleString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch { 
+      return d; 
+    } 
+  };
+
   // Filter notifications
   const filteredNotifications = notifications.filter(n => {
     // Filter by read status
@@ -120,6 +167,7 @@ export default function Notifications() {
     if (typeFilter === 'handover' && !n.type.includes('HANDOVER')) return false;
     if (typeFilter === 'task' && !n.type.startsWith('TASK_')) return false;
     if (typeFilter === 'urgent') return false; // Urgent tasks are shown separately
+    if (typeFilter === 'followup') return false; // Follow-ups are shown separately
 
     return true;
   });
@@ -189,6 +237,7 @@ export default function Notifications() {
           >
             <option value="all">All Types</option>
             <option value="urgent">Urgent Tasks</option>
+            <option value="followup">Follow-up Due</option>
             <option value="leave">Leave Applications</option>
             <option value="tada">TA/DA Applications</option>
             <option value="handover">Handover Requests</option>
@@ -261,8 +310,73 @@ export default function Notifications() {
             )
           ) : null}
 
+          {/* Follow-up Notifications Section */}
+          {typeFilter === 'all' || typeFilter === 'followup' ? (
+            followUpNotifications.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-2 bg-purple-50 rounded-lg">
+                    <Bell className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <h2 className="text-lg font-bold text-navy">Follow-up Due ({followUpNotifications.length})</h2>
+                </div>
+                <div className="space-y-3">
+                  {followUpNotifications.map(lead => {
+                    const isOverdue = lead.isOverdue;
+                    return (
+                      <div
+                        key={lead._id}
+                        onClick={() => handleFollowUpClick(lead)}
+                        className={`p-4 rounded-xl border-2 cursor-pointer hover:shadow-md transition-all ${
+                          isOverdue ? 'border-red-200 bg-red-50' : 'border-purple-200 bg-purple-50'
+                        }`}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="p-2 rounded-lg bg-white">
+                            <Users className={`w-5 h-5 ${isOverdue ? 'text-red-600' : 'text-purple-600'}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1">
+                                <h3 className="text-base font-semibold text-navy">
+                                  {lead.leadId} — {lead.name}
+                                </h3>
+                                <p className="text-sm text-gray-600 mt-1">
+                                  {lead.interestedCourse || 'No course'} • {lead.status}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  {lead.phone} {lead.email && `• ${lead.email}`}
+                                </p>
+                                {lead.assignedTo && (
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    👤 Assigned to: {lead.assignedTo.name}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <span className={`text-xs px-2 py-1 rounded font-medium ${
+                                  isOverdue ? 'bg-red-100 text-red-700' : 'bg-purple-100 text-purple-700'
+                                }`}>
+                                  {isOverdue ? 'OVERDUE' : 'DUE TODAY'}
+                                </span>
+                                <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
+                                  <Calendar size={12} />
+                                  {new Date(lead.nextFollowUpDate).toLocaleDateString('en-GB')}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )
+          ) : null}
+
           {/* System Notifications */}
-          {filteredNotifications.length === 0 && urgentTasks.length === 0 ? (
+          {filteredNotifications.length === 0 && urgentTasks.length === 0 && followUpNotifications.length === 0 ? (
             <div className="text-center py-12 bg-gray-50 rounded-2xl">
               <Bell size={48} className="mx-auto text-gray-300 mb-4" />
               <p className="text-gray-500 text-lg">No notifications found</p>
@@ -272,7 +386,7 @@ export default function Notifications() {
 
           {filteredNotifications.length > 0 && (
             <div>
-              {urgentTasks.length > 0 && typeFilter === 'all' && (
+              {(urgentTasks.length > 0 || followUpNotifications.length > 0) && typeFilter === 'all' && (
                 <div className="flex items-center gap-2 mb-3">
                   <div className="p-2 bg-indigo-50 rounded-lg">
                     <Bell className="w-5 h-5 text-indigo-600" />
@@ -361,6 +475,96 @@ export default function Notifications() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Lead History Modal */}
+      {showLeadHistory && selectedLead && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-black opacity-30" onClick={() => setShowLeadHistory(false)} />
+          <div className="bg-white rounded-xl p-6 z-10 w-full max-w-3xl shadow-lg max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold mb-4 text-navy">Lead History — {selectedLead.leadId}</h3>
+            
+            {/* Student Info */}
+            <div className="bg-blue-50 rounded-lg p-3 mb-4">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div><span className="text-gray-600">Name:</span> <strong>{selectedLead.name}</strong></div>
+                <div><span className="text-gray-600">Phone:</span> <strong>{selectedLead.phone || '-'}</strong></div>
+                <div><span className="text-gray-600">Email:</span> <strong>{selectedLead.email || '-'}</strong></div>
+                <div><span className="text-gray-600">Course:</span> <strong>{selectedLead.interestedCourse || '-'}</strong></div>
+                <div><span className="text-gray-600">Status:</span> <strong className="text-indigo-600">{selectedLead.status}</strong></div>
+                <div><span className="text-gray-600">Assigned To:</span> <strong>{selectedLead.assignedTo?.name || '-'}</strong></div>
+              </div>
+            </div>
+
+            {/* Timeline */}
+            <div className="space-y-3">
+              <div className="border-l-4 border-blue-400 pl-4 py-2">
+                <div className="text-sm text-gray-600">Assigned At</div>
+                <div className="font-semibold">{selectedLead.assignedAt ? fmtDT(selectedLead.assignedAt) : <span className="text-gray-400">Not recorded</span>}</div>
+              </div>
+              
+              <div className="border-l-4 border-purple-400 pl-4 py-2">
+                <div className="text-sm text-gray-600">Counseling At</div>
+                <div className="font-semibold">{selectedLead.counselingAt ? fmtDT(selectedLead.counselingAt) : <span className="text-gray-400">Not yet</span>}</div>
+              </div>
+              
+              <div className="border-l-4 border-green-400 pl-4 py-2">
+                <div className="text-sm text-gray-600">Admitted At</div>
+                <div className="font-semibold">{selectedLead.admittedAt ? fmtDT(selectedLead.admittedAt) : <span className="text-gray-400">Not admitted yet</span>}</div>
+                {selectedLead.admittedToCourse && (
+                  <div className="text-sm text-gray-600 mt-1">Course: <strong>{selectedLead.admittedToCourse.name}</strong></div>
+                )}
+                {selectedLead.admittedToBatch && (
+                  <div className="text-sm text-gray-600">Batch: <strong>{selectedLead.admittedToBatch.name}</strong></div>
+                )}
+              </div>
+            </div>
+
+            {/* Follow-ups Section */}
+            <div className="mt-4">
+              <h4 className="font-bold text-navy mb-2">Follow-ups ({(selectedLead.followUps||[]).length})</h4>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {(selectedLead.followUps||[]).length === 0 ? (
+                  <div className="text-gray-500 text-sm bg-gray-50 p-3 rounded-lg">No follow-ups recorded</div>
+                ) : (
+                  (selectedLead.followUps||[]).map((f, idx)=> (
+                    <div key={idx} className="bg-gray-50 rounded-lg p-3 border-l-4 border-orange-400">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-gray-700">{fmtDT(f.at)}</div>
+                          {f.by?.name && <div className="text-xs text-gray-500">by {f.by.name}</div>}
+                          <div className="text-sm text-gray-800 mt-1">{f.note || <span className="text-gray-400">No note</span>}</div>
+                          {f.nextFollowUpDate && (
+                            <div className="text-xs text-indigo-600 mt-1">Next follow-up: {new Date(f.nextFollowUpDate).toLocaleDateString('en-GB')}</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Notes Section */}
+            {selectedLead.notes && (
+              <div className="mt-4">
+                <h4 className="font-bold text-navy mb-2">Additional Notes</h4>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm">
+                  {selectedLead.notes}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button 
+                onClick={() => setShowLeadHistory(false)} 
+                className="px-4 py-2 rounded-xl border border-gray-300 hover:bg-gray-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

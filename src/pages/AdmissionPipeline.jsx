@@ -688,26 +688,82 @@ function PipelineTable({ status, canAct }) {
       {showHistory && histLead && (
         <div className="fixed inset-0 flex items-center justify-center z-50">
           <div className="absolute inset-0 bg-black opacity-30" onClick={()=>setShowHistory(false)} />
-          <div className="bg-white rounded-xl p-4 z-10 w-full max-w-2xl shadow-lg">
-            <h3 className="text-lg font-semibold mb-2">Lead History — {histLead.leadId}</h3>
-            <div className="grid grid-cols-1 gap-2">
-              <div>Assigned At: <strong>{fmtDT(histLead.assignedAt || histLead.updatedAt)}</strong></div>
-              <div>Counseling At: <strong>{fmtDT(histLead.counselingAt || histLead.updatedAt)}</strong></div>
-              <div>Admitted At: <strong>{fmtDT(histLead.admittedAt || histLead.updatedAt)}</strong></div>
-              <div>Follow-ups ({(histLead.followUps||[]).length}):</div>
-              <div className="pl-2">
-                {(histLead.followUps||[]).length === 0 ? <div className="text-royal/70">No follow-ups</div> : (
+          <div className="bg-white rounded-xl p-6 z-10 w-full max-w-3xl shadow-lg max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold mb-4 text-navy">Lead History — {histLead.leadId}</h3>
+            
+            {/* Student Info */}
+            <div className="bg-blue-50 rounded-lg p-3 mb-4">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div><span className="text-gray-600">Name:</span> <strong>{histLead.name}</strong></div>
+                <div><span className="text-gray-600">Phone:</span> <strong>{histLead.phone || '-'}</strong></div>
+                <div><span className="text-gray-600">Email:</span> <strong>{histLead.email || '-'}</strong></div>
+                <div><span className="text-gray-600">Course:</span> <strong>{histLead.interestedCourse || '-'}</strong></div>
+                <div><span className="text-gray-600">Status:</span> <strong className="text-indigo-600">{histLead.status}</strong></div>
+                <div><span className="text-gray-600">Assigned To:</span> <strong>{histLead.assignedTo?.name || '-'}</strong></div>
+              </div>
+            </div>
+
+            {/* Timeline */}
+            <div className="space-y-3">
+              <div className="border-l-4 border-blue-400 pl-4 py-2">
+                <div className="text-sm text-gray-600">Assigned At</div>
+                <div className="font-semibold">{histLead.assignedAt ? fmtDT(histLead.assignedAt) : <span className="text-gray-400">Not recorded</span>}</div>
+              </div>
+              
+              <div className="border-l-4 border-purple-400 pl-4 py-2">
+                <div className="text-sm text-gray-600">Counseling At</div>
+                <div className="font-semibold">{histLead.counselingAt ? fmtDT(histLead.counselingAt) : <span className="text-gray-400">Not yet</span>}</div>
+              </div>
+              
+              <div className="border-l-4 border-green-400 pl-4 py-2">
+                <div className="text-sm text-gray-600">Admitted At</div>
+                <div className="font-semibold">{histLead.admittedAt ? fmtDT(histLead.admittedAt) : <span className="text-gray-400">Not admitted yet</span>}</div>
+                {histLead.admittedToCourse && (
+                  <div className="text-sm text-gray-600 mt-1">Course: <strong>{histLead.admittedToCourse.name}</strong></div>
+                )}
+                {histLead.admittedToBatch && (
+                  <div className="text-sm text-gray-600">Batch: <strong>{histLead.admittedToBatch.name}</strong></div>
+                )}
+              </div>
+            </div>
+
+            {/* Follow-ups Section */}
+            <div className="mt-4">
+              <h4 className="font-bold text-navy mb-2">Follow-ups ({(histLead.followUps||[]).length})</h4>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {(histLead.followUps||[]).length === 0 ? (
+                  <div className="text-gray-500 text-sm bg-gray-50 p-3 rounded-lg">No follow-ups recorded</div>
+                ) : (
                   (histLead.followUps||[]).map((f, idx)=> (
-                    <div key={idx} className="mb-2">
-                      <div className="text-sm font-medium">{fmtDT(f.at)} {f.by?.name ? ` — ${f.by.name}` : ''}</div>
-                      <div className="text-royal/70">{f.note || '-'}</div>
+                    <div key={idx} className="bg-gray-50 rounded-lg p-3 border-l-4 border-orange-400">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-gray-700">{fmtDT(f.at)}</div>
+                          {f.by?.name && <div className="text-xs text-gray-500">by {f.by.name}</div>}
+                          <div className="text-sm text-gray-800 mt-1">{f.note || <span className="text-gray-400">No note</span>}</div>
+                          {f.nextFollowUpDate && (
+                            <div className="text-xs text-indigo-600 mt-1">Next follow-up: {new Date(f.nextFollowUpDate).toLocaleDateString('en-GB')}</div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   ))
                 )}
               </div>
             </div>
-            <div className="mt-4 text-right">
-              <button onClick={()=>setShowHistory(false)} className="px-3 py-2 rounded-xl border">Close</button>
+
+            {/* Notes Section */}
+            {histLead.notes && (
+              <div className="mt-4">
+                <h4 className="font-bold text-navy mb-2">Additional Notes</h4>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm">
+                  {histLead.notes}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button onClick={()=>setShowHistory(false)} className="px-4 py-2 rounded-xl border border-gray-300 hover:bg-gray-50">Close</button>
             </div>
           </div>
         </div>
