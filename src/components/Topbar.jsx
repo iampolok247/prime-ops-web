@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, User as UserIcon, Menu, Bell, Calendar, MessageCircle } from 'lucide-react';
 import { api } from '../lib/api.js';
+import LeadHistoryModal from './LeadHistoryModal.jsx';
 
 export default function Topbar({ onMenuClick }) {
   const { user, logout } = useAuth();
@@ -15,6 +16,9 @@ export default function Topbar({ onMenuClick }) {
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [systemNotifications, setSystemNotifications] = useState([]);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+  const [showLeadHistory, setShowLeadHistory] = useState(false);
+  const [selectedLead, setSelectedLead] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   // Load read notifications from localStorage
   useEffect(() => {
@@ -258,7 +262,7 @@ export default function Topbar({ onMenuClick }) {
     navigate('/coordinator/due-fees');
   };
 
-  const handleFollowUpClick = (lead) => {
+  const handleFollowUpClick = async (lead) => {
     // Mark notification as read
     const newRead = [...readNotifications.filter(n => n.leadId !== lead._id), {
       leadId: lead._id,
@@ -269,8 +273,20 @@ export default function Topbar({ onMenuClick }) {
     
     setShowNotifications(false);
     
-    // Navigate to admission pipeline
-    navigate('/admission/pipeline');
+    // Fetch and show lead history
+    try {
+      setHistoryLoading(true);
+      const response = await api.getLeadHistory(lead._id);
+      const fullLead = response.lead || response;
+      setSelectedLead(fullLead);
+      setShowLeadHistory(true);
+    } catch (e) {
+      console.error('Failed to load lead history:', e);
+      // Fallback: navigate to pipeline
+      navigate('/admission/pipeline');
+    } finally {
+      setHistoryLoading(false);
+    }
   };
 
   // Count unread urgent tasks
@@ -639,6 +655,26 @@ export default function Topbar({ onMenuClick }) {
           <LogOut size={16}/>
         </button>
       </div>
+      
+      {/* Lead History Modal */}
+      {showLeadHistory && selectedLead && (
+        <LeadHistoryModal
+          lead={selectedLead}
+          onClose={() => {
+            setShowLeadHistory(false);
+            setSelectedLead(null);
+          }}
+          onUpdate={async () => {
+            // Reload the lead data
+            try {
+              const response = await api.getLeadHistory(selectedLead._id);
+              setSelectedLead(response.lead || response);
+            } catch (e) {
+              console.error('Failed to reload lead:', e);
+            }
+          }}
+        />
+      )}
     </header>
   );
 }

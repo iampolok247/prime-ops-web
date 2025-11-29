@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../lib/api.js';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import LeadHistoryModal from '../components/LeadHistoryModal.jsx';
 import { 
   Bell, 
   Calendar, 
@@ -500,92 +501,22 @@ export default function Notifications() {
 
       {/* Lead History Modal */}
       {showLeadHistory && selectedLead && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="absolute inset-0 bg-black opacity-30" onClick={() => setShowLeadHistory(false)} />
-          <div className="bg-white rounded-xl p-6 z-10 w-full max-w-3xl shadow-lg max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-bold mb-4 text-navy">Lead History — {selectedLead.leadId}</h3>
-            
-            {/* Student Info */}
-            <div className="bg-blue-50 rounded-lg p-3 mb-4">
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div><span className="text-gray-600">Name:</span> <strong>{selectedLead.name}</strong></div>
-                <div><span className="text-gray-600">Phone:</span> <strong>{selectedLead.phone || '-'}</strong></div>
-                <div><span className="text-gray-600">Email:</span> <strong>{selectedLead.email || '-'}</strong></div>
-                <div><span className="text-gray-600">Course:</span> <strong>{selectedLead.interestedCourse || '-'}</strong></div>
-                <div><span className="text-gray-600">Status:</span> <strong className="text-indigo-600">{selectedLead.status}</strong></div>
-                <div><span className="text-gray-600">Assigned To:</span> <strong>{selectedLead.assignedTo?.name || '-'}</strong></div>
-              </div>
-            </div>
-
-            {/* Timeline */}
-            <div className="space-y-3">
-              <div className="border-l-4 border-blue-400 pl-4 py-2">
-                <div className="text-sm text-gray-600">Assigned At</div>
-                <div className="font-semibold">{selectedLead.assignedAt ? fmtDT(selectedLead.assignedAt) : <span className="text-gray-400">Not recorded</span>}</div>
-              </div>
-              
-              <div className="border-l-4 border-purple-400 pl-4 py-2">
-                <div className="text-sm text-gray-600">Counseling At</div>
-                <div className="font-semibold">{selectedLead.counselingAt ? fmtDT(selectedLead.counselingAt) : <span className="text-gray-400">Not yet</span>}</div>
-              </div>
-              
-              <div className="border-l-4 border-green-400 pl-4 py-2">
-                <div className="text-sm text-gray-600">Admitted At</div>
-                <div className="font-semibold">{selectedLead.admittedAt ? fmtDT(selectedLead.admittedAt) : <span className="text-gray-400">Not admitted yet</span>}</div>
-                {selectedLead.admittedToCourse && (
-                  <div className="text-sm text-gray-600 mt-1">Course: <strong>{selectedLead.admittedToCourse.name}</strong></div>
-                )}
-                {selectedLead.admittedToBatch && (
-                  <div className="text-sm text-gray-600">Batch: <strong>{selectedLead.admittedToBatch.name}</strong></div>
-                )}
-              </div>
-            </div>
-
-            {/* Follow-ups Section */}
-            <div className="mt-4">
-              <h4 className="font-bold text-navy mb-2">Follow-ups ({(selectedLead.followUps||[]).length})</h4>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {(selectedLead.followUps||[]).length === 0 ? (
-                  <div className="text-gray-500 text-sm bg-gray-50 p-3 rounded-lg">No follow-ups recorded</div>
-                ) : (
-                  (selectedLead.followUps||[]).map((f, idx)=> (
-                    <div key={idx} className="bg-gray-50 rounded-lg p-3 border-l-4 border-orange-400">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="text-sm font-medium text-gray-700">{fmtDT(f.at)}</div>
-                          {f.by?.name && <div className="text-xs text-gray-500">by {f.by.name}</div>}
-                          <div className="text-sm text-gray-800 mt-1">{f.note || <span className="text-gray-400">No note</span>}</div>
-                          {f.nextFollowUpDate && (
-                            <div className="text-xs text-indigo-600 mt-1">Next follow-up: {new Date(f.nextFollowUpDate).toLocaleDateString('en-GB')}</div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* Notes Section */}
-            {selectedLead.notes && (
-              <div className="mt-4">
-                <h4 className="font-bold text-navy mb-2">Additional Notes</h4>
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm">
-                  {selectedLead.notes}
-                </div>
-              </div>
-            )}
-
-            <div className="mt-6 flex justify-end gap-2">
-              <button 
-                onClick={() => setShowLeadHistory(false)} 
-                className="px-4 py-2 rounded-xl border border-gray-300 hover:bg-gray-50"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
+        <LeadHistoryModal 
+          lead={selectedLead}
+          onClose={() => {
+            setShowLeadHistory(false);
+            setSelectedLead(null);
+          }}
+          onUpdate={async () => {
+            // Reload the lead data
+            try {
+              const history = await api.getLeadHistory(selectedLead._id);
+              setSelectedLead(history);
+            } catch (err) {
+              console.error('Failed to reload lead:', err);
+            }
+          }}
+        />
       )}
     </div>
   );
