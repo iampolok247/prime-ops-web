@@ -443,14 +443,14 @@ export const api = {
     );
     return handleJson(res, "Update lead status failed");
   },
-  async addLeadFollowUp(id, { note, nextFollowUpDate }) {
+  async addLeadFollowUp(id, { note, nextFollowUpDate, priority }) {
     const res = await authFetch(
       `${getApiBase()}/api/admission/leads/${id}/follow-up`,
       {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ note, nextFollowUpDate }),
+        body: JSON.stringify({ note, nextFollowUpDate, priority }),
       }
     );
     return handleJson(res, "Add follow-up failed");

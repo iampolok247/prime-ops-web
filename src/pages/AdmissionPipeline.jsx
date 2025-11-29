@@ -55,6 +55,7 @@ function PipelineTable({ status, canAct }) {
   const [followNote, setFollowNote] = useState('');
   const [followTarget, setFollowTarget] = useState(null);
   const [followNextDate, setFollowNextDate] = useState('');
+  const [followPriority, setFollowPriority] = useState('Interested');
   const [showNotAdmitModal, setShowNotAdmitModal] = useState(false);
   const [notAdmitNote, setNotAdmitNote] = useState('');
   const [notAdmitTarget, setNotAdmitTarget] = useState(null);
@@ -269,7 +270,7 @@ function PipelineTable({ status, canAct }) {
       return (
         <div className="flex gap-2">
           <ActionBtn onClick={()=>handleAdmitClick(row._id)}>Admitted</ActionBtn>
-          <ActionBtn onClick={()=>{ setFollowTarget(row._id); setFollowNote(''); setFollowNextDate(''); setShowFollowModal(true); }}>Follow-Up</ActionBtn>
+          <ActionBtn onClick={()=>{ setFollowTarget(row._id); setFollowNote(''); setFollowNextDate(''); setFollowPriority(row.priority || 'Interested'); setShowFollowModal(true); }}>Follow-Up</ActionBtn>
           <ActionBtn variant="danger" onClick={()=>{ setNotAdmitTarget(row._id); setNotAdmitNote(''); setShowNotAdmitModal(true); }}>Not Admitted</ActionBtn>
           <ActionBtn onClick={async ()=>{
             try {
@@ -288,7 +289,7 @@ function PipelineTable({ status, canAct }) {
         return (
           <div className="flex gap-2">
             <ActionBtn onClick={()=>handleAdmitClick(row._id)}>Admitted</ActionBtn>
-            <ActionBtn onClick={()=>{ setFollowTarget(row._id); setFollowNote(''); setFollowNextDate(''); setShowFollowModal(true); }}>Follow-Up Again</ActionBtn>
+            <ActionBtn onClick={()=>{ setFollowTarget(row._id); setFollowNote(''); setFollowNextDate(''); setFollowPriority(row.priority || 'Interested'); setShowFollowModal(true); }}>Follow-Up Again</ActionBtn>
             <ActionBtn variant="danger" onClick={()=>{ setNotAdmitTarget(row._id); setNotAdmitNote(''); setShowNotAdmitModal(true); }}>Not Admitted</ActionBtn>
             <ActionBtn onClick={async ()=>{
               try {
@@ -686,24 +687,54 @@ function PipelineTable({ status, canAct }) {
           <div className="absolute inset-0 bg-black opacity-30" onClick={()=>setShowFollowModal(false)} />
           <div className="bg-white rounded-xl p-4 z-10 w-full max-w-lg shadow-lg">
             <h3 className="text-lg font-semibold mb-2">Add Follow-Up Note</h3>
-            <textarea rows={6} className="w-full border rounded-xl px-3 py-2 mb-3" value={followNote} onChange={e=>setFollowNote(e.target.value)} placeholder="Enter follow-up note (optional)" />
+            <textarea rows={4} className="w-full border rounded-xl px-3 py-2 mb-3" value={followNote} onChange={e=>setFollowNote(e.target.value)} placeholder="Enter follow-up note (optional)" />
             
-            <div className="mb-3">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Next Follow-Up Date
-              </label>
-              <input
-                type="date"
-                value={followNextDate}
-                onChange={e => setFollowNextDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold"
-                placeholder="Select next follow-up date"
-              />
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Next Follow-Up Date
+                </label>
+                <input
+                  type="date"
+                  value={followNextDate}
+                  onChange={e => setFollowNextDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Priority
+                </label>
+                <select
+                  value={followPriority}
+                  onChange={e => setFollowPriority(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold"
+                >
+                  <option value="Very Interested">Very Interested</option>
+                  <option value="Interested">Interested</option>
+                  <option value="Few Interested">Few Interested</option>
+                  <option value="Not Interested">Not Interested</option>
+                </select>
+              </div>
             </div>
 
             <div className="flex justify-end gap-2">
-              <button type="button" onClick={()=>{ setShowFollowModal(false); setFollowNote(''); setFollowTarget(null); setFollowNextDate(''); }} className="px-3 py-2 rounded-xl border">Cancel</button>
-              <button type="button" onClick={()=>act(followTarget,'In Follow Up', followNote, '', '', followNextDate)} className="px-3 py-2 rounded-xl bg-gold text-navy">Save Follow-Up</button>
+              <button type="button" onClick={()=>{ setShowFollowModal(false); setFollowNote(''); setFollowTarget(null); setFollowNextDate(''); setFollowPriority('Interested'); }} className="px-3 py-2 rounded-xl border">Cancel</button>
+              <button type="button" onClick={async ()=>{
+                try {
+                  setErr(null);
+                  await api.addLeadFollowUp(followTarget, { note: followNote, nextFollowUpDate: followNextDate, priority: followPriority });
+                  setMsg('Follow-up added successfully');
+                  setShowFollowModal(false);
+                  setFollowNote('');
+                  setFollowTarget(null);
+                  setFollowNextDate('');
+                  setFollowPriority('Interested');
+                  load();
+                } catch (e) {
+                  setErr(e.message);
+                }
+              }} className="px-3 py-2 rounded-xl bg-gold text-navy">Save Follow-Up</button>
             </div>
           </div>
         </div>
