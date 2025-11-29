@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../lib/api.js';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx';
 import { 
   Bell, 
   Calendar, 
@@ -16,6 +17,7 @@ import {
 
 export default function Notifications() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [urgentTasks, setUrgentTasks] = useState([]);
   const [followUpNotifications, setFollowUpNotifications] = useState([]);
@@ -29,8 +31,10 @@ export default function Notifications() {
   const [selectedLead, setSelectedLead] = useState(null);
 
   useEffect(() => {
-    loadNotifications();
-  }, []);
+    if (user) {
+      loadNotifications();
+    }
+  }, [user]);
 
   const loadNotifications = async () => {
     try {
@@ -56,21 +60,23 @@ export default function Notifications() {
       }
 
       // Load follow-up notifications (for Admission/Admin/SuperAdmin)
-      try {
-        const followUpData = await api.getAdmissionFollowUpNotifications();
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        const urgent = (followUpData.leads || []).map(lead => {
-          const nextDate = new Date(lead.nextFollowUpDate);
-          nextDate.setHours(0, 0, 0, 0);
-          const isOverdue = nextDate < today;
-          return { ...lead, isOverdue };
-        });
-        
-        setFollowUpNotifications(urgent);
-      } catch (e) {
-        console.log('Could not load follow-up notifications:', e.message);
+      if (user && ['Admission', 'Admin', 'SuperAdmin'].includes(user.role)) {
+        try {
+          const followUpData = await api.getAdmissionFollowUpNotifications();
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          const urgent = (followUpData.leads || []).map(lead => {
+            const nextDate = new Date(lead.nextFollowUpDate);
+            nextDate.setHours(0, 0, 0, 0);
+            const isOverdue = nextDate < today;
+            return { ...lead, isOverdue };
+          });
+          
+          setFollowUpNotifications(urgent);
+        } catch (e) {
+          console.log('Could not load follow-up notifications:', e.message);
+        }
       }
     } catch (e) {
       setErr(e.message);
@@ -131,11 +137,16 @@ export default function Notifications() {
 
   const handleFollowUpClick = async (lead) => {
     try {
+      setErr(null);
       // Fetch full lead details with populated fields
       const response = await api.getLeadHistory(lead._id);
-      setSelectedLead(response.lead || response);
+      const fullLead = response.lead || response;
+      
+      // Populate the lead data ensuring all fields are available
+      setSelectedLead(fullLead);
       setShowLeadHistory(true);
     } catch (e) {
+      console.error('Failed to load lead details:', e);
       setErr('Failed to load lead details: ' + e.message);
     }
   };
