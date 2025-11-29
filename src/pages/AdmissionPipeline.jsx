@@ -229,10 +229,8 @@ function PipelineTable({ status, canAct }) {
       today.setHours(0, 0, 0, 0);
       
       filtered = filtered.filter(row => {
-        if (!row.followUps || row.followUps.length === 0) return false;
-        const lastFollowUp = row.followUps[row.followUps.length - 1];
-        const nextDate = lastFollowUp.nextFollowUpDate ? new Date(lastFollowUp.nextFollowUpDate) : null;
-        if (!nextDate) return false;
+        if (!row.nextFollowUpDate) return false;
+        const nextDate = new Date(row.nextFollowUpDate);
         nextDate.setHours(0, 0, 0, 0);
         
         const yesterday = new Date(today);
@@ -833,14 +831,13 @@ function PipelineTable({ status, canAct }) {
                   )}
                 </td>}
                 {status === 'In Follow Up' && <td className="p-3">
-                  {((r.followUps||[]).length === 0) ? (
+                  {!r.nextFollowUpDate ? (
                     <div className="text-royal/70 text-xs">-</div>
                   ) : (
                     <div className={`text-sm font-semibold px-2 py-1 rounded-lg ${
                       (() => {
-                        const lastFollowUp = r.followUps[r.followUps.length - 1];
-                        if (!lastFollowUp.nextFollowUpDate) return 'text-gray-600 bg-gray-50';
-                        const nextDate = new Date(lastFollowUp.nextFollowUpDate);
+                        if (!r.nextFollowUpDate) return 'text-gray-600 bg-gray-50';
+                        const nextDate = new Date(r.nextFollowUpDate);
                         const today = new Date();
                         today.setHours(0, 0, 0, 0);
                         nextDate.setHours(0, 0, 0, 0);
@@ -849,10 +846,7 @@ function PipelineTable({ status, canAct }) {
                         return 'text-green-700 bg-green-50';
                       })()
                     }`}>
-                      {r.followUps[r.followUps.length - 1].nextFollowUpDate ? 
-                        new Date(r.followUps[r.followUps.length - 1].nextFollowUpDate).toLocaleDateString() 
-                        : '-'
-                      }
+                      {new Date(r.nextFollowUpDate).toLocaleDateString()}
                     </div>
                   )}
                 </td>}
