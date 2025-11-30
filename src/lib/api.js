@@ -497,6 +497,42 @@ export const api = {
     return handleJson(res, "Load admission reports failed");
   },
 
+  // New: Admission metrics (server aggregated counts for counseling & follow-ups)
+  async getAdmissionMetrics(userId, from, to) {
+    const params = new URLSearchParams();
+    if (userId) params.append("userId", userId);
+    if (from) params.append("from", from);
+    if (to) params.append("to", to);
+    const q = params.toString() ? `?${params.toString()}` : "";
+    const res = await authFetch(`${getApiBase()}/api/reports/admission-metrics${q}`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load admission metrics failed");
+  },
+
+  // Download CSV for admission metrics (Admin/SuperAdmin only)
+  async downloadAdmissionMetricsCSV(userId, from, to) {
+    const params = new URLSearchParams();
+    if (userId) params.append("userId", userId);
+    if (from) params.append("from", from);
+    if (to) params.append("to", to);
+    params.append("format", "csv");
+    const q = params.toString() ? `?${params.toString()}` : "";
+    const res = await authFetch(`${getApiBase()}/api/reports/admission-metrics${q}`, {
+      credentials: "include",
+    });
+    if (!res.ok) {
+      // try to parse JSON error
+      let errBody = {};
+      try { errBody = await res.json(); } catch(_) {}
+      const msg = errBody?.message || `Download failed (${res.status})`;
+      throw new Error(msg);
+    }
+    // return blob for caller to handle download
+    const blob = await res.blob();
+    return blob;
+  },
+
   // ---- Accounting (Accountant/Admin/SA) ----
   async listFeesForApproval(status) {
     const q = status ? `?status=${encodeURIComponent(status)}` : "";
