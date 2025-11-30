@@ -25,6 +25,9 @@ export default function AdmissionMetrics() {
   const [downloading, setDownloading] = useState(false);
 
   const isAdmin = user?.role === 'Admin' || user?.role === 'SuperAdmin';
+  const isAdmission = user?.role === 'Admission';
+  const canDownload = isAdmin || isAdmission;
+  const [showRaw, setShowRaw] = useState(false);
 
   useEffect(() => {
     if (isAdmin) {
@@ -185,18 +188,25 @@ export default function AdmissionMetrics() {
         </div>
       </div>
 
-      {isAdmin && (
+      {canDownload && (
         <div className="mb-4 flex items-center gap-3">
-          <select value={selectedUser || 'all'} onChange={e=>setSelectedUser(e.target.value)} className="px-3 py-2 border rounded-lg bg-white">
-            <option value="all">Overall Team</option>
-            <option value="me">My Metrics</option>
-            {admissionUsers.map(u=> (
-              <option key={u._id} value={u._id}>{u.name} ({u.email})</option>
-            ))}
-          </select>
+          {isAdmin && (
+            <select value={selectedUser || 'all'} onChange={e=>setSelectedUser(e.target.value)} className="px-3 py-2 border rounded-lg bg-white">
+              <option value="all">Overall Team</option>
+              <option value="me">My Metrics</option>
+              {admissionUsers.map(u=> (
+                <option key={u._id} value={u._id}>{u.name} ({u.email})</option>
+              ))}
+            </select>
+          )}
+
+          <button onClick={fetchMetrics} disabled={loading} className="px-3 py-2 border rounded-lg bg-white">Refresh</button>
+
           <button onClick={handleDownload} disabled={downloading} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg">
             <Download className="w-4 h-4" /> {downloading ? 'Downloading...' : 'Download CSV'}
           </button>
+
+          <label className="ml-2 text-sm text-gray-600 flex items-center gap-2"><input type="checkbox" checked={showRaw} onChange={e=>setShowRaw(e.target.checked)} /> Show raw data</label>
         </div>
       )}
 
@@ -257,10 +267,19 @@ export default function AdmissionMetrics() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg p-4 border border-gray-100">
-        <h4 className="font-semibold text-gray-700 mb-2">Raw Data (debug)</h4>
-        <pre className="text-xs text-gray-600 max-h-60 overflow-auto">{loading ? 'Loading...' : (metrics ? JSON.stringify(metrics, null, 2) : 'No data')}</pre>
-      </div>
+      {showRaw && (
+        <div className="bg-white rounded-lg p-4 border border-gray-100">
+          <h4 className="font-semibold text-gray-700 mb-2">Raw Data (debug)</h4>
+          <pre className="text-xs text-gray-600 max-h-60 overflow-auto">{loading ? 'Loading...' : (metrics ? JSON.stringify(metrics, null, 2) : 'No data')}</pre>
+        </div>
+      )}
+
+      {/* If reports failed to load, show a small note */}
+      {metrics && !metrics.reportsResp && (
+        <div className="mt-4 text-sm text-yellow-700 bg-yellow-50 border border-yellow-100 rounded p-3">
+          Detailed report data is not available for this request. The summary metrics above are shown from aggregated data. If you expect non-zero values, try adjusting the date range or click Refresh.
+        </div>
+      )}
     </div>
   );
 }
