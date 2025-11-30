@@ -918,6 +918,59 @@ export const api = {
     return handleJson(res, "Delete DM cost failed");
   },
 
+  // ---- DM Campaigns (Meta Ads / LinkedIn Ads) ----
+  async listDMCampaigns(platform, from, to) {
+    const params = new URLSearchParams();
+    if (platform) params.append("platform", platform);
+    if (from) params.append("from", from);
+    if (to) params.append("to", to);
+    const q = params.toString() ? `?${params.toString()}` : "";
+    const res = await authFetch(`${getApiBase()}/api/dm/campaigns${q}`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load DM campaigns failed");
+  },
+
+  async createDMCampaign(payload) {
+    const res = await authFetch(`${getApiBase()}/api/dm/campaigns`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return handleJson(res, "Create DM campaign failed");
+  },
+
+  async updateDMCampaign(id, payload) {
+    const res = await authFetch(`${getApiBase()}/api/dm/campaigns/${id}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return handleJson(res, "Update DM campaign failed");
+  },
+
+  async deleteDMCampaign(id) {
+    const res = await authFetch(`${getApiBase()}/api/dm/campaigns/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    return handleJson(res, "Delete DM campaign failed");
+  },
+
+  async getDMCampaignsSummary(platform, from, to) {
+    const params = new URLSearchParams();
+    if (platform) params.append("platform", platform);
+    if (from) params.append("from", from);
+    if (to) params.append("to", to);
+    const q = params.toString() ? `?${params.toString()}` : "";
+    const res = await authFetch(`${getApiBase()}/api/dm/campaigns/summary/metrics${q}`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load DM campaigns summary failed");
+  },
+
   // ---- Social Media Metrics ----
   // Try /api/dm/social; if 404, retry /api/dm/social-metrics
   async listSocial(date) {
