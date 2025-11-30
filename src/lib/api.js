@@ -510,18 +510,6 @@ export const api = {
     return handleJson(res, "Load admission metrics failed");
   },
 
-  // Debug: Get raw matched leads for inspection
-  async getAdmissionMetricsDebug(from, to) {
-    const params = new URLSearchParams();
-    if (from) params.append("from", from);
-    if (to) params.append("to", to);
-    const q = params.toString() ? `?${params.toString()}` : "";
-    const res = await authFetch(`${getApiBase()}/api/reports/admission-metrics-debug${q}`, {
-      credentials: "include",
-    });
-    return handleJson(res, "Load debug metrics failed");
-  },
-
   // Download CSV for admission metrics (Admin/SuperAdmin only)
   async downloadAdmissionMetricsCSV(userId, from, to) {
     const params = new URLSearchParams();

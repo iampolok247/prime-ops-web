@@ -23,8 +23,6 @@ export default function AdmissionMetrics() {
   const [admissionUsers, setAdmissionUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(user?._id || 'me');
   const [downloading, setDownloading] = useState(false);
-  const [debugData, setDebugData] = useState(null);
-  const [showDebug, setShowDebug] = useState(false);
 
   const isAdmin = user?.role === 'Admin' || user?.role === 'SuperAdmin';
   const isAdmission = user?.role === 'Admission';
@@ -165,17 +163,6 @@ export default function AdmissionMetrics() {
     }
   }
 
-  async function fetchDebugData() {
-    try {
-      const range = computeRange();
-      const debugResp = await api.getAdmissionMetricsDebug(range.from, range.to);
-      setDebugData(debugResp);
-    } catch (e) {
-      console.error('Debug fetch failed', e);
-      alert('Debug fetch failed: ' + e.message);
-    }
-  }
-
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between mb-6">
@@ -218,8 +205,6 @@ export default function AdmissionMetrics() {
           <button onClick={handleDownload} disabled={downloading} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg">
             <Download className="w-4 h-4" /> {downloading ? 'Downloading...' : 'Download CSV'}
           </button>
-
-          <button onClick={fetchDebugData} className="px-3 py-2 border rounded-lg bg-blue-50 text-blue-600 text-sm">Debug</button>
 
           <label className="ml-2 text-sm text-gray-600 flex items-center gap-2"><input type="checkbox" checked={showRaw} onChange={e=>setShowRaw(e.target.checked)} /> Show raw data</label>
         </div>
@@ -283,22 +268,9 @@ export default function AdmissionMetrics() {
       </div>
 
       {showRaw && (
-        <div className="bg-white rounded-lg p-4 border border-gray-100 mb-4">
+        <div className="bg-white rounded-lg p-4 border border-gray-100">
           <h4 className="font-semibold text-gray-700 mb-2">Raw Data (debug)</h4>
           <pre className="text-xs text-gray-600 max-h-60 overflow-auto">{loading ? 'Loading...' : (metrics ? JSON.stringify(metrics, null, 2) : 'No data')}</pre>
-        </div>
-      )}
-
-      {debugData && (
-        <div className="bg-blue-50 rounded-lg p-4 border border-blue-100 mb-4">
-          <h4 className="font-semibold text-blue-900 mb-2">Debug: Actual DB Records in Range</h4>
-          <div className="text-sm text-blue-800 mb-2">
-            <strong>Range:</strong> {debugData.range?.from} to {debugData.range?.to} (parsed: {debugData.range?.start?.slice(0,10)} to {debugData.range?.end?.slice(0,10)})
-          </div>
-          <div className="text-sm text-blue-800 mb-3">
-            <strong>Summary:</strong> {debugData.summary?.totalCounselingLeads} leads with counselingAt | {debugData.summary?.totalFollowUpLeads} leads with follow-ups in range
-          </div>
-          <pre className="text-xs text-blue-700 max-h-80 overflow-auto bg-white rounded p-2 border border-blue-200">{JSON.stringify(debugData, null, 2)}</pre>
         </div>
       )}
 
