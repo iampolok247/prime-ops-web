@@ -6,7 +6,7 @@ const getApiBase = () => {
   // For production builds, always use production API
   if (import.meta.env.PROD) {
     console.log("[API] Production build - using production API");
-    return "http://31.97.228.226:5000";
+    return "http://31.97.228.226:5001";
   }
 
   // For development, use localhost
