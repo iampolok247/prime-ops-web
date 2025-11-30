@@ -39,7 +39,7 @@ export default function DMMetrics() {
         <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
           Digital Marketing Metrics
         </h1>
-        <p className="text-gray-600 mt-1">Track expenses, social media performance, and SEO activities</p>
+        <p className="text-gray-600 mt-1">Track expenses, social media performance, SEO activities, and ad campaigns</p>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -47,6 +47,9 @@ export default function DMMetrics() {
         <Social />
         <SEOReports />
       </div>
+
+      {/* Ad Campaigns Section */}
+      <Campaigns />
     </div>
   );
 }
@@ -648,6 +651,367 @@ function SEOReports() {
           </form>
         </div>
       )}
+    </div>
+  );
+}
+
+// =============== Ad Campaigns Component ===============
+function Campaigns() {
+  const [platform, setPlatform] = useState('Meta Ads');
+  const [campaigns, setCampaigns] = useState([]);
+  const [summary, setSummary] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [formData, setFormData] = useState({
+    campaignName: '',
+    platform: 'Meta Ads',
+    boostType: 'Leads',
+    cost: '',
+    leads: '',
+    postEngagements: '',
+    thruPlays: '',
+    impressions: '',
+    reach: '',
+    notes: ''
+  });
+
+  useEffect(() => {
+    fetchCampaigns();
+  }, [platform]);
+
+  async function fetchCampaigns() {
+    setLoading(true);
+    try {
+      const [campaignsResp, summaryResp] = await Promise.all([
+        api.listDMCampaigns(platform).catch(e => { console.warn('Campaigns fetch failed', e); return { campaigns: [] }; }),
+        api.getDMCampaignsSummary(platform).catch(e => { console.warn('Summary fetch failed', e); return null; })
+      ]);
+      setCampaigns(campaignsResp?.campaigns || []);
+      setSummary(summaryResp?.summary || null);
+    } catch (e) {
+      console.error('Failed to fetch campaigns', e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleFormChange(e) {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    try {
+      const payload = {
+        ...formData,
+        cost: Number(formData.cost),
+        leads: Number(formData.leads) || 0,
+        postEngagements: Number(formData.postEngagements) || 0,
+        thruPlays: Number(formData.thruPlays) || 0,
+        impressions: Number(formData.impressions) || 0,
+        reach: Number(formData.reach) || 0
+      };
+
+      if (editingId) {
+        await api.updateDMCampaign(editingId, payload);
+      } else {
+        await api.createDMCampaign(payload);
+      }
+
+      setFormData({
+        campaignName: '',
+        platform: 'Meta Ads',
+        boostType: 'Leads',
+        cost: '',
+        leads: '',
+        postEngagements: '',
+        thruPlays: '',
+        impressions: '',
+        reach: '',
+        notes: ''
+      });
+      setShowForm(false);
+      setEditingId(null);
+      await fetchCampaigns();
+    } catch (e) {
+      alert('Error: ' + (e.message || 'Failed to save campaign'));
+    }
+  }
+
+  async function handleDelete(id) {
+    if (!window.confirm('Are you sure you want to delete this campaign?')) return;
+    try {
+      await api.deleteDMCampaign(id);
+      await fetchCampaigns();
+    } catch (e) {
+      alert('Error: ' + (e.message || 'Failed to delete'));
+    }
+  }
+
+  function handleEdit(campaign) {
+    setFormData({
+      campaignName: campaign.campaignName,
+      platform: campaign.platform,
+      boostType: campaign.boostType,
+      cost: campaign.cost.toString(),
+      leads: campaign.leads.toString(),
+      postEngagements: campaign.postEngagements.toString(),
+      thruPlays: campaign.thruPlays.toString(),
+      impressions: campaign.impressions.toString(),
+      reach: campaign.reach.toString(),
+      notes: campaign.notes
+    });
+    setEditingId(campaign._id);
+    setShowForm(true);
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-bold flex items-center gap-2">
+          <Target className="w-5 h-5 text-blue-600" />
+          Ad Campaigns
+        </h2>
+        <button 
+          onClick={() => { setShowForm(!showForm); setEditingId(null); setFormData({campaignName: '', platform: 'Meta Ads', boostType: 'Leads', cost: '', leads: '', postEngagements: '', thruPlays: '', impressions: '', reach: '', notes: ''}); }}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
+        >
+          <Plus className="w-4 h-4" /> {showForm ? 'Cancel' : 'Add Campaign'}
+        </button>
+      </div>
+
+      {/* Platform Selection */}
+      <div className="mb-6 flex items-center gap-4">
+        <label className="text-sm font-medium">Platform:</label>
+        <select 
+          value={platform} 
+          onChange={e => setPlatform(e.target.value)}
+          className="px-3 py-2 border rounded-lg bg-white text-sm"
+        >
+          <option value="Meta Ads">Meta Ads</option>
+          <option value="LinkedIn Ads">LinkedIn Ads</option>
+        </select>
+      </div>
+
+      {/* Summary Cards */}
+      {summary && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 border border-blue-200">
+            <div className="text-xs text-blue-600 font-semibold uppercase">Total Cost</div>
+            <div className="text-xl font-bold text-blue-900 mt-1">₹{summary.totalCost.toLocaleString('en-IN')}</div>
+          </div>
+          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3 border border-green-200">
+            <div className="text-xs text-green-600 font-semibold uppercase">Total Leads</div>
+            <div className="text-xl font-bold text-green-900 mt-1">{summary.totalLeads}</div>
+          </div>
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3 border border-purple-200">
+            <div className="text-xs text-purple-600 font-semibold uppercase">Avg CPL</div>
+            <div className="text-xl font-bold text-purple-900 mt-1">₹{Number(summary.avgCostPerLead).toFixed(2)}</div>
+          </div>
+          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-3 border border-orange-200">
+            <div className="text-xs text-orange-600 font-semibold uppercase">Impressions</div>
+            <div className="text-xl font-bold text-orange-900 mt-1">{(summary.totalImpressions / 1000).toFixed(1)}K</div>
+          </div>
+        </div>
+      )}
+
+      {/* Add/Edit Form */}
+      {showForm && (
+        <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
+          <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit Campaign' : 'Add New Campaign'}</h3>
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-medium mb-1">Campaign Name *</label>
+              <input 
+                type="text" 
+                name="campaignName" 
+                value={formData.campaignName}
+                onChange={handleFormChange}
+                required 
+                className="w-full px-3 py-2 border rounded text-sm"
+                placeholder="e.g., AI For Personal Camp"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium mb-1">Platform *</label>
+              <select 
+                name="platform" 
+                value={formData.platform}
+                onChange={handleFormChange}
+                className="w-full px-3 py-2 border rounded text-sm"
+              >
+                <option value="Meta Ads">Meta Ads</option>
+                <option value="LinkedIn Ads">LinkedIn Ads</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium mb-1">Boost Type *</label>
+              <select 
+                name="boostType" 
+                value={formData.boostType}
+                onChange={handleFormChange}
+                className="w-full px-3 py-2 border rounded text-sm"
+              >
+                <option value="Leads">Leads</option>
+                <option value="Engagements">Engagements</option>
+                <option value="ThruPlays">ThruPlays</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium mb-1">Cost (₹) *</label>
+              <input 
+                type="number" 
+                name="cost" 
+                value={formData.cost}
+                onChange={handleFormChange}
+                required 
+                step="0.01"
+                className="w-full px-3 py-2 border rounded text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium mb-1">Leads</label>
+              <input 
+                type="number" 
+                name="leads" 
+                value={formData.leads}
+                onChange={handleFormChange}
+                className="w-full px-3 py-2 border rounded text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium mb-1">Engagements</label>
+              <input 
+                type="number" 
+                name="postEngagements" 
+                value={formData.postEngagements}
+                onChange={handleFormChange}
+                className="w-full px-3 py-2 border rounded text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium mb-1">ThruPlays</label>
+              <input 
+                type="number" 
+                name="thruPlays" 
+                value={formData.thruPlays}
+                onChange={handleFormChange}
+                className="w-full px-3 py-2 border rounded text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium mb-1">Impressions</label>
+              <input 
+                type="number" 
+                name="impressions" 
+                value={formData.impressions}
+                onChange={handleFormChange}
+                className="w-full px-3 py-2 border rounded text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium mb-1">Reach</label>
+              <input 
+                type="number" 
+                name="reach" 
+                value={formData.reach}
+                onChange={handleFormChange}
+                className="w-full px-3 py-2 border rounded text-sm"
+              />
+            </div>
+
+            <div className="lg:col-span-3 flex gap-2">
+              <button 
+                type="submit"
+                className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 font-medium"
+              >
+                {editingId ? 'Update' : 'Add'} Campaign
+              </button>
+              <button 
+                type="button"
+                onClick={() => { setShowForm(false); setEditingId(null); }}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded text-sm hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Campaigns Table */}
+      <div className="overflow-x-auto">
+        {loading && campaigns.length === 0 ? (
+          <div className="p-8 text-center text-gray-500 text-sm">Loading campaigns...</div>
+        ) : campaigns.length === 0 ? (
+          <div className="p-8 text-center text-gray-500 text-sm">No campaigns yet. Add one to get started!</div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="bg-gray-100 border-b border-gray-300">
+              <tr>
+                <th className="px-3 py-2 text-left font-semibold">Campaign</th>
+                <th className="px-3 py-2 text-left font-semibold">Type</th>
+                <th className="px-3 py-2 text-right font-semibold">Cost (₹)</th>
+                <th className="px-3 py-2 text-right font-semibold">Leads</th>
+                <th className="px-3 py-2 text-right font-semibold">Eng</th>
+                <th className="px-3 py-2 text-right font-semibold">Impressions</th>
+                <th className="px-3 py-2 text-right font-semibold">Reach</th>
+                <th className="px-3 py-2 text-right font-semibold">CPL</th>
+                <th className="px-3 py-2 text-center font-semibold">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {campaigns.map((campaign, idx) => (
+                <tr key={campaign._id} className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50`}>
+                  <td className="px-3 py-2">{campaign.campaignName}</td>
+                  <td className="px-3 py-2">
+                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                      {campaign.boostType}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-right font-semibold">{campaign.cost.toLocaleString('en-IN')}</td>
+                  <td className="px-3 py-2 text-right">{campaign.leads}</td>
+                  <td className="px-3 py-2 text-right">{campaign.postEngagements}</td>
+                  <td className="px-3 py-2 text-right">{(campaign.impressions / 1000).toFixed(1)}K</td>
+                  <td className="px-3 py-2 text-right">{(campaign.reach / 1000).toFixed(1)}K</td>
+                  <td className="px-3 py-2 text-right font-semibold text-green-700">
+                    {campaign.costPerLead ? `₹${Number(campaign.costPerLead).toFixed(2)}` : '—'}
+                  </td>
+                  <td className="px-3 py-2 text-center">
+                    <button 
+                      onClick={() => handleEdit(campaign)}
+                      className="text-blue-600 hover:text-blue-800 inline-block mr-2"
+                      title="Edit"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(campaign._id)}
+                      className="text-red-600 hover:text-red-800 inline-block"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }
