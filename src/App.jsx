@@ -24,6 +24,7 @@ import DMDashboard from './pages/dash/DMDashboard.jsx';
 
 import AdmissionPipeline from './pages/AdmissionPipeline.jsx';
 import AdmissionFees from './pages/AdmissionFees.jsx';
+import AdmissionMetrics from './pages/AdmissionMetrics.jsx';
 
 import AccountingDashboard from './pages/AccountingDashboard.jsx';
 import FeesApproval from './pages/FeesApproval.jsx';
@@ -133,6 +134,7 @@ export default function App() {
           {/* Admission */}
          <Route element={<RoleRoute roles={['Admission','Admin','SuperAdmin']} />}>
          <Route path="/admission/dashboard" element={<AdmissionDashboard />} />   {/* <-- NEW */}
+         <Route path="/admission/metrics" element={<AdmissionMetrics />} />
          <Route path="/my-targets" element={<MyTargets />} />
          <Route path="/admission/assigned" element={<AdmissionPipeline />} />
          <Route path="/admission/counseling" element={<AdmissionPipeline />} />
