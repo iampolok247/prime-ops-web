@@ -12,9 +12,14 @@ npm install -g pm2
 
 # Optional: export PM2_HOME=/home/jenkins/.pm2
 
+# Get the absolute path to the current directory (Jenkins workspace)
+WORKSPACE_DIR=$(pwd)
+
 pm2 delete prime.client || true
-pm2 start npm --name prime.client -- run serve --no-clipboard
+pm2 start "npm --prefix $WORKSPACE_DIR run serve" --name prime.client --no-autorestart
 pm2 save
 set +x
 
-echo 'App running at http://localhost:5173'
+echo '✅ App running at http://localhost:5173'
+echo "Working directory: $WORKSPACE_DIR"
+pm2 logs prime.client --lines 5
