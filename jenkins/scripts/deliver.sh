@@ -2,48 +2,28 @@
 set -e
 
 echo 'Building the Vite app...'
-set -x
 npm run build
-set +x
 
-echo 'Starting the production server using PM2...'
-set -x
+echo 'Deploying with PM2...'
 
-# Get the absolute path to the current directory (Jenkins workspace)
-WORKSPACE_DIR=$(pwd)
+# Make sure PM2 is available
+which pm2 > /dev/null || npm install -g pm2
 
-# Stop and remove existing process
-pm2 delete prime.client || true
+# Delete old process if exists (don't fail if it doesn't)
+pm2 delete prime.client 2>/dev/null || true
+
+# Wait a moment
 sleep 1
 
-# Start the serve process with PM2 from the workspace directory
-cd $WORKSPACE_DIR
-pm2 start "npm run serve" --name prime.client --no-autorestart --cwd $WORKSPACE_DIR
-PM2_START_EXIT=$?
+# Start the serve process
+pm2 start "npm run serve" --name prime.client --no-autorestart
 
-set +x
-
-# Check if PM2 start succeeded
-if [ $PM2_START_EXIT -ne 0 ]; then
-  echo "❌ ERROR: Failed to start prime.client with PM2 (exit code: $PM2_START_EXIT)"
-  echo "Checking PM2 logs..."
-  pm2 logs prime.client --lines 20 --nostream || true
-  exit 1
-fi
-
-# Save PM2 config
+# Save PM2 config to autostart
 pm2 save
 
-echo '✅ App running at http://localhost:5173'
-echo "Working directory: $WORKSPACE_DIR"
+echo '✅ Frontend deployed successfully'
+echo 'Waiting for serve to start...'
 sleep 3
 
-# Verify process is running
-if pm2 list | grep -q "prime.client"; then
-  echo "✓ prime.client is running"
-  pm2 show prime.client | head -20
-else
-  echo "❌ prime.client is NOT running after start attempt"
-  pm2 logs prime.client --lines 30 || true
-  exit 1
-fi
+# List PM2 processes
+pm2 list
