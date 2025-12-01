@@ -57,7 +57,8 @@ export default function DMMetrics() {
 function Costs() {
   const [list, setList] = useState([]);
   const [form, setForm] = useState({ date: new Date().toISOString().slice(0,10), purpose:'Meta Ads', amount:0 });
-  const [msg, setMsg] = useState(null); const [err, setErr] = useState(null);
+  const [msg, setMsg] = useState(null); 
+  const [err, setErr] = useState(null);
 
   const load = async () => {
     try {
@@ -67,34 +68,63 @@ function Costs() {
       if (Array.isArray(resp)) arr = resp;
       else if (Array.isArray(resp?.costs)) arr = resp.costs;
       else if (Array.isArray(resp?.items)) arr = resp.items;
-      setList(arr);
-    } catch (e) { setErr(e.message); }
+      else arr = [];
+      setList(Array.isArray(arr) ? arr : []);
+      setErr(null);
+    } catch (e) { 
+      console.error('Failed to load DM costs:', e);
+      setErr(e.message || 'Failed to load costs');
+      setList([]);
+    }
   };
   useEffect(() => { load(); }, []);
 
   const add = async (e) => {
-    e.preventDefault(); setMsg(null); setErr(null);
+    e.preventDefault(); 
+    setMsg(null); 
+    setErr(null);
     try { 
       await api.createDMCost(form); 
       setMsg('Cost added successfully!'); 
       setForm({ date: new Date().toISOString().slice(0,10), purpose:'Meta Ads', amount:0 }); 
-      load(); 
-    } catch (e) { setErr(e.message); }
+      await load(); 
+    } catch (e) { 
+      console.error('Failed to add cost:', e);
+      setErr(e.message || 'Failed to add cost');
+    }
   };
   
   const remove = async (id) => {
     if (!confirm('Are you sure you want to delete this cost entry?')) return;
-    try { await api.deleteDMCost(id); load(); } catch (e) { setErr(e.message); }
+    try { 
+      await api.deleteDMCost(id); 
+      await load(); 
+    } catch (e) { 
+      console.error('Failed to delete cost:', e);
+      setErr(e.message || 'Failed to delete');
+    }
   };
 
-  // Calculate total and by purpose
+  // Calculate total and by purpose with safe checks
   const stats = useMemo(() => {
-    const total = list.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-    const byPurpose = {};
-    list.forEach(item => {
-      byPurpose[item.purpose] = (byPurpose[item.purpose] || 0) + (Number(item.amount) || 0);
-    });
-    return { total, byPurpose };
+    try {
+      const total = (Array.isArray(list) ? list : []).reduce((sum, item) => {
+        const amt = Number(item?.amount) || 0;
+        return sum + (isNaN(amt) ? 0 : amt);
+      }, 0);
+      
+      const byPurpose = {};
+      (Array.isArray(list) ? list : []).forEach(item => {
+        if (item && item.purpose) {
+          const amt = Number(item.amount) || 0;
+          byPurpose[item.purpose] = (byPurpose[item.purpose] || 0) + (isNaN(amt) ? 0 : amt);
+        }
+      });
+      return { total, byPurpose };
+    } catch (e) {
+      console.error('Error calculating stats:', e);
+      return { total: 0, byPurpose: {} };
+    }
   }, [list]);
 
   const purposeColors = {
@@ -255,41 +285,53 @@ function Social() {
     facebookFollowers: 0, instagramFollowers: 0, facebookGroupMembers: 0, youtubeSubscribers: 0,
     linkedInFollowers: 0, xFollowers: 0, pinterestView: 0, bloggerImpression: 0, totalReach: 0
   });
-  const [msg, setMsg] = useState(null); const [err, setErr] = useState(null);
+  const [msg, setMsg] = useState(null); 
+  const [err, setErr] = useState(null);
 
   const load = async () => {
     try {
       const resp = await api.listSocial();
       // server exposes latest metrics as { metrics: { ... }, updatedAt }
       const m = resp?.metrics || resp?.social || {};
-      if (m && Object.keys(m).length) {
+      if (m && typeof m === 'object' && Object.keys(m).length > 0) {
         const mapped = {
-          facebookFollowers: m.facebookFollowers || 0,
-          instagramFollowers: m.instagramFollowers || 0,
-          facebookGroupMembers: m.facebookGroupMembers || 0,
-          youtubeSubscribers: m.youtubeSubscribers || 0,
-          linkedInFollowers: m.linkedInFollowers || 0,
-          xFollowers: m.xFollowers || 0,
-          pinterestView: m.pinterestView || 0,
-          bloggerImpression: m.bloggerImpression || 0,
-          totalReach: m.totalReach || 0
+          facebookFollowers: Number(m.facebookFollowers) || 0,
+          instagramFollowers: Number(m.instagramFollowers) || 0,
+          facebookGroupMembers: Number(m.facebookGroupMembers) || 0,
+          youtubeSubscribers: Number(m.youtubeSubscribers) || 0,
+          linkedInFollowers: Number(m.linkedInFollowers) || 0,
+          xFollowers: Number(m.xFollowers) || 0,
+          pinterestView: Number(m.pinterestView) || 0,
+          bloggerImpression: Number(m.bloggerImpression) || 0,
+          totalReach: Number(m.totalReach) || 0
         };
         setForm(f => ({ ...f, ...mapped }));
         setList([{ _id: resp?.updatedAt || 'latest', date: resp?.updatedAt || form.date, ...mapped }]);
+        setErr(null);
       } else {
         setList([]);
+        setErr(null);
       }
-    } catch (e) { setErr(e.message); }
+    } catch (e) { 
+      console.error('Failed to load social metrics:', e);
+      setErr(e.message || 'Failed to load social metrics');
+      setList([]);
+    }
   };
   useEffect(() => { load(); }, []);
 
   const add = async (e) => {
-    e.preventDefault(); setMsg(null); setErr(null);
+    e.preventDefault(); 
+    setMsg(null); 
+    setErr(null);
     try { 
       await api.createSocial(form); 
       setMsg('Social metrics updated successfully!'); 
-      load(); 
-    } catch (e) { setErr(e.message); }
+      await load(); 
+    } catch (e) { 
+      console.error('Failed to save social metrics:', e);
+      setErr(e.message || 'Failed to save social metrics');
+    }
   };
 
   const socialPlatforms = [
@@ -663,6 +705,7 @@ function Campaigns() {
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [err, setErr] = useState(null);
   const [formData, setFormData] = useState({
     campaignName: '',
     platform: 'Meta Ads',
@@ -682,15 +725,31 @@ function Campaigns() {
 
   async function fetchCampaigns() {
     setLoading(true);
+    setErr(null);
     try {
       const [campaignsResp, summaryResp] = await Promise.all([
-        api.listDMCampaigns(platform).catch(e => { console.warn('Campaigns fetch failed', e); return { campaigns: [] }; }),
-        api.getDMCampaignsSummary(platform).catch(e => { console.warn('Summary fetch failed', e); return null; })
+        api.listDMCampaigns(platform).catch(e => { 
+          console.warn('Campaigns fetch failed', e); 
+          return { campaigns: [] }; 
+        }),
+        api.getDMCampaignsSummary(platform).catch(e => { 
+          console.warn('Summary fetch failed', e); 
+          return { summary: null }; 
+        })
       ]);
-      setCampaigns(campaignsResp?.campaigns || []);
-      setSummary(summaryResp?.summary || null);
+      
+      // Ensure campaigns is always an array
+      const campaignsList = Array.isArray(campaignsResp?.campaigns) ? campaignsResp.campaigns : [];
+      setCampaigns(campaignsList);
+      
+      // Ensure summary is safe
+      const summaryData = (summaryResp?.summary && typeof summaryResp.summary === 'object') ? summaryResp.summary : null;
+      setSummary(summaryData);
     } catch (e) {
-      console.error('Failed to fetch campaigns', e);
+      console.error('Failed to fetch campaigns:', e);
+      setErr(e.message || 'Failed to load campaigns');
+      setCampaigns([]);
+      setSummary(null);
     } finally {
       setLoading(false);
     }
@@ -785,6 +844,13 @@ function Campaigns() {
         </button>
       </div>
 
+      {/* Error Message */}
+      {err && (
+        <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg text-sm">
+          ✗ {err}
+        </div>
+      )}
+
       {/* Platform Selection */}
       <div className="mb-6 flex items-center gap-4">
         <label className="text-sm font-medium">Platform:</label>
@@ -799,23 +865,23 @@ function Campaigns() {
       </div>
 
       {/* Summary Cards */}
-      {summary && (
+      {summary && typeof summary === 'object' && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 border border-blue-200">
             <div className="text-xs text-blue-600 font-semibold uppercase">Total Cost</div>
-            <div className="text-xl font-bold text-blue-900 mt-1">₹{summary.totalCost.toLocaleString('en-IN')}</div>
+            <div className="text-xl font-bold text-blue-900 mt-1">₹{(Number(summary.totalCost) || 0).toLocaleString('en-IN')}</div>
           </div>
           <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3 border border-green-200">
             <div className="text-xs text-green-600 font-semibold uppercase">Total Leads</div>
-            <div className="text-xl font-bold text-green-900 mt-1">{summary.totalLeads}</div>
+            <div className="text-xl font-bold text-green-900 mt-1">{Number(summary.totalLeads) || 0}</div>
           </div>
           <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3 border border-purple-200">
             <div className="text-xs text-purple-600 font-semibold uppercase">Avg CPL</div>
-            <div className="text-xl font-bold text-purple-900 mt-1">₹{Number(summary.avgCostPerLead).toFixed(2)}</div>
+            <div className="text-xl font-bold text-purple-900 mt-1">₹{(Number(summary.avgCostPerLead) || 0).toFixed(2)}</div>
           </div>
           <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-3 border border-orange-200">
             <div className="text-xs text-orange-600 font-semibold uppercase">Impressions</div>
-            <div className="text-xl font-bold text-orange-900 mt-1">{(summary.totalImpressions / 1000).toFixed(1)}K</div>
+            <div className="text-xl font-bold text-orange-900 mt-1">{((Number(summary.totalImpressions) || 0) / 1000).toFixed(1)}K</div>
           </div>
         </div>
       )}
