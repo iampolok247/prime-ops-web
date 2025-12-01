@@ -19,7 +19,8 @@ import {
   Target,
   Edit2,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Download
 } from 'lucide-react';
 
 export default function DMMetrics() {
@@ -803,7 +804,8 @@ function Campaigns({ selectedMonth }) {
     thruPlays: '',
     impressions: '',
     reach: '',
-    notes: ''
+    notes: '',
+    campaignDate: new Date().toISOString().slice(0, 7)
   });
 
   // Filter campaigns by selected month
@@ -910,7 +912,8 @@ function Campaigns({ selectedMonth }) {
         thruPlays: '',
         impressions: '',
         reach: '',
-        notes: ''
+        notes: '',
+        campaignDate: new Date().toISOString().slice(0, 7)
       });
       setShowForm(false);
       setEditingId(null);
@@ -941,10 +944,66 @@ function Campaigns({ selectedMonth }) {
       thruPlays: (campaign.thruPlays || 0).toString(),
       impressions: (campaign.impressions || 0).toString(),
       reach: (campaign.reach || 0).toString(),
-      notes: campaign.notes || ''
+      notes: campaign.notes || '',
+      campaignDate: campaign.campaignDate || new Date().toISOString().slice(0, 7)
     });
     setEditingId(campaign._id);
     setShowForm(true);
+  }
+
+  function downloadReport() {
+    if (filteredCampaigns.length === 0) {
+      alert('No campaigns to export for this month');
+      return;
+    }
+
+    const [year, month] = selectedMonth.split('-');
+    const monthName = new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    
+    // Create CSV content
+    const headers = ['Campaign Name', 'Platform', 'Type', 'Cost (৳)', 'Leads', 'Engagements', 'ThruPlays', 'Impressions', 'Reach', 'CPL (৳)', 'Notes'];
+    const rows = filteredCampaigns.map(c => [
+      c.campaignName || '',
+      c.platform || '',
+      c.boostType || '',
+      (c.cost || 0).toFixed(2),
+      c.leads || 0,
+      c.postEngagements || 0,
+      c.thruPlays || 0,
+      c.impressions || 0,
+      c.reach || 0,
+      c.costPerLead ? c.costPerLead.toFixed(2) : '0',
+      c.notes || ''
+    ]);
+
+    // Add summary
+    const summaryRows = [
+      [],
+      ['SUMMARY'],
+      ['Total Cost', (Number(filteredSummary?.totalCost) || 0).toFixed(2)],
+      ['Total Leads', Number(filteredSummary?.totalLeads) || 0],
+      ['Average CPL', (Number(filteredSummary?.avgCostPerLead) || 0).toFixed(2)],
+      ['Total Impressions', Number(filteredSummary?.totalImpressions) || 0]
+    ];
+
+    const csvContent = [
+      [`Campaign Report - ${monthName}`],
+      [],
+      [headers.join(',')],
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
+      ...summaryRows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Campaign-Report-${monthName.replace(/ /g, '-')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   return (
@@ -954,12 +1013,21 @@ function Campaigns({ selectedMonth }) {
           <Target className="w-5 h-5 text-blue-600" />
           Ad Campaigns
         </h2>
-        <button 
-          onClick={() => { setShowForm(!showForm); setEditingId(null); setFormData({campaignName: '', platform: 'Meta Ads', boostType: 'Leads', cost: '', leads: '', postEngagements: '', thruPlays: '', impressions: '', reach: '', notes: ''}); }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
-        >
-          <Plus className="w-4 h-4" /> {showForm ? 'Cancel' : 'Add Campaign'}
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={downloadReport}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium"
+            title="Download monthwise report"
+          >
+            <Download className="w-4 h-4" /> Download Report
+          </button>
+          <button 
+            onClick={() => { setShowForm(!showForm); setEditingId(null); setFormData({campaignName: '', platform: 'Meta Ads', boostType: 'Leads', cost: '', leads: '', postEngagements: '', thruPlays: '', impressions: '', reach: '', notes: '', campaignDate: new Date().toISOString().slice(0, 7)}); }}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
+          >
+            <Plus className="w-4 h-4" /> {showForm ? 'Cancel' : 'Add Campaign'}
+          </button>
+        </div>
       </div>
 
       {/* Error Message */}
@@ -1020,6 +1088,23 @@ function Campaigns({ selectedMonth }) {
                 className="w-full px-3 py-2 border rounded text-sm"
                 placeholder="e.g., AI For Personal Camp"
               />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium mb-1">Campaign Month *</label>
+              <select 
+                name="campaignDate" 
+                value={formData.campaignDate}
+                onChange={handleFormChange}
+                className="w-full px-3 py-2 border rounded text-sm"
+              >
+                {Array.from({ length: 24 }, (_, i) => {
+                  const d = new Date(2025, 10 + i);
+                  const yearMonth = d.toISOString().slice(0, 7);
+                  const monthName = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                  return <option key={yearMonth} value={yearMonth}>{monthName}</option>;
+                })}
+              </select>
             </div>
 
             <div>
