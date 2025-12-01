@@ -755,16 +755,16 @@ function Campaigns() {
 
   function handleEdit(campaign) {
     setFormData({
-      campaignName: campaign.campaignName,
-      platform: campaign.platform,
-      boostType: campaign.boostType,
-      cost: campaign.cost.toString(),
-      leads: campaign.leads.toString(),
-      postEngagements: campaign.postEngagements.toString(),
-      thruPlays: campaign.thruPlays.toString(),
-      impressions: campaign.impressions.toString(),
-      reach: campaign.reach.toString(),
-      notes: campaign.notes
+      campaignName: campaign.campaignName || '',
+      platform: campaign.platform || 'Meta Ads',
+      boostType: campaign.boostType || 'Leads',
+      cost: (campaign.cost || 0).toString(),
+      leads: (campaign.leads || 0).toString(),
+      postEngagements: (campaign.postEngagements || 0).toString(),
+      thruPlays: (campaign.thruPlays || 0).toString(),
+      impressions: (campaign.impressions || 0).toString(),
+      reach: (campaign.reach || 0).toString(),
+      notes: campaign.notes || ''
     });
     setEditingId(campaign._id);
     setShowForm(true);
@@ -976,17 +976,17 @@ function Campaigns() {
             <tbody>
               {campaigns.map((campaign, idx) => (
                 <tr key={campaign._id} className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50`}>
-                  <td className="px-3 py-2">{campaign.campaignName}</td>
+                  <td className="px-3 py-2">{campaign.campaignName || '—'}</td>
                   <td className="px-3 py-2">
                     <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-                      {campaign.boostType}
+                      {campaign.boostType || 'N/A'}
                     </span>
                   </td>
-                  <td className="px-3 py-2 text-right font-semibold">{campaign.cost.toLocaleString('en-IN')}</td>
-                  <td className="px-3 py-2 text-right">{campaign.leads}</td>
-                  <td className="px-3 py-2 text-right">{campaign.postEngagements}</td>
-                  <td className="px-3 py-2 text-right">{(campaign.impressions / 1000).toFixed(1)}K</td>
-                  <td className="px-3 py-2 text-right">{(campaign.reach / 1000).toFixed(1)}K</td>
+                  <td className="px-3 py-2 text-right font-semibold">{(campaign.cost || 0).toLocaleString('en-IN')}</td>
+                  <td className="px-3 py-2 text-right">{campaign.leads || 0}</td>
+                  <td className="px-3 py-2 text-right">{campaign.postEngagements || 0}</td>
+                  <td className="px-3 py-2 text-right">{((campaign.impressions || 0) / 1000).toFixed(1)}K</td>
+                  <td className="px-3 py-2 text-right">{((campaign.reach || 0) / 1000).toFixed(1)}K</td>
                   <td className="px-3 py-2 text-right font-semibold text-green-700">
                     {campaign.costPerLead ? `₹${Number(campaign.costPerLead).toFixed(2)}` : '—'}
                   </td>
