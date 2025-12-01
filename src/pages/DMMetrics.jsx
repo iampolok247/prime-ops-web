@@ -16,42 +16,60 @@ import {
   Trash2,
   Users,
   Eye,
-  Target
+  Target,
+  Edit2,
+  AlertCircle,
+  CheckCircle
 } from 'lucide-react';
 
 export default function DMMetrics() {
   const { user } = useAuth();
-  if (user?.role !== 'DigitalMarketing') {
+  
+  // Error boundary
+  try {
+    if (user?.role !== 'DigitalMarketing') {
+      return (
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="text-6xl mb-4">🔒</div>
+            <p className="text-xl text-gray-600">Only Digital Marketing can access this page.</p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+            Digital Marketing Metrics
+          </h1>
+          <p className="text-gray-600 mt-1">Track expenses, social media performance, SEO activities, and ad campaigns</p>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <Costs />
+          <Social />
+          <SEOReports />
+        </div>
+
+        {/* Ad Campaigns Section */}
+        <Campaigns />
+      </div>
+    );
+  } catch (error) {
+    console.error('DMMetrics error:', error);
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="text-6xl mb-4">🔒</div>
-          <p className="text-xl text-gray-600">Only Digital Marketing can access this page.</p>
+        <div className="text-center bg-red-50 p-6 rounded-lg border border-red-200">
+          <AlertCircle className="w-16 h-16 text-red-600 mx-auto mb-4" />
+          <p className="text-red-700 font-semibold">Error loading DM Metrics</p>
+          <p className="text-red-600 text-sm mt-2">{error.message}</p>
         </div>
       </div>
     );
   }
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-          Digital Marketing Metrics
-        </h1>
-        <p className="text-gray-600 mt-1">Track expenses, social media performance, SEO activities, and ad campaigns</p>
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <Costs />
-        <Social />
-        <SEOReports />
-      </div>
-
-      {/* Ad Campaigns Section */}
-      <Campaigns />
-    </div>
-  );
 }
 
 function Costs() {
@@ -63,7 +81,6 @@ function Costs() {
   const load = async () => {
     try {
       const resp = await api.listDMCosts();
-      // backend may return { items: [...] } or { costs: [...] } or plain array
       let arr = [];
       if (Array.isArray(resp)) arr = resp;
       else if (Array.isArray(resp?.costs)) arr = resp.costs;
@@ -105,7 +122,6 @@ function Costs() {
     }
   };
 
-  // Calculate total and by purpose with safe checks
   const stats = useMemo(() => {
     try {
       const total = (Array.isArray(list) ? list : []).reduce((sum, item) => {
