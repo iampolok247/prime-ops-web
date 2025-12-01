@@ -24,6 +24,26 @@ import {
 
 export default function DMMetrics() {
   const { user } = useAuth();
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth()).toISOString().slice(0, 7);
+  });
+
+  // Generate months from November 2025 onwards (backwards compatible)
+  const generateMonths = () => {
+    const months = [];
+    const startDate = new Date(2025, 10); // November 2025
+    const today = new Date();
+    
+    let current = new Date(startDate);
+    while (current <= today) {
+      const yearMonth = current.toISOString().slice(0, 7);
+      months.push(yearMonth);
+      current.setMonth(current.getMonth() + 1);
+    }
+    
+    return months.reverse(); // Latest first
+  };
   
   // Error boundary
   try {
@@ -48,14 +68,35 @@ export default function DMMetrics() {
           <p className="text-gray-600 mt-1">Track expenses, social media performance, SEO activities, and ad campaigns</p>
         </div>
 
+        {/* Month Filter */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-blue-600" />
+              <label className="text-sm font-semibold text-gray-700">Filter by Month:</label>
+            </div>
+            <select 
+              value={selectedMonth} 
+              onChange={e => setSelectedMonth(e.target.value)}
+              className="px-4 py-2 border-2 border-gray-200 rounded-lg bg-white font-medium text-gray-700 focus:border-blue-500 focus:outline-none transition-colors hover:border-gray-300"
+            >
+              {generateMonths().map(month => {
+                const [year, monthNum] = month.split('-');
+                const monthName = new Date(year, monthNum - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                return <option key={month} value={month}>{monthName}</option>;
+              })}
+            </select>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <Costs />
-          <Social />
-          <SEOReports />
+          <Costs selectedMonth={selectedMonth} />
+          <Social selectedMonth={selectedMonth} />
+          <SEOReports selectedMonth={selectedMonth} />
         </div>
 
         {/* Ad Campaigns Section */}
-        <Campaigns />
+        <Campaigns selectedMonth={selectedMonth} />
       </div>
     );
   } catch (error) {
@@ -72,7 +113,7 @@ export default function DMMetrics() {
   }
 }
 
-function Costs() {
+function Costs({ selectedMonth }) {
   const [list, setList] = useState([]);
   const [form, setForm] = useState({ date: new Date().toISOString().slice(0,10), purpose:'Meta Ads', amount:0 });
   const [msg, setMsg] = useState(null); 
@@ -94,6 +135,16 @@ function Costs() {
       setList([]);
     }
   };
+  
+  // Filter costs by selected month
+  const filteredList = useMemo(() => {
+    if (!selectedMonth) return list;
+    return (Array.isArray(list) ? list : []).filter(item => {
+      const itemMonth = new Date(item.date).toISOString().slice(0, 7);
+      return itemMonth === selectedMonth;
+    });
+  }, [list, selectedMonth]);
+
   useEffect(() => { load(); }, []);
 
   const add = async (e) => {
@@ -124,13 +175,13 @@ function Costs() {
 
   const stats = useMemo(() => {
     try {
-      const total = (Array.isArray(list) ? list : []).reduce((sum, item) => {
+      const total = (Array.isArray(filteredList) ? filteredList : []).reduce((sum, item) => {
         const amt = Number(item?.amount) || 0;
         return sum + (isNaN(amt) ? 0 : amt);
       }, 0);
       
       const byPurpose = {};
-      (Array.isArray(list) ? list : []).forEach(item => {
+      (Array.isArray(filteredList) ? filteredList : []).forEach(item => {
         if (item && item.purpose) {
           const amt = Number(item.amount) || 0;
           byPurpose[item.purpose] = (byPurpose[item.purpose] || 0) + (isNaN(amt) ? 0 : amt);
@@ -141,7 +192,7 @@ function Costs() {
       console.error('Error calculating stats:', e);
       return { total: 0, byPurpose: {} };
     }
-  }, [list]);
+  }, [filteredList]);
 
   const purposeColors = {
     'Meta Ads': 'bg-blue-100 text-blue-800',
@@ -250,13 +301,13 @@ function Costs() {
 
         {/* Expenses List */}
         <div className="space-y-2 max-h-96 overflow-y-auto">
-          {list.length === 0 ? (
+          {filteredList.length === 0 ? (
             <div className="text-center py-8 text-gray-400">
               <DollarSign className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No expenses recorded yet</p>
+              <p className="text-sm">No expenses recorded for this month</p>
             </div>
           ) : (
-            list.map(r=>(
+            filteredList.map(r=>(
               <div key={r._id} className="group bg-gray-50 hover:bg-gray-100 rounded-lg p-3 border border-gray-200 transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
@@ -294,7 +345,7 @@ function Costs() {
   );
 }
 
-function Social() {
+function Social({ selectedMonth }) {
   const [list, setList] = useState([]);
   const [form, setForm] = useState({
     date: new Date().toISOString().slice(0,10),
@@ -334,6 +385,16 @@ function Social() {
       setList([]);
     }
   };
+  
+  // Filter social metrics by selected month
+  const filteredList = useMemo(() => {
+    if (!selectedMonth) return list;
+    return (Array.isArray(list) ? list : []).filter(item => {
+      const itemMonth = new Date(item.date).toISOString().slice(0, 7);
+      return itemMonth === selectedMonth;
+    });
+  }, [list, selectedMonth]);
+
   useEffect(() => { load(); }, []);
 
   const add = async (e) => {
@@ -401,7 +462,7 @@ function Social() {
         )}
 
         {/* Current Metrics Display */}
-        {list.length > 0 && (
+        {filteredList.length > 0 && (
           <div className="mb-4 grid grid-cols-2 gap-2">
             {socialPlatforms.map(platform => {
               const Icon = platform.icon;
@@ -464,9 +525,9 @@ function Social() {
         </form>
 
         {/* Last Updated Info */}
-        {list.length > 0 && (
+        {filteredList.length > 0 && (
           <div className="mt-3 text-xs text-gray-500 text-center">
-            Last updated: {new Date(list[0].date).toLocaleDateString('en-GB', { 
+            Last updated: {new Date(filteredList[0].date).toLocaleDateString('en-GB', { 
               day: '2-digit', 
               month: 'short', 
               year: 'numeric' 
@@ -478,7 +539,7 @@ function Social() {
   );
 }
 
-function SEOReports() {
+function SEOReports({ selectedMonth }) {
   const [list, setList] = useState([]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ date: new Date().toISOString().slice(0,10), typeOfWork:'Blogpost', challenge:'', details:'' });
@@ -494,6 +555,16 @@ function SEOReports() {
       setList(arr);
     } catch (e) { setErr(e.message); }
   };
+  
+  // Filter SEO reports by selected month
+  const filteredList = useMemo(() => {
+    if (!selectedMonth) return list;
+    return (Array.isArray(list) ? list : []).filter(item => {
+      const itemMonth = new Date(item.date).toISOString().slice(0, 7);
+      return itemMonth === selectedMonth;
+    });
+  }, [list, selectedMonth]);
+
   useEffect(() => { load(); }, []);
 
   const add = async (e) => {
@@ -517,11 +588,11 @@ function SEOReports() {
 
   const stats = useMemo(() => {
     const byType = {};
-    list.forEach(item => {
+    filteredList.forEach(item => {
       byType[item.typeOfWork] = (byType[item.typeOfWork] || 0) + 1;
     });
-    return { total: list.length, byType };
-  }, [list]);
+    return { total: filteredList.length, byType };
+  }, [filteredList]);
 
   return (
     <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
@@ -579,10 +650,10 @@ function SEOReports() {
 
         {/* Reports List */}
         <div className="space-y-2 max-h-96 overflow-y-auto">
-          {list.length === 0 ? (
+          {filteredList.length === 0 ? (
             <div className="text-center py-8 text-gray-400">
               <Search className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No SEO reports yet</p>
+              <p className="text-sm">No SEO reports for this month</p>
               <button 
                 onClick={()=>setOpen(true)}
                 className="mt-3 text-green-600 hover:text-green-700 font-medium text-sm"
@@ -591,7 +662,7 @@ function SEOReports() {
               </button>
             </div>
           ) : (
-            list.map(r=>(
+            filteredList.map(r=>(
               <div key={r._id} className="bg-gray-50 hover:bg-gray-100 rounded-lg p-3 border border-gray-200 transition-colors">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
@@ -714,7 +785,7 @@ function SEOReports() {
 }
 
 // =============== Ad Campaigns Component ===============
-function Campaigns() {
+function Campaigns({ selectedMonth }) {
   const [platform, setPlatform] = useState('Meta Ads');
   const [campaigns, setCampaigns] = useState([]);
   const [summary, setSummary] = useState(null);
@@ -734,6 +805,37 @@ function Campaigns() {
     reach: '',
     notes: ''
   });
+
+  // Filter campaigns by selected month
+  const filteredCampaigns = useMemo(() => {
+    if (!selectedMonth) return campaigns;
+    return (Array.isArray(campaigns) ? campaigns : []).filter(item => {
+      const itemMonth = new Date(item.campaignDate || item.createdAt).toISOString().slice(0, 7);
+      return itemMonth === selectedMonth;
+    });
+  }, [campaigns, selectedMonth]);
+
+  // Recalculate summary based on filtered campaigns
+  const filteredSummary = useMemo(() => {
+    if (!filteredCampaigns.length || !summary) return summary;
+    
+    let totalCost = 0;
+    let totalLeads = 0;
+    let totalImpressions = 0;
+    
+    filteredCampaigns.forEach(campaign => {
+      totalCost += Number(campaign.cost) || 0;
+      totalLeads += Number(campaign.leads) || 0;
+      totalImpressions += Number(campaign.impressions) || 0;
+    });
+    
+    return {
+      totalCost,
+      totalLeads,
+      avgCostPerLead: totalLeads > 0 ? totalCost / totalLeads : 0,
+      totalImpressions
+    };
+  }, [filteredCampaigns, summary]);
 
   useEffect(() => {
     fetchCampaigns();
@@ -881,23 +983,23 @@ function Campaigns() {
       </div>
 
       {/* Summary Cards */}
-      {summary && typeof summary === 'object' && (
+      {filteredSummary && typeof filteredSummary === 'object' && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 border border-blue-200">
             <div className="text-xs text-blue-600 font-semibold uppercase">Total Cost</div>
-            <div className="text-xl font-bold text-blue-900 mt-1">৳{(Number(summary.totalCost) || 0).toLocaleString('en-IN')}</div>
+            <div className="text-xl font-bold text-blue-900 mt-1">৳{(Number(filteredSummary.totalCost) || 0).toLocaleString('en-IN')}</div>
           </div>
           <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3 border border-green-200">
             <div className="text-xs text-green-600 font-semibold uppercase">Total Leads</div>
-            <div className="text-xl font-bold text-green-900 mt-1">{Number(summary.totalLeads) || 0}</div>
+            <div className="text-xl font-bold text-green-900 mt-1">{Number(filteredSummary.totalLeads) || 0}</div>
           </div>
           <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3 border border-purple-200">
             <div className="text-xs text-purple-600 font-semibold uppercase">Avg CPL</div>
-            <div className="text-xl font-bold text-purple-900 mt-1">৳{(Number(summary.avgCostPerLead) || 0).toFixed(2)}</div>
+            <div className="text-xl font-bold text-purple-900 mt-1">৳{(Number(filteredSummary.avgCostPerLead) || 0).toFixed(2)}</div>
           </div>
           <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-3 border border-orange-200">
             <div className="text-xs text-orange-600 font-semibold uppercase">Impressions</div>
-            <div className="text-xl font-bold text-orange-900 mt-1">{((Number(summary.totalImpressions) || 0) / 1000).toFixed(1)}K</div>
+            <div className="text-xl font-bold text-orange-900 mt-1">{((Number(filteredSummary.totalImpressions) || 0) / 1000).toFixed(1)}K</div>
           </div>
         </div>
       )}
@@ -1036,10 +1138,10 @@ function Campaigns() {
 
       {/* Campaigns Table */}
       <div className="overflow-x-auto">
-        {loading && campaigns.length === 0 ? (
+        {loading && filteredCampaigns.length === 0 ? (
           <div className="p-8 text-center text-gray-500 text-sm">Loading campaigns...</div>
-        ) : campaigns.length === 0 ? (
-          <div className="p-8 text-center text-gray-500 text-sm">No campaigns yet. Add one to get started!</div>
+        ) : filteredCampaigns.length === 0 ? (
+          <div className="p-8 text-center text-gray-500 text-sm">No campaigns for this month. Add one to get started!</div>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-gray-100 border-b border-gray-300">
@@ -1056,7 +1158,7 @@ function Campaigns() {
               </tr>
             </thead>
             <tbody>
-              {campaigns.map((campaign, idx) => (
+              {filteredCampaigns.map((campaign, idx) => (
                 <tr key={campaign._id} className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50`}>
                   <td className="px-3 py-2">{campaign.campaignName || '—'}</td>
                   <td className="px-3 py-2">
