@@ -91,6 +91,9 @@ export function fmtDate(d) {
 }
 
 export const api = {
+  // ---- authFetch utility (for direct API calls) ----
+  authFetch,
+
   // ---- small helpers ----
   _normalizeDate(d) {
     if (!d) return "";
