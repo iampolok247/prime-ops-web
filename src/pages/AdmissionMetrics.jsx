@@ -95,9 +95,16 @@ export default function AdmissionMetrics() {
     const { metricsResp, reportsResp } = metrics;
     if (metricsResp) {
       if (metricsResp.stats) {
+        // Old format (stats object)
         display.counselingCount = metricsResp.stats.counseling || 0;
         display.followUpCount = metricsResp.stats.followUps || metricsResp.stats.followUp || 0;
+      } else if (metricsResp.metrics && Array.isArray(metricsResp.metrics)) {
+        // Team format: metrics is an array of user metrics (when Admin selects 'all')
+        // Sum all counseling and follow-up counts from all team members
+        display.counselingCount = metricsResp.metrics.reduce((sum, m) => sum + (m.counselingCount || 0), 0);
+        display.followUpCount = metricsResp.metrics.reduce((sum, m) => sum + (m.followUpCount || 0), 0);
       } else {
+        // Single user format (individual Admission staff like Sajrin)
         display.counselingCount = metricsResp.counselingCount || metricsResp.counseling || 0;
         display.followUpCount = metricsResp.followUpCount || metricsResp.followUps || 0;
       }
@@ -266,6 +273,41 @@ export default function AdmissionMetrics() {
           </div>
         </div>
       </div>
+
+      {/* Team Breakdown Table (when viewing all) */}
+      {selectedUser === 'all' && metrics?.metricsResp?.metrics && Array.isArray(metrics.metricsResp.metrics) && (
+        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 mt-6">
+          <h3 className="text-lg font-bold text-gray-800 mb-4">Team Breakdown</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700">Team Member</th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-700">Counseling Calls</th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-700">Follow-up Calls</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {metrics.metricsResp.metrics.map((m, i) => (
+                  <tr key={i} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 font-medium text-gray-800">{m.userName || 'Unknown'}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full font-semibold">
+                        {m.counselingCount || 0}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className="inline-block px-3 py-1 bg-orange-100 text-orange-700 rounded-full font-semibold">
+                        {m.followUpCount || 0}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {showRaw && (
         <div className="bg-white rounded-lg p-4 border border-gray-100">
