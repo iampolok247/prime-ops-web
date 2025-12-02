@@ -335,6 +335,25 @@ export default function AdminApprovals() {
                         </div>
                       )}
 
+                      {app.detailsRequested && (
+                        <div className="mt-3 p-4 rounded-lg border-l-4 bg-blue-50 border-blue-400">
+                          <div className="flex items-start gap-2">
+                            <HelpCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-blue-600" />
+                            <div className="flex-1">
+                              <p className="text-xs font-semibold text-blue-700 uppercase">
+                                ℹ️ Details Requested
+                              </p>
+                              <p className="text-sm text-gray-700 mt-2">{app.detailsRequested}</p>
+                              {app.detailsRequestedBy && (
+                                <p className="text-xs text-gray-500 mt-2">
+                                  by {app.detailsRequestedBy.name} on {new Date(app.detailsRequestedAt).toLocaleDateString()}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {app.reviewNote && (
                         <div className={`mt-3 p-4 rounded-lg border-l-4 ${app.status === 'Approved' ? 'bg-green-50 border-green-400' : 'bg-red-50 border-red-400'}`}>
                           <div className="flex items-start gap-2">
@@ -466,6 +485,25 @@ export default function AdminApprovals() {
                             <MessageSquare className="w-3 h-3" />
                             Click to add comment/reason before submitting
                           </p>
+                        </div>
+                      )}
+
+                      {app.detailsRequested && (
+                        <div className="mt-3 p-4 rounded-lg border-l-4 bg-blue-50 border-blue-400">
+                          <div className="flex items-start gap-2">
+                            <HelpCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-blue-600" />
+                            <div className="flex-1">
+                              <p className="text-xs font-semibold text-blue-700 uppercase">
+                                ℹ️ Details Requested
+                              </p>
+                              <p className="text-sm text-gray-700 mt-2">{app.detailsRequested}</p>
+                              {app.detailsRequestedBy && (
+                                <p className="text-xs text-gray-500 mt-2">
+                                  by {app.detailsRequestedBy.name} on {new Date(app.detailsRequestedAt).toLocaleDateString()}
+                                </p>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       )}
 
