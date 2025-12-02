@@ -8,7 +8,9 @@ import {
   Clock,
   User,
   FileText,
-  Users
+  Users,
+  MessageSquare,
+  Send
 } from 'lucide-react';
 
 export default function AdminApprovals() {
@@ -286,14 +288,21 @@ export default function AdminApprovals() {
                       )}
 
                       {app.reviewNote && (
-                        <div className={`mt-3 p-3 rounded-lg ${app.status === 'Approved' ? 'bg-green-50' : 'bg-red-50'}`}>
-                          <p className="text-xs font-medium text-gray-600 mb-1">Review Note</p>
-                          <p className="text-sm text-gray-700">{app.reviewNote}</p>
-                          {app.reviewedBy && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              by {app.reviewedBy.name} on {new Date(app.reviewedAt).toLocaleDateString()}
-                            </p>
-                          )}
+                        <div className={`mt-3 p-4 rounded-lg border-l-4 ${app.status === 'Approved' ? 'bg-green-50 border-green-400' : 'bg-red-50 border-red-400'}`}>
+                          <div className="flex items-start gap-2">
+                            <MessageSquare className="w-4 h-4 mt-0.5 flex-shrink-0 text-gray-600" />
+                            <div className="flex-1">
+                              <p className="text-xs font-semibold text-gray-700 uppercase">
+                                {app.status === 'Approved' ? '✓ Admin Comment' : '✗ Rejection Reason'}
+                              </p>
+                              <p className="text-sm text-gray-700 mt-2">{app.reviewNote}</p>
+                              {app.reviewedBy && (
+                                <p className="text-xs text-gray-500 mt-2">
+                                  by {app.reviewedBy.name} on {new Date(app.reviewedAt).toLocaleDateString()}
+                                </p>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -400,14 +409,21 @@ export default function AdminApprovals() {
                       )}
 
                       {app.adminReviewNote && (
-                        <div className={`mt-3 p-3 rounded-lg ${app.adminStatus === 'Approved' ? 'bg-green-50' : 'bg-red-50'}`}>
-                          <p className="text-xs font-medium text-gray-600 mb-1">Admin Review</p>
-                          <p className="text-sm text-gray-700">{app.adminReviewNote}</p>
-                          {app.adminReviewedBy && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              by {app.adminReviewedBy.name} on {new Date(app.adminReviewedAt).toLocaleDateString()}
-                            </p>
-                          )}
+                        <div className={`mt-3 p-4 rounded-lg border-l-4 ${app.adminStatus === 'Approved' ? 'bg-green-50 border-green-400' : 'bg-red-50 border-red-400'}`}>
+                          <div className="flex items-start gap-2">
+                            <MessageSquare className="w-4 h-4 mt-0.5 flex-shrink-0 text-gray-600" />
+                            <div className="flex-1">
+                              <p className="text-xs font-semibold text-gray-700 uppercase">
+                                {app.adminStatus === 'Approved' ? '✓ Admin Comment' : '✗ Rejection Reason'}
+                              </p>
+                              <p className="text-sm text-gray-700 mt-2">{app.adminReviewNote}</p>
+                              {app.adminReviewedBy && (
+                                <p className="text-xs text-gray-500 mt-2">
+                                  by {app.adminReviewedBy.name} on {new Date(app.adminReviewedAt).toLocaleDateString()}
+                                </p>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       )}
 
@@ -430,7 +446,7 @@ export default function AdminApprovals() {
       {/* Review Modal */}
       {showModal && selectedApp && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center gap-3 mb-4">
               <div className={`p-2 rounded-lg ${actionType === 'approve' ? 'bg-green-100' : 'bg-red-100'}`}>
                 {actionType === 'approve' ? (
@@ -444,36 +460,45 @@ export default function AdminApprovals() {
               </h3>
             </div>
 
-            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
               <p className="text-sm text-gray-600">Employee:</p>
               <p className="font-semibold text-gray-800">{selectedApp.employee.name}</p>
+              <p className="text-xs text-gray-500 mt-1">{selectedApp.employee.role}</p>
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {actionType === 'approve' ? 'Review Note (Optional)' : 'Rejection Reason *'}
-              </label>
+              <div className="flex items-center gap-2 mb-2">
+                <MessageSquare className="w-4 h-4 text-blue-600" />
+                <label className="block text-sm font-medium text-gray-700">
+                  {actionType === 'approve' ? 'Comment (Optional)' : 'Reason for Rejection *'}
+                </label>
+              </div>
               <textarea
                 rows="4"
-                className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:outline-none resize-none"
+                className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:outline-none resize-none text-sm"
                 value={reviewNote}
                 onChange={e => setReviewNote(e.target.value)}
-                placeholder={actionType === 'approve' ? 'Add any comments...' : 'Please provide a reason for rejection...'}
+                placeholder={actionType === 'approve' ? 'Add any comments about this application...' : 'Please provide a reason for rejection...'}
                 required={actionType === 'reject'}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                {actionType === 'approve' 
+                  ? 'Your comment will be sent to the applicant via notification'
+                  : 'The applicant will receive this reason in a notification'}
+              </p>
             </div>
 
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => { setShowModal(false); setReviewNote(''); }}
-                className="px-5 py-2.5 rounded-lg border-2 border-gray-300 text-gray-700 font-medium hover:bg-gray-50"
+                className="px-5 py-2.5 rounded-lg border-2 border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={activeTab === 'leave' ? handleLeaveAction : handleTADAAction}
                 disabled={loading || (actionType === 'reject' && !reviewNote)}
-                className={`px-5 py-2.5 rounded-lg text-white font-semibold hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 ${
+                className={`px-5 py-2.5 rounded-lg text-white font-semibold hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
                   actionType === 'approve'
                     ? 'bg-gradient-to-r from-green-500 to-green-600'
                     : 'bg-gradient-to-r from-red-500 to-red-600'
@@ -486,8 +511,17 @@ export default function AdminApprovals() {
                   </>
                 ) : (
                   <>
-                    {actionType === 'approve' ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                    Confirm {actionType === 'approve' ? 'Approval' : 'Rejection'}
+                    {actionType === 'approve' ? (
+                      <>
+                        <CheckCircle className="w-4 h-4" />
+                        Approve & Notify
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="w-4 h-4" />
+                        Reject & Notify
+                      </>
+                    )}
                   </>
                 )}
               </button>
