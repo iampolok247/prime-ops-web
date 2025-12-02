@@ -10,7 +10,8 @@ import {
   FileText,
   Users,
   MessageSquare,
-  Send
+  Send,
+  HelpCircle
 } from 'lucide-react';
 
 export default function AdminApprovals() {
@@ -22,7 +23,7 @@ export default function AdminApprovals() {
   const [selectedApp, setSelectedApp] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [reviewNote, setReviewNote] = useState('');
-  const [actionType, setActionType] = useState(''); // 'approve' or 'reject'
+  const [actionType, setActionType] = useState(''); // 'approve', 'reject', or 'request_details'
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
   const [err, setErr] = useState(null);
@@ -109,6 +110,40 @@ export default function AdminApprovals() {
     setActionType('reject');
     setReviewNote('');
     setShowModal(true);
+  };
+
+  const openRequestDetailsModal = (app, type) => {
+    setSelectedApp(app);
+    setActionType('request_details');
+    setReviewNote('');
+    setShowModal(true);
+  };
+
+  const handleRequestDetails = async () => {
+    if (!reviewNote.trim()) {
+      setErr('Please enter what details you need');
+      return;
+    }
+    setLoading(true); setErr(null); setMsg(null);
+    try {
+      const endpoint = activeTab === 'leave' 
+        ? `/api/leave/${selectedApp._id}/request-details`
+        : `/api/tada/${selectedApp._id}/request-details`;
+      
+      await api.authFetch(endpoint, {
+        method: 'PATCH',
+        body: JSON.stringify({ detailsRequested: reviewNote })
+      });
+      
+      setMsg(`Details request sent to ${selectedApp.employee.name}`);
+      setShowModal(false);
+      setReviewNote('');
+      activeTab === 'leave' ? loadLeaveApplications() : loadTADAApplications();
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getStatusBadge = (status) => {
@@ -279,6 +314,13 @@ export default function AdminApprovals() {
                               Approve
                             </button>
                             <button
+                              onClick={() => openRequestDetailsModal(app, 'leave')}
+                              className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg px-4 py-2 font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                            >
+                              <HelpCircle className="w-4 h-4" />
+                              Ask Details
+                            </button>
+                            <button
                               onClick={() => openRejectModal(app, 'leave')}
                               className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg px-4 py-2 font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
                             >
@@ -406,6 +448,13 @@ export default function AdminApprovals() {
                               Approve
                             </button>
                             <button
+                              onClick={() => openRequestDetailsModal(app, 'tada')}
+                              className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg px-4 py-2 font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                            >
+                              <HelpCircle className="w-4 h-4" />
+                              Ask Details
+                            </button>
+                            <button
                               onClick={() => openRejectModal(app, 'tada')}
                               className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg px-4 py-2 font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
                             >
@@ -460,15 +509,21 @@ export default function AdminApprovals() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center gap-3 mb-4">
-              <div className={`p-2 rounded-lg ${actionType === 'approve' ? 'bg-green-100' : 'bg-red-100'}`}>
+              <div className={`p-2 rounded-lg ${
+                actionType === 'approve' ? 'bg-green-100' : 
+                actionType === 'request_details' ? 'bg-blue-100' : 
+                'bg-red-100'
+              }`}>
                 {actionType === 'approve' ? (
                   <CheckCircle className="w-6 h-6 text-green-600" />
+                ) : actionType === 'request_details' ? (
+                  <HelpCircle className="w-6 h-6 text-blue-600" />
                 ) : (
                   <XCircle className="w-6 h-6 text-red-600" />
                 )}
               </div>
               <h3 className="text-xl font-bold text-gray-800">
-                {actionType === 'approve' ? 'Approve' : 'Reject'} Application
+                {actionType === 'approve' ? 'Approve' : actionType === 'request_details' ? 'Request More Details' : 'Reject'} Application
               </h3>
             </div>
 
@@ -482,7 +537,7 @@ export default function AdminApprovals() {
               <div className="flex items-center gap-2 mb-2">
                 <MessageSquare className="w-4 h-4 text-blue-600" />
                 <label className="block text-sm font-medium text-gray-700">
-                  {actionType === 'approve' ? 'Comment (Optional)' : 'Reason for Rejection *'}
+                  {actionType === 'approve' ? 'Comment (Optional)' : actionType === 'request_details' ? 'What details do you need? *' : 'Reason for Rejection *'}
                 </label>
               </div>
               <textarea
@@ -490,12 +545,18 @@ export default function AdminApprovals() {
                 className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:outline-none resize-none text-sm"
                 value={reviewNote}
                 onChange={e => setReviewNote(e.target.value)}
-                placeholder={actionType === 'approve' ? 'Add any comments about this application...' : 'Please provide a reason for rejection...'}
-                required={actionType === 'reject'}
+                placeholder={
+                  actionType === 'approve' ? 'Add any comments about this application...' : 
+                  actionType === 'request_details' ? 'Please specify what additional information you need...' :
+                  'Please provide a reason for rejection...'
+                }
+                required={actionType !== 'approve'}
               />
               <p className="text-xs text-gray-500 mt-1">
                 {actionType === 'approve' 
                   ? 'Your comment will be sent to the applicant via notification'
+                  : actionType === 'request_details'
+                  ? 'The applicant will be asked to provide these details. Application will remain pending.'
                   : 'The applicant will receive this reason in a notification'}
               </p>
             </div>
@@ -508,11 +569,17 @@ export default function AdminApprovals() {
                 Cancel
               </button>
               <button
-                onClick={activeTab === 'leave' ? handleLeaveAction : handleTADAAction}
-                disabled={loading || (actionType === 'reject' && !reviewNote)}
+                onClick={
+                  actionType === 'request_details' 
+                    ? handleRequestDetails
+                    : activeTab === 'leave' ? handleLeaveAction : handleTADAAction
+                }
+                disabled={loading || (actionType !== 'approve' && !reviewNote.trim())}
                 className={`px-5 py-2.5 rounded-lg text-white font-semibold hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
                   actionType === 'approve'
                     ? 'bg-gradient-to-r from-green-500 to-green-600'
+                    : actionType === 'request_details'
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600'
                     : 'bg-gradient-to-r from-red-500 to-red-600'
                 }`}
               >
@@ -527,6 +594,11 @@ export default function AdminApprovals() {
                       <>
                         <CheckCircle className="w-4 h-4" />
                         Approve & Notify
+                      </>
+                    ) : actionType === 'request_details' ? (
+                      <>
+                        <HelpCircle className="w-4 h-4" />
+                        Send Details Request
                       </>
                     ) : (
                       <>
