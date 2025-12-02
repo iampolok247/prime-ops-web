@@ -474,6 +474,20 @@ export default function MyApplications() {
                         </div>
                       </div>
                     )}
+                    {app.detailsRequested && (
+                      <div className="p-3 rounded-lg mb-2 bg-blue-50 border-l-4 border-blue-400">
+                        <p className="text-xs font-bold text-blue-700 uppercase mb-1 flex items-center gap-1">
+                          <AlertCircle className="w-4 h-4" />
+                          ℹ️ Details Requested
+                        </p>
+                        <p className="text-sm text-gray-700">{app.detailsRequested}</p>
+                        {app.detailsRequestedBy && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            by {app.detailsRequestedBy.name} on {new Date(app.detailsRequestedAt).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                    )}
                     {app.reviewNote && (
                       <div className={`p-3 rounded-lg ${app.status === 'Approved' ? 'bg-green-50' : 'bg-red-50'}`}>
                         <p className="text-xs font-medium text-gray-600 mb-1">Review Note</p>
@@ -563,6 +577,20 @@ export default function MyApplications() {
                       <div className="mb-3">
                         <p className="text-xs text-gray-500 mb-1">Description</p>
                         <p className="text-sm text-gray-700">{app.description}</p>
+                      </div>
+                    )}
+                    {app.detailsRequested && (
+                      <div className="p-3 rounded-lg mb-2 bg-blue-50 border-l-4 border-blue-400">
+                        <p className="text-xs font-bold text-blue-700 uppercase mb-1 flex items-center gap-1">
+                          <AlertCircle className="w-4 h-4" />
+                          ℹ️ Details Requested
+                        </p>
+                        <p className="text-sm text-gray-700">{app.detailsRequested}</p>
+                        {app.detailsRequestedBy && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            by {app.detailsRequestedBy.name} on {new Date(app.detailsRequestedAt).toLocaleDateString()}
+                          </p>
+                        )}
                       </div>
                     )}
                     {app.adminReviewNote && (
