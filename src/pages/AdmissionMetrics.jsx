@@ -41,11 +41,15 @@ export default function AdmissionMetrics() {
   }, [period, from, to, selectedUser]);
 
   function computeRange() {
+    const now = new Date();
+    
+    // Custom range
     if (period === 'custom') {
       if (from && to) return { from: toISODate(from), to: toISODate(to) };
       return { from: null, to: null };
     }
-    const now = new Date();
+    
+    // Today: 00:00 to 23:59:59 of today
     if (period === 'daily') {
       const f = new Date(now);
       f.setHours(0, 0, 0, 0);
@@ -53,18 +57,37 @@ export default function AdmissionMetrics() {
       t.setHours(23, 59, 59, 999);
       return { from: toISODate(f), to: toISODate(t) };
     }
+    
+    // Yesterday: 00:00 to 23:59:59 of yesterday
+    if (period === 'yesterday') {
+      const yesterday = new Date(now);
+      yesterday.setDate(now.getDate() - 1);
+      yesterday.setHours(0, 0, 0, 0);
+      const t = new Date(yesterday);
+      t.setHours(23, 59, 59, 999);
+      return { from: toISODate(yesterday), to: toISODate(t) };
+    }
+    
+    // Weekly: last 7 days from today
     if (period === 'weekly') {
       const f = new Date(now);
       f.setDate(now.getDate() - 7);
       f.setHours(0, 0, 0, 0);
-      return { from: toISODate(f), to: toISODate(now) };
+      const t = new Date(now);
+      t.setHours(23, 59, 59, 999);
+      return { from: toISODate(f), to: toISODate(t) };
     }
+    
+    // Monthly: last 30 days from today
     if (period === 'monthly') {
       const f = new Date(now);
-      f.setMonth(now.getMonth() - 1);
+      f.setDate(now.getDate() - 30);
       f.setHours(0, 0, 0, 0);
-      return { from: toISODate(f), to: toISODate(now) };
+      const t = new Date(now);
+      t.setHours(23, 59, 59, 999);
+      return { from: toISODate(f), to: toISODate(t) };
     }
+    
     return { from: null, to: null };
   }
 
@@ -190,6 +213,7 @@ export default function AdmissionMetrics() {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="daily">Today</option>
+              <option value="yesterday">Yesterday</option>
               <option value="weekly">Last 7 Days</option>
               <option value="monthly">Last 30 Days</option>
               <option value="custom">Custom Range</option>
