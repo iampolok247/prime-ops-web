@@ -199,8 +199,15 @@ export default function AdmissionDashboard() {
       return { from: null, to: null };
     }
     const now = new Date();
+    now.setHours(23, 59, 59, 999); // End of today
     let f = new Date();
-    if (period === 'daily') { f.setDate(now.getDate() - 1); }
+    f.setHours(0, 0, 0, 0); // Start of day
+    
+    if (period === 'daily') { 
+      // Today only: from = today at 00:00, to = today at 23:59:59
+      f.setDate(now.getDate());
+      return { from: f, to: now };
+    }
     else if (period === 'weekly') { f.setDate(now.getDate() - 7); }
     else if (period === 'monthly') { f.setMonth(now.getMonth() - 1); }
     else if (period === 'yearly') { f.setFullYear(now.getFullYear() - 1); }
