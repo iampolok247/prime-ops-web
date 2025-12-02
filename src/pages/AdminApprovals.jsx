@@ -269,21 +269,27 @@ export default function AdminApprovals() {
                       )}
 
                       {app.status === 'Pending' && (
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => openApproveModal(app, 'leave')}
-                            className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg px-4 py-2 font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => openRejectModal(app, 'leave')}
-                            className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg px-4 py-2 font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                          >
-                            <XCircle className="w-4 h-4" />
-                            Reject
-                          </button>
+                        <div>
+                          <div className="flex gap-2 mb-2">
+                            <button
+                              onClick={() => openApproveModal(app, 'leave')}
+                              className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg px-4 py-2 font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => openRejectModal(app, 'leave')}
+                              className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg px-4 py-2 font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                            >
+                              <XCircle className="w-4 h-4" />
+                              Reject
+                            </button>
+                          </div>
+                          <p className="text-xs text-gray-500 text-center flex items-center justify-center gap-1">
+                            <MessageSquare className="w-3 h-3" />
+                            Click to add comment/reason before submitting
+                          </p>
                         </div>
                       )}
 
@@ -390,21 +396,27 @@ export default function AdminApprovals() {
                       )}
 
                       {app.adminStatus === 'Pending' && (
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => openApproveModal(app, 'tada')}
-                            className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg px-4 py-2 font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => openRejectModal(app, 'tada')}
-                            className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg px-4 py-2 font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                          >
-                            <XCircle className="w-4 h-4" />
-                            Reject
-                          </button>
+                        <div>
+                          <div className="flex gap-2 mb-2">
+                            <button
+                              onClick={() => openApproveModal(app, 'tada')}
+                              className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg px-4 py-2 font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => openRejectModal(app, 'tada')}
+                              className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg px-4 py-2 font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                            >
+                              <XCircle className="w-4 h-4" />
+                              Reject
+                            </button>
+                          </div>
+                          <p className="text-xs text-gray-500 text-center flex items-center justify-center gap-1">
+                            <MessageSquare className="w-3 h-3" />
+                            Click to add comment/reason before submitting
+                          </p>
                         </div>
                       )}
 
