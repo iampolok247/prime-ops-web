@@ -16,6 +16,7 @@ export default function Candidates() {
   const [showAdd, setShowAdd] = useState(false);
   const [showRecruit, setShowRecruit] = useState(null);
   const [showEdit, setShowEdit] = useState(null);
+  const [showDetails, setShowDetails] = useState(null);
 
   const load = async (status = tab) => {
     const data = await api.listCandidates(status);
@@ -72,6 +73,17 @@ export default function Candidates() {
                 <td className="py-2">
                   <div className="flex items-center gap-2">
                     <button 
+                      onClick={() => setShowDetails(c)} 
+                      className="px-3 py-1 rounded-xl bg-green-500 text-white hover:bg-green-600 transition-colors flex items-center gap-1"
+                      title="View details"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      Details
+                    </button>
+                    <button 
                       onClick={() => setShowEdit(c)} 
                       className="px-3 py-1 rounded-xl bg-blue-500 text-white hover:bg-blue-600 transition-colors flex items-center gap-1"
                       title="Edit candidate"
@@ -97,6 +109,7 @@ export default function Candidates() {
 
       {showAdd && <AddModal onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); load(); }} />}
       {showEdit && <EditModal candidate={showEdit} onClose={() => setShowEdit(null)} onSaved={() => { setShowEdit(null); load(tab); }} />}
+      {showDetails && <DetailsModal candidate={showDetails} onClose={() => setShowDetails(null)} />}
       {showRecruit && <RecruitModal
         candidate={showRecruit}
         employers={employers}
@@ -109,7 +122,7 @@ export default function Candidates() {
 }
 
 function AddModal({ onClose, onSaved }) {
-  const [form, setForm] = useState({ canId: '', name: '', jobInterest: '', source: 'Facebook', trained: false, cvLink: '' });
+  const [form, setForm] = useState({ canId: '', name: '', phone: '', email: '', jobInterest: '', source: 'Facebook', trained: false, cvLink: '' });
   const [validating, setValidating] = useState(false);
   const [canIdError, setCanIdError] = useState('');
 
@@ -139,6 +152,7 @@ function AddModal({ onClose, onSaved }) {
     if (!form.canId) return alert('Candidate ID is required');
     if (canIdError) return alert(canIdError);
     if (!form.name || !form.jobInterest) return alert('Name & Job Interest required');
+    if (!form.phone) return alert('Phone number is required');
     
     try {
       await api.addCandidate(form);
@@ -212,6 +226,32 @@ function AddModal({ onClose, onSaved }) {
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   className="w-full border-2 border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#253985] focus:border-transparent transition-all"
                   placeholder="Full name"
+                />
+              </label>
+            </div>
+
+            <div>
+              <label className="block">
+                <span className="text-sm font-semibold text-[#053867] mb-2 block">Phone *</span>
+                <input 
+                  type="tel"
+                  value={form.phone} 
+                  onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                  className="w-full border-2 border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#253985] focus:border-transparent transition-all"
+                  placeholder="e.g., 01712345678"
+                />
+              </label>
+            </div>
+
+            <div>
+              <label className="block">
+                <span className="text-sm font-semibold text-[#053867] mb-2 block">Email</span>
+                <input 
+                  type="email"
+                  value={form.email} 
+                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                  className="w-full border-2 border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#253985] focus:border-transparent transition-all"
+                  placeholder="example@email.com"
                 />
               </label>
             </div>
@@ -301,6 +341,8 @@ function EditModal({ candidate, onClose, onSaved }) {
   const [form, setForm] = useState({ 
     canId: candidate.canId,
     name: candidate.name, 
+    phone: candidate.phone || '',
+    email: candidate.email || '',
     jobInterest: candidate.jobInterest, 
     source: candidate.source || 'Facebook', 
     trained: candidate.trained || false, 
@@ -335,6 +377,7 @@ function EditModal({ candidate, onClose, onSaved }) {
     if (!form.canId) return alert('Candidate ID is required');
     if (canIdError) return alert(canIdError);
     if (!form.name || !form.jobInterest) return alert('Name & Job Interest required');
+    if (!form.phone) return alert('Phone number is required');
     
     try {
       await api.updateCandidate(candidate._id, form);
@@ -414,6 +457,32 @@ function EditModal({ candidate, onClose, onSaved }) {
 
             <div>
               <label className="block">
+                <span className="text-sm font-semibold text-[#053867] mb-2 block">Phone *</span>
+                <input 
+                  type="tel"
+                  value={form.phone} 
+                  onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                  className="w-full border-2 border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#253985] focus:border-transparent transition-all"
+                  placeholder="e.g., 01712345678"
+                />
+              </label>
+            </div>
+
+            <div>
+              <label className="block">
+                <span className="text-sm font-semibold text-[#053867] mb-2 block">Email</span>
+                <input 
+                  type="email"
+                  value={form.email} 
+                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                  className="w-full border-2 border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#253985] focus:border-transparent transition-all"
+                  placeholder="example@email.com"
+                />
+              </label>
+            </div>
+
+            <div>
+              <label className="block">
                 <span className="text-sm font-semibold text-[#053867] mb-2 block">Job Interest *</span>
                 <input 
                   type="text"
@@ -478,7 +547,7 @@ function EditModal({ candidate, onClose, onSaved }) {
             Cancel
           </button>
           <button 
-            onClick={submit} 
+            onClick="{submit}" 
             disabled={validating || !!canIdError}
             className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium hover:shadow-lg transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2"
           >
@@ -605,6 +674,129 @@ function RecruitModal({ candidate, employers, jobs, onClose, onSaved }) {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function DetailsModal({ candidate, onClose }) {
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-3xl space-y-6 animate-fadeIn max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between border-b border-gray-200 pb-4 sticky top-0 bg-white">
+          <div>
+            <h3 className="text-2xl font-bold text-[#253985]">Candidate Details</h3>
+            <p className="text-sm text-gray-600 mt-1">Complete information about {candidate.name}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <DetailRow label="Candidate ID" value={candidate.canId} />
+          <DetailRow label="Name" value={candidate.name} />
+          <DetailRow 
+            label="Phone" 
+            value={candidate.phone || <span className="text-gray-400">Not provided</span>} 
+          />
+          <DetailRow 
+            label="Email" 
+            value={candidate.email || <span className="text-gray-400">Not provided</span>} 
+          />
+          <DetailRow label="Job Interest" value={candidate.jobInterest} />
+          <DetailRow label="CV Source" value={candidate.source} />
+          <DetailRow 
+            label="Training Status" 
+            value={
+              <span className={`px-2 py-1 rounded text-sm ${candidate.trained ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                {candidate.trained ? 'Trained' : 'Not Trained'}
+              </span>
+            } 
+          />
+          <DetailRow 
+            label="Date Added" 
+            value={new Date(candidate.date).toLocaleDateString('en-GB', { 
+              day: '2-digit', 
+              month: 'short', 
+              year: 'numeric' 
+            })} 
+          />
+          <DetailRow 
+            label="CV Link" 
+            value={
+              candidate.cvLink ? (
+                <a 
+                  href={candidate.cvLink} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
+                >
+                  View CV
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              ) : (
+                <span className="text-gray-400">No CV link</span>
+              )
+            } 
+          />
+          <DetailRow 
+            label="Recruitment Status" 
+            value={
+              <span className={`px-2 py-1 rounded text-sm font-medium ${candidate.recruited ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                {candidate.recruited ? 'Recruited' : 'Available'}
+              </span>
+            } 
+          />
+        </div>
+
+        {candidate.recruited && (
+          <div className="pt-6 border-t border-gray-200">
+            <h4 className="text-lg font-bold text-[#053867] mb-4">Recruitment Information</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <DetailRow 
+                label="Employer" 
+                value={candidate.employer?.name || 'N/A'} 
+              />
+              <DetailRow 
+                label="Job Position" 
+                value={candidate.job?.position || 'N/A'} 
+              />
+              {candidate.recruitedDate && (
+                <DetailRow 
+                  label="Recruitment Date" 
+                  value={new Date(candidate.recruitedDate).toLocaleDateString('en-GB', { 
+                    day: '2-digit', 
+                    month: 'short', 
+                    year: 'numeric' 
+                  })} 
+                />
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center justify-end pt-4 border-t border-gray-200">
+          <button 
+            onClick={onClose} 
+            className="px-6 py-2.5 rounded-xl bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailRow({ label, value }) {
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</p>
+      <p className="text-base font-medium text-gray-800">{value}</p>
     </div>
   );
 }
