@@ -128,11 +128,14 @@ function PipelineTable({ status, canAct }) {
       setMsg(`Status updated to ${action}`);
       setShowFollowModal(false);
       setFollowNote(''); setFollowTarget(null); setFollowNextDate('');
-      setShowNotAdmitModal(false); setNotAdmitNote(''); setNotAdmitTarget(null);
+      setShowNotAdmitModal(false); setNotAdmitNote(''); setNotAdmitTarget(null); setNotAdmitSaving(false);
       setShowAdmitModal(false); setAdmitTarget(null); setSelectedCourse(''); setSelectedBatch('');
       setShowHistory(false); setHistLead(null); setHistLoading(false);
       load();
-    } catch (e) { setErr(e.message); }
+    } catch (e) { 
+      setErr(e.message);
+      throw e; // Re-throw so the caller can handle it
+    }
   };
   
   const handleAdmitClick = (rowId) => {
@@ -853,14 +856,16 @@ function PipelineTable({ status, canAct }) {
                     alert('No lead selected');
                     return;
                   }
+                  console.log('Starting Not Admitted action for:', notAdmitTarget, 'with note:', notAdmitNote);
                   setNotAdmitSaving(true);
                   try {
                     await act(notAdmitTarget, 'Not Admitted', notAdmitNote);
+                    console.log('Not Admitted action completed successfully');
+                    // Modal will be closed by act() function on success
                   } catch (e) {
                     console.error('Not Admitted error:', e);
-                    alert(e.message || 'Failed to update status');
-                  } finally {
                     setNotAdmitSaving(false);
+                    alert('Error: ' + (e.message || 'Failed to update status. Please try again.'));
                   }
                 }} 
                 disabled={notAdmitSaving}
