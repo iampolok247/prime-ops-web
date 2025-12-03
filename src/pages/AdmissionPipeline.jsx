@@ -59,6 +59,7 @@ function PipelineTable({ status, canAct }) {
   const [showNotAdmitModal, setShowNotAdmitModal] = useState(false);
   const [notAdmitNote, setNotAdmitNote] = useState('');
   const [notAdmitTarget, setNotAdmitTarget] = useState(null);
+  const [notAdmitSaving, setNotAdmitSaving] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [histLead, setHistLead] = useState(null);
   const [histLoading, setHistLoading] = useState(false);
@@ -827,21 +828,45 @@ function PipelineTable({ status, canAct }) {
           <div className="absolute inset-0 bg-black opacity-30" onClick={()=>setShowNotAdmitModal(false)} />
           <div className="bg-white rounded-xl p-4 z-10 w-full max-w-lg shadow-lg">
             <h3 className="text-lg font-semibold mb-2">Reason for Not Admitted</h3>
-            <textarea rows={6} className="w-full border rounded-xl px-3 py-2 mb-3" value={notAdmitNote} onChange={e=>setNotAdmitNote(e.target.value)} placeholder="Enter reason (optional)" />
+            <textarea 
+              rows={6} 
+              className="w-full border rounded-xl px-3 py-2 mb-3" 
+              value={notAdmitNote} 
+              onChange={e=>setNotAdmitNote(e.target.value)} 
+              placeholder="Enter reason (optional)"
+              disabled={notAdmitSaving}
+            />
             <div className="flex justify-end gap-2">
-              <button type="button" onClick={()=>{ setShowNotAdmitModal(false); setNotAdmitNote(''); setNotAdmitTarget(null); }} className="px-3 py-2 rounded-xl border">Cancel</button>
+              <button 
+                type="button" 
+                onClick={()=>{ setShowNotAdmitModal(false); setNotAdmitNote(''); setNotAdmitTarget(null); setNotAdmitSaving(false); }} 
+                className="px-3 py-2 rounded-xl border"
+                disabled={notAdmitSaving}
+              >
+                Cancel
+              </button>
               <button 
                 type="button" 
                 onClick={async ()=>{
+                  if (notAdmitSaving) return;
                   if (!notAdmitTarget) {
                     alert('No lead selected');
                     return;
                   }
-                  await act(notAdmitTarget, 'Not Admitted', notAdmitNote);
+                  setNotAdmitSaving(true);
+                  try {
+                    await act(notAdmitTarget, 'Not Admitted', notAdmitNote);
+                  } catch (e) {
+                    console.error('Not Admitted error:', e);
+                    alert(e.message || 'Failed to update status');
+                  } finally {
+                    setNotAdmitSaving(false);
+                  }
                 }} 
-                className="px-3 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700"
+                disabled={notAdmitSaving}
+                className="px-3 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Save
+                {notAdmitSaving ? 'Saving...' : 'Save'}
               </button>
             </div>
           </div>
