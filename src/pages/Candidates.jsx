@@ -339,14 +339,14 @@ function AddModal({ onClose, onSaved }) {
 
 function EditModal({ candidate, onClose, onSaved }) {
   const [form, setForm] = useState({ 
-    canId: candidate.canId,
-    name: candidate.name, 
-    phone: candidate.phone || '',
-    email: candidate.email || '',
-    jobInterest: candidate.jobInterest, 
-    source: candidate.source || 'Facebook', 
-    trained: candidate.trained || false, 
-    cvLink: candidate.cvLink || '' 
+    canId: candidate?.canId || '',
+    name: candidate?.name || '', 
+    phone: candidate?.phone || '',
+    email: candidate?.email || '',
+    jobInterest: candidate?.jobInterest || '', 
+    source: candidate?.source || 'Facebook', 
+    trained: candidate?.trained || false, 
+    cvLink: candidate?.cvLink || '' 
   });
   const [validating, setValidating] = useState(false);
   const [canIdError, setCanIdError] = useState('');
@@ -413,7 +413,7 @@ function EditModal({ candidate, onClose, onSaved }) {
               </div>
               <input 
                 type="text" 
-                value={form.canId} 
+                value={form.canId || ''} 
                 onChange={e => handleCanIdChange(e.target.value)}
                 onBlur={() => validateCanId(form.canId)}
                 className={`w-full border-2 rounded-xl px-4 py-3 text-lg font-mono focus:outline-none focus:ring-2 transition-all ${canIdError ? 'border-red-400 focus:ring-red-400 bg-red-50' : 'border-blue-300 focus:ring-blue-400 bg-white'}`}
@@ -447,7 +447,7 @@ function EditModal({ candidate, onClose, onSaved }) {
                 <span className="text-sm font-semibold text-[#053867] mb-2 block">Name *</span>
                 <input 
                   type="text"
-                  value={form.name} 
+                  value={form.name || ''} 
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   className="w-full border-2 border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#253985] focus:border-transparent transition-all"
                   placeholder="Full name"
@@ -460,7 +460,7 @@ function EditModal({ candidate, onClose, onSaved }) {
                 <span className="text-sm font-semibold text-[#053867] mb-2 block">Phone *</span>
                 <input 
                   type="tel"
-                  value={form.phone} 
+                  value={form.phone || ''} 
                   onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
                   className="w-full border-2 border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#253985] focus:border-transparent transition-all"
                   placeholder="e.g., 01712345678"
@@ -473,7 +473,7 @@ function EditModal({ candidate, onClose, onSaved }) {
                 <span className="text-sm font-semibold text-[#053867] mb-2 block">Email</span>
                 <input 
                   type="email"
-                  value={form.email} 
+                  value={form.email || ''} 
                   onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                   className="w-full border-2 border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#253985] focus:border-transparent transition-all"
                   placeholder="example@email.com"
@@ -486,7 +486,7 @@ function EditModal({ candidate, onClose, onSaved }) {
                 <span className="text-sm font-semibold text-[#053867] mb-2 block">Job Interest *</span>
                 <input 
                   type="text"
-                  value={form.jobInterest} 
+                  value={form.jobInterest || ''} 
                   onChange={e => setForm(f => ({ ...f, jobInterest: e.target.value }))}
                   className="w-full border-2 border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#253985] focus:border-transparent transition-all"
                   placeholder="e.g., Software Developer"
@@ -498,7 +498,7 @@ function EditModal({ candidate, onClose, onSaved }) {
               <label className="block">
                 <span className="text-sm font-semibold text-[#053867] mb-2 block">CV Source</span>
                 <select 
-                  value={form.source} 
+                  value={form.source || 'Facebook'} 
                   onChange={e => setForm(f => ({ ...f, source: e.target.value }))}
                   className="w-full border-2 border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#253985] focus:border-transparent transition-all bg-white"
                 >
@@ -514,7 +514,7 @@ function EditModal({ candidate, onClose, onSaved }) {
                 <span className="text-sm font-semibold text-[#053867] mb-2 block">CV Link</span>
                 <input 
                   type="url"
-                  value={form.cvLink} 
+                  value={form.cvLink || ''} 
                   onChange={e => setForm(f => ({ ...f, cvLink: e.target.value }))}
                   className="w-full border-2 border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#253985] focus:border-transparent transition-all"
                   placeholder="Google Drive or OneDrive link"
