@@ -93,6 +93,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/accounting/fees', label: 'Admission Fees Approval', icon: <FolderOpen size={18}/> },
       { to: '/accounting/due-collections', label: 'Due Collection Approval', icon: <FolderOpen size={18}/> },
       { to: '/recruitment/income', label: 'Recruitment Income Approval', icon: <Wallet size={18}/> },
+      { to: '/accounting/income', label: 'Income', icon: <DollarSign size={18}/> },
       { to: '/accounting/expense', label: 'Expense', icon: <FolderOpen size={18}/> },
       { to: '/accounting/tada-payments', label: 'TA/DA Payments', icon: <DollarSign size={18}/> }
     ],
