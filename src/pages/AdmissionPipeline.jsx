@@ -830,7 +830,7 @@ function PipelineTable({ status, canAct }) {
             <textarea rows={6} className="w-full border rounded-xl px-3 py-2 mb-3" value={notAdmitNote} onChange={e=>setNotAdmitNote(e.target.value)} placeholder="Enter reason (optional)" />
             <div className="flex justify-end gap-2">
               <button type="button" onClick={()=>{ setShowNotAdmitModal(false); setNotAdmitNote(''); setNotAdmitTarget(null); }} className="px-3 py-2 rounded-xl border">Cancel</button>
-              <button type="button" onClick={()=>act(notAdmitTarget,'Not Admitted', notAdmitNote)} className="px-3 py-2 rounded-xl bg-red-600 text-white">Save</button>
+              <button type="button" onClick={()=>act(notAdmitTarget, 'Not Admitted', notAdmitNote)} className="px-3 py-2 rounded-xl bg-red-600 text-white">Save</button>
             </div>
           </div>
         </div>
