@@ -547,7 +547,7 @@ function EditModal({ candidate, onClose, onSaved }) {
             Cancel
           </button>
           <button 
-            onClick="{submit}" 
+            onClick={submit} 
             disabled={validating || !!canIdError}
             className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium hover:shadow-lg transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2"
           >
