@@ -847,7 +847,16 @@ function PipelineTable({ status, canAct }) {
               </button>
               <button 
                 type="button" 
-                onClick={()=>act(notAdmitTarget, 'Not Admitted', notAdmitNote)} 
+                onClick={async ()=>{
+                  try {
+                    console.log('Not Admitted - Calling act with:', notAdmitTarget, notAdmitNote);
+                    await act(notAdmitTarget, 'Not Admitted', notAdmitNote);
+                    console.log('Not Admitted - Success');
+                  } catch (error) {
+                    console.error('Not Admitted - Error:', error);
+                    alert('Error: ' + (error?.message || 'Failed to update status'));
+                  }
+                }} 
                 className="px-3 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700"
               >
                 Save
