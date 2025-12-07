@@ -1610,4 +1610,47 @@ export const api = {
     });
     return handleJson(res, "Delete notification failed");
   },
+
+  // ---- Bank Management ----
+  async getBankBalances() {
+    const res = await authFetch(`${getApiBase()}/api/bank/balances`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load bank balances failed");
+  },
+  async getBankTransactions(filters = {}) {
+    const params = new URLSearchParams();
+    if (filters.from) params.append("from", filters.from);
+    if (filters.to) params.append("to", filters.to);
+    if (filters.type) params.append("type", filters.type);
+    const res = await authFetch(`${getApiBase()}/api/bank/transactions?${params}`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load bank transactions failed");
+  },
+  async depositToBank(payload) {
+    const res = await authFetch(`${getApiBase()}/api/bank/deposit`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return handleJson(res, "Deposit to bank failed");
+  },
+  async withdrawFromBank(payload) {
+    const res = await authFetch(`${getApiBase()}/api/bank/withdraw`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return handleJson(res, "Withdraw from bank failed");
+  },
+  async deleteBankTransaction(id) {
+    const res = await authFetch(`${getApiBase()}/api/bank/transactions/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    return handleJson(res, "Delete bank transaction failed");
+  },
 };

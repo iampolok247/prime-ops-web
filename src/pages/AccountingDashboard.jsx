@@ -9,7 +9,8 @@ import {
   Wallet,
   PieChart as PieChartIcon,
   BarChart2,
-  Settings
+  Settings,
+  Building2
 } from 'lucide-react';
 
 export default function AccountingDashboard() {
@@ -25,6 +26,7 @@ export default function AccountingDashboard() {
     to: new Date().toISOString().slice(0,10)
   });
   const [data, setData] = useState({ totalIncome:0, totalExpense:0, profit:0 });
+  const [balances, setBalances] = useState({ bankBalance: 0, pettyCash: 0 });
   const [err, setErr] = useState(null);
   const [incomes, setIncomes] = useState([]);
   const [expenses, setExpenses] = useState([]);
@@ -46,14 +48,16 @@ export default function AccountingDashboard() {
         qFrom = f.toISOString().slice(0,10);
         qTo = now.toISOString().slice(0,10);
       }
-      const [d, incResp, expResp] = await Promise.all([
+      const [d, incResp, expResp, balResp] = await Promise.all([
         api.accountingSummary(qFrom, qTo),
         api.listIncome().catch(()=>({ income: [] })),
-        api.listExpenses().catch(()=>({ expenses: [] }))
+        api.listExpenses().catch(()=>({ expenses: [] })),
+        api.getBankBalances().catch(()=>({ bankBalance: 0, pettyCash: 0 }))
       ]);
       setData(d || { totalIncome:0, totalExpense:0, profit:0 });
       setIncomes(Array.isArray(incResp) ? incResp : (incResp?.income || []));
       setExpenses(Array.isArray(expResp) ? expResp : (expResp?.expenses || []));
+      setBalances(balResp || { bankBalance: 0, pettyCash: 0 });
     } catch (e) { setErr(e.message); }
   };
 
@@ -134,7 +138,7 @@ export default function AccountingDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
         {/* Income */}
         <div className="group relative bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
           <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
@@ -177,8 +181,40 @@ export default function AccountingDashboard() {
           </div>
         </div>
 
-        {/* Net Balance */}
-        <div className="group relative bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
+        {/* Total Balance */}
+        <div className="group relative bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
+          <div className="relative">
+            <div className="flex items-center justify-between mb-2">
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <DollarSign className="w-5 h-5 text-white" />
+              </div>
+            </div>
+            <p className="text-white/80 text-xs font-medium mb-1">Total Balance</p>
+            <h3 className={`text-2xl font-bold ${(balances.bankBalance + balances.pettyCash) < 0 ? 'text-red-200' : 'text-white'}`}>
+              {fmtBDTEn((balances.bankBalance || 0) + (balances.pettyCash || 0))}
+            </h3>
+          </div>
+        </div>
+
+        {/* Balance in Bank */}
+        <div className="group relative bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
+          <div className="relative">
+            <div className="flex items-center justify-between mb-2">
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <Building2 className="w-5 h-5 text-white" />
+              </div>
+            </div>
+            <p className="text-white/80 text-xs font-medium mb-1">Balance in Bank</p>
+            <h3 className={`text-2xl font-bold ${balances.bankBalance < 0 ? 'text-red-200' : 'text-white'}`}>
+              {fmtBDTEn(balances.bankBalance || 0)}
+            </h3>
+          </div>
+        </div>
+
+        {/* Petty Cash */}
+        <div className="group relative bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
           <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
           <div className="relative">
             <div className="flex items-center justify-between mb-2">
@@ -186,8 +222,8 @@ export default function AccountingDashboard() {
                 <Wallet className="w-5 h-5 text-white" />
               </div>
             </div>
-            <p className="text-white/80 text-xs font-medium mb-1">Net Balance</p>
-            <h3 className="text-2xl font-bold text-white">{fmtBDTEn(netBalance)}</h3>
+            <p className="text-white/80 text-xs font-medium mb-1">Petty Cash</p>
+            <h3 className="text-2xl font-bold text-white">{fmtBDTEn(balances.pettyCash || 0)}</h3>
           </div>
         </div>
       </div>
