@@ -64,69 +64,38 @@ function PipelineTable({ status, canAct }) {
   const [histLead, setHistLead] = useState(null);
   const [histLoading, setHistLoading] = useState(false);
 
-  // Dedicated function for Not Admitted - completely independent
+  // Simple function using the EXISTING api.updateLeadStatus
   const handleNotAdmitted = async (leadId, reason) => {
+    console.log('========== NOT ADMITTED START ==========');
+    console.log('Lead ID:', leadId);
+    console.log('Reason:', reason);
+    
+    setNotAdmitSaving(true);
+    setErr(null);
+    
     try {
-      setNotAdmitSaving(true);
-      setErr(null);
+      // Use the EXISTING api function that already works for other status updates
+      console.log('Calling api.updateLeadStatus...');
+      const result = await api.updateLeadStatus(leadId, 'Not Admitted', reason || '', '', '', '');
+      console.log('API call successful:', result);
       
-      // Get auth token from localStorage
-      const token = localStorage.getItem('auth_token');
-      
-      // Direct API call with hardcoded production URL
-      const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5001' : 'http://31.97.228.226:5000';
-      const url = `${apiBase}/api/admission/leads/${leadId}/status`;
-      
-      console.log('NOT ADMITTED - Making request to:', url);
-      console.log('NOT ADMITTED - Lead ID:', leadId);
-      console.log('NOT ADMITTED - Reason:', reason);
-      console.log('NOT ADMITTED - Has token:', !!token);
-      
-      const headers = {
-        'Content-Type': 'application/json',
-      };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const response = await fetch(url, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: headers,
-        body: JSON.stringify({
-          status: 'Not Admitted',
-          notes: reason || ''
-        })
-      });
-
-      console.log('NOT ADMITTED - Response status:', response.status);
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('NOT ADMITTED - Error response:', errorData);
-        throw new Error(errorData.message || `Failed with status ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('NOT ADMITTED - Success! Response:', data);
-      
-      // Success - close modal and reload
+      // Close modal and reset
       setShowNotAdmitModal(false);
       setNotAdmitNote('');
       setNotAdmitTarget(null);
-      setMsg('Lead marked as Not Admitted successfully');
+      setMsg('Lead marked as Not Admitted');
       
-      console.log('NOT ADMITTED - Reloading leads...');
+      // Reload the list
+      console.log('Reloading leads...');
       await load();
-      console.log('NOT ADMITTED - Complete!');
+      console.log('========== NOT ADMITTED SUCCESS ==========');
       
-      return data;
     } catch (error) {
-      console.error('NOT ADMITTED - ERROR:', error);
-      setErr(error.message);
-      alert('Error marking as Not Admitted: ' + error.message);
-      throw error;
+      console.error('========== NOT ADMITTED FAILED ==========');
+      console.error('Error:', error);
+      console.error('Message:', error?.message);
+      setErr(error?.message || 'Failed to update status');
+      alert('Failed: ' + (error?.message || 'Unknown error'));
     } finally {
       setNotAdmitSaving(false);
     }
