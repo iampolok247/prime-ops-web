@@ -70,6 +70,9 @@ function PipelineTable({ status, canAct }) {
       setNotAdmitSaving(true);
       setErr(null);
       
+      // Get auth token from localStorage
+      const token = localStorage.getItem('auth_token');
+      
       // Direct API call with hardcoded production URL
       const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5001' : 'http://31.97.228.226:5000';
       const url = `${apiBase}/api/admission/leads/${leadId}/status`;
@@ -77,13 +80,20 @@ function PipelineTable({ status, canAct }) {
       console.log('NOT ADMITTED - Making request to:', url);
       console.log('NOT ADMITTED - Lead ID:', leadId);
       console.log('NOT ADMITTED - Reason:', reason);
+      console.log('NOT ADMITTED - Has token:', !!token);
+      
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
       
       const response = await fetch(url, {
         method: 'PATCH',
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: headers,
         body: JSON.stringify({
           status: 'Not Admitted',
           notes: reason || ''
