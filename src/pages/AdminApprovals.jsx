@@ -250,6 +250,12 @@ export default function AdminApprovals() {
                           <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
                             {app.leaveType}
                           </span>
+                          {/* Application Date for Admin view */}
+                          {app.createdAt && (
+                            <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
+                              {new Date(app.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -424,6 +430,12 @@ export default function AdminApprovals() {
                           <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
                             {app.applicationType}
                           </span>
+                          {/* Application Date for Admin view */}
+                          {app.createdAt && (
+                            <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
+                              {new Date(app.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </span>
+                          )}
                         </div>
                       </div>
 
