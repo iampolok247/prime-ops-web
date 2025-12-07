@@ -581,6 +581,22 @@ export const api = {
     });
     return handleJson(res, "Add income failed");
   },
+  async updateIncome(id, payload) {
+    const res = await authFetch(`${getApiBase()}/api/accounting/income/${id}`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return handleJson(res, "Update income failed");
+  },
+  async deleteIncome(id) {
+    const res = await authFetch(`${getApiBase()}/api/accounting/income/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    return handleJson(res, "Delete income failed");
+  },
 
   async listExpenses() {
     const res = await authFetch(`${getApiBase()}/api/accounting/expense`, {
@@ -596,6 +612,15 @@ export const api = {
       body: JSON.stringify(payload),
     });
     return handleJson(res, "Add expense failed");
+  },
+  async updateExpense(id, payload) {
+    const res = await authFetch(`${getApiBase()}/api/accounting/expense/${id}`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return handleJson(res, "Update expense failed");
   },
   async deleteExpense(id) {
     const res = await authFetch(

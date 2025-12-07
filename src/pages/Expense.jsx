@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, fmtBDTEn } from '../lib/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Edit2, Trash2 } from 'lucide-react';
 
 function PurposeSelect({ kind = 'expenses', value, onChange }){
   let raw = {};
@@ -37,6 +37,7 @@ export default function ExpensePage() {
   const [rows, setRows] = useState([]);
   const [form, setForm] = useState({ date: new Date().toISOString().slice(0,10), purpose:'', amount:0, note:'' });
   const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const nav = useNavigate();
   const [msg, setMsg] = useState(null);
   const [err, setErr] = useState(null);
@@ -46,13 +47,40 @@ export default function ExpensePage() {
   };
   useEffect(() => { load(); }, []); // eslint-disable-line
 
+  const startEdit = (row) => {
+    setForm({ date: row.date?.slice(0,10) || new Date().toISOString().slice(0,10), purpose: row.purpose, amount: row.amount, note: row.note || '' });
+    setEditingId(row._id);
+    setShowModal(true);
+  };
+
   const add = async (e) => {
     e?.preventDefault?.(); setMsg(null); setErr(null);
-    try { await api.addExpense(form); setMsg('Expense added'); setForm({ ...form, purpose:'', amount:0, note:'' }); setShowModal(false); load(); } catch (e) { setErr(e.message); }
+    try {
+      if (editingId) {
+        await api.updateExpense(editingId, form);
+        setMsg('Expense updated');
+      } else {
+        await api.addExpense(form);
+        setMsg('Expense added');
+      }
+      closeModal();
+      load();
+    } catch (e) { setErr(e.message); }
   };
+
   const remove = async (id) => {
-    if (!confirm('Delete expense?')) return;
-    try { await api.deleteExpense(id); load(); } catch (e) { setErr(e.message); }
+    if (!confirm('Delete this expense entry?')) return;
+    try { 
+      await api.deleteExpense(id); 
+      setMsg('Expense deleted');
+      load(); 
+    } catch (e) { setErr(e.message); }
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingId(null);
+    setForm({ date: new Date().toISOString().slice(0,10), purpose:'', amount:0, note:'' });
   };
 
   return (
@@ -71,9 +99,9 @@ export default function ExpensePage() {
 
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="absolute inset-0 bg-black opacity-30" onClick={()=>setShowModal(false)} />
+          <div className="absolute inset-0 bg-black opacity-30" onClick={closeModal} />
           <div className="bg-white rounded-xl p-4 z-10 w-full max-w-lg shadow-lg">
-            <h3 className="text-lg font-semibold mb-2">Add Expense</h3>
+            <h3 className="text-lg font-semibold mb-2">{editingId ? 'Edit Expense' : 'Add Expense'}</h3>
             <form onSubmit={add} className="grid grid-cols-1 gap-2">
               <input type="date" className="border rounded-xl px-3 py-2" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))}/>
               {/* Purpose select from account heads */}
@@ -84,8 +112,8 @@ export default function ExpensePage() {
               <input type="number" className="border rounded-xl px-3 py-2" placeholder="Amount" value={form.amount} onChange={e=>setForm(f=>({...f,amount:Number(e.target.value)}))}/>
               <input className="border rounded-xl px-3 py-2" placeholder="Note" value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))}/>
               <div className="flex justify-end gap-2 mt-2">
-                <button type="button" onClick={()=>setShowModal(false)} className="px-4 py-2 rounded-xl border">Cancel</button>
-                <button className="bg-gold text-navy rounded-xl px-4 py-2">Add</button>
+                <button type="button" onClick={closeModal} className="px-4 py-2 rounded-xl border">Cancel</button>
+                <button className="bg-gold text-navy rounded-xl px-4 py-2">{editingId ? 'Update' : 'Add'}</button>
               </div>
             </form>
           </div>
@@ -100,12 +128,33 @@ export default function ExpensePage() {
           </thead>
           <tbody>
             {rows.map(r=>(
-              <tr key={r._id} className="border-t">
+              <tr key={r._id} className="border-t hover:bg-gray-50">
                 <td className="p-3">{new Date(r.date).toLocaleDateString()}</td>
                 <td className="p-3">{r.purpose}</td>
-                <td className="p-3">{fmtBDTEn(r.amount)}</td>
+                <td className="p-3 font-semibold text-red-600">{fmtBDTEn(r.amount)}</td>
                 <td className="p-3">{r.note || '-'}</td>
-                {isAcc && <td className="p-3"><button onClick={()=>remove(r._id)} className="px-3 py-1 rounded-lg border hover:bg-red-50 text-red-700">Delete</button></td>}
+                {isAcc && (
+                  <td className="p-3">
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => startEdit(r)} 
+                        className="flex items-center gap-1 px-3 py-1 rounded-lg border border-blue-300 hover:bg-blue-50 text-blue-700 transition-colors"
+                        title="Edit"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                        Edit
+                      </button>
+                      <button 
+                        onClick={() => remove(r._id)} 
+                        className="flex items-center gap-1 px-3 py-1 rounded-lg border border-red-300 hover:bg-red-50 text-red-700 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
             {rows.length === 0 && <tr><td className="p-4 text-royal/70" colSpan={isAcc?5:4}>No entries</td></tr>}
