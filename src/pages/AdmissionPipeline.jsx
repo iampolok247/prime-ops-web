@@ -63,6 +63,64 @@ function PipelineTable({ status, canAct }) {
   const [showHistory, setShowHistory] = useState(false);
   const [histLead, setHistLead] = useState(null);
   const [histLoading, setHistLoading] = useState(false);
+
+  // Dedicated function for Not Admitted - completely independent
+  const handleNotAdmitted = async (leadId, reason) => {
+    try {
+      setNotAdmitSaving(true);
+      setErr(null);
+      
+      // Direct API call with hardcoded production URL
+      const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5001' : 'http://31.97.228.226:5000';
+      const url = `${apiBase}/api/admission/leads/${leadId}/status`;
+      
+      console.log('NOT ADMITTED - Making request to:', url);
+      console.log('NOT ADMITTED - Lead ID:', leadId);
+      console.log('NOT ADMITTED - Reason:', reason);
+      
+      const response = await fetch(url, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'Not Admitted',
+          notes: reason || ''
+        })
+      });
+
+      console.log('NOT ADMITTED - Response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('NOT ADMITTED - Error response:', errorData);
+        throw new Error(errorData.message || `Failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('NOT ADMITTED - Success! Response:', data);
+      
+      // Success - close modal and reload
+      setShowNotAdmitModal(false);
+      setNotAdmitNote('');
+      setNotAdmitTarget(null);
+      setMsg('Lead marked as Not Admitted successfully');
+      
+      console.log('NOT ADMITTED - Reloading leads...');
+      await load();
+      console.log('NOT ADMITTED - Complete!');
+      
+      return data;
+    } catch (error) {
+      console.error('NOT ADMITTED - ERROR:', error);
+      setErr(error.message);
+      alert('Error marking as Not Admitted: ' + error.message);
+      throw error;
+    } finally {
+      setNotAdmitSaving(false);
+    }
+  };
   
   // Course and Batch selection for admission
   const [showAdmitModal, setShowAdmitModal] = useState(false);
@@ -850,54 +908,12 @@ function PipelineTable({ status, canAct }) {
               </button>
               <button 
                 type="button" 
-                onClick={async (e)=>{
-                  e.preventDefault();
-                  e.stopPropagation();
-                  
-                  if (notAdmitSaving) {
-                    console.log('Already saving, ignoring click');
-                    return;
-                  }
-                  
+                onClick={async ()=>{
                   if (!notAdmitTarget) {
-                    console.error('No lead selected for Not Admitted');
-                    alert('Error: No lead selected');
+                    alert('No lead selected');
                     return;
                   }
-                  
-                  console.log('=== Starting Not Admitted Action ===');
-                  console.log('Lead ID:', notAdmitTarget);
-                  console.log('Note:', notAdmitNote);
-                  console.log('Status to set: Not Admitted');
-                  
-                  setNotAdmitSaving(true);
-                  
-                  try {
-                    console.log('Calling api.updateLeadStatus...');
-                    await api.updateLeadStatus(notAdmitTarget, 'Not Admitted', notAdmitNote, '', '', '');
-                    console.log('API call successful');
-                    
-                    // Close modal and reset state
-                    setShowNotAdmitModal(false);
-                    setNotAdmitNote('');
-                    setNotAdmitTarget(null);
-                    setNotAdmitSaving(false);
-                    setMsg('Lead marked as Not Admitted');
-                    
-                    // Reload data
-                    console.log('Reloading leads...');
-                    await load();
-                    console.log('=== Not Admitted Action Complete ===');
-                    
-                  } catch (error) {
-                    console.error('=== Not Admitted Action Failed ===');
-                    console.error('Error:', error);
-                    console.error('Error message:', error?.message);
-                    console.error('Error stack:', error?.stack);
-                    setNotAdmitSaving(false);
-                    setErr(error?.message || 'Failed to update status');
-                    alert('Failed to mark as Not Admitted: ' + (error?.message || 'Unknown error'));
-                  }
+                  await handleNotAdmitted(notAdmitTarget, notAdmitNote);
                 }} 
                 disabled={notAdmitSaving}
                 className="px-3 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
