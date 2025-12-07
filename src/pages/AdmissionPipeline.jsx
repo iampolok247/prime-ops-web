@@ -11,7 +11,7 @@ const STATUS_TABS = [
   { key: 'Counseling', path: '/admission/counseling', label: 'Counseling' },
   { key: 'In Follow Up', path: '/admission/follow-up', label: 'In Follow-Up' },
   { key: 'Admitted', path: '/admission/admitted', label: 'Admitted' },
-  { key: 'Not Admitted', path: '/admission/not-admitted', label: 'Not Admitted' }
+  // Removed legacy Not Admitted tab
 ];
 
 export default function AdmissionPipeline() {
@@ -56,9 +56,9 @@ function PipelineTable({ status, canAct }) {
   const [followTarget, setFollowTarget] = useState(null);
   const [followNextDate, setFollowNextDate] = useState('');
   const [followPriority, setFollowPriority] = useState('Interested');
-  const [showNotAdmitModal, setShowNotAdmitModal] = useState(false);
-  const [notAdmitNote, setNotAdmitNote] = useState('');
-  const [notAdmitTarget, setNotAdmitTarget] = useState(null);
+  const [showNotInterestedModal, setShowNotInterestedModal] = useState(false);
+  const [notInterestedNote, setNotInterestedNote] = useState('');
+  const [notInterestedTarget, setNotInterestedTarget] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
   const [histLead, setHistLead] = useState(null);
   const [histLoading, setHistLoading] = useState(false);
@@ -127,7 +127,7 @@ function PipelineTable({ status, canAct }) {
       setMsg(`Status updated to ${action}`);
       setShowFollowModal(false);
       setFollowNote(''); setFollowTarget(null); setFollowNextDate('');
-      setShowNotAdmitModal(false); setNotAdmitNote(''); setNotAdmitTarget(null);
+  setShowNotInterestedModal(false); setNotInterestedNote(''); setNotInterestedTarget(null);
       setShowAdmitModal(false); setAdmitTarget(null); setSelectedCourse(''); setSelectedBatch('');
       setShowHistory(false); setHistLead(null); setHistLoading(false);
       load();
@@ -274,7 +274,7 @@ function PipelineTable({ status, canAct }) {
         <div className="flex gap-2">
           <ActionBtn onClick={()=>handleAdmitClick(row._id)}>Admitted</ActionBtn>
           <ActionBtn onClick={()=>{ setFollowTarget(row._id); setFollowNote(''); setFollowNextDate(''); setFollowPriority(row.priority || 'Interested'); setShowFollowModal(true); }}>Follow-Up</ActionBtn>
-          <ActionBtn variant="danger" onClick={()=>{ setNotAdmitTarget(row._id); setNotAdmitNote(''); setShowNotAdmitModal(true); }}>Not Admitted</ActionBtn>
+          <ActionBtn variant="danger" onClick={()=>{ setNotInterestedTarget(row._id); setNotInterestedNote(''); setShowNotInterestedModal(true); }}>Not Interested</ActionBtn>
           <ActionBtn onClick={async ()=>{
             try {
               setErr(null);
@@ -293,7 +293,7 @@ function PipelineTable({ status, canAct }) {
           <div className="flex gap-2">
             <ActionBtn onClick={()=>handleAdmitClick(row._id)}>Admitted</ActionBtn>
             <ActionBtn onClick={()=>{ setFollowTarget(row._id); setFollowNote(''); setFollowNextDate(''); setFollowPriority(row.priority || 'Interested'); setShowFollowModal(true); }}>Follow-Up Again</ActionBtn>
-            <ActionBtn variant="danger" onClick={()=>{ setNotAdmitTarget(row._id); setNotAdmitNote(''); setShowNotAdmitModal(true); }}>Not Admitted</ActionBtn>
+            <ActionBtn variant="danger" onClick={()=>{ setNotInterestedTarget(row._id); setNotInterestedNote(''); setShowNotInterestedModal(true); }}>Not Interested</ActionBtn>
             <ActionBtn onClick={async ()=>{
               try {
                 setErr(null);
@@ -825,22 +825,22 @@ function PipelineTable({ status, canAct }) {
           </div>
         </div>
       )}
-      {showNotAdmitModal && (
+      {showNotInterestedModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="absolute inset-0 bg-black opacity-30" onClick={()=>setShowNotAdmitModal(false)} />
+          <div className="absolute inset-0 bg-black opacity-30" onClick={()=>setShowNotInterestedModal(false)} />
           <div className="bg-white rounded-xl p-4 z-10 w-full max-w-lg shadow-lg">
-            <h3 className="text-lg font-semibold mb-2">Reason for Not Admitted</h3>
+            <h3 className="text-lg font-semibold mb-2">Reason for Not Interested</h3>
             <textarea 
               rows={6} 
               className="w-full border rounded-xl px-3 py-2 mb-3" 
-              value={notAdmitNote} 
-              onChange={e=>setNotAdmitNote(e.target.value)} 
+              value={notInterestedNote} 
+              onChange={e=>setNotInterestedNote(e.target.value)} 
               placeholder="Enter reason (optional)"
             />
             <div className="flex justify-end gap-2">
               <button 
                 type="button" 
-                onClick={()=>{ setShowNotAdmitModal(false); setNotAdmitNote(''); setNotAdmitTarget(null); }} 
+                onClick={()=>{ setShowNotInterestedModal(false); setNotInterestedNote(''); setNotInterestedTarget(null); }} 
                 className="px-3 py-2 rounded-xl border"
               >
                 Cancel
@@ -849,11 +849,11 @@ function PipelineTable({ status, canAct }) {
                 type="button" 
                 onClick={async ()=>{
                   try {
-                    console.log('Not Admitted - Calling act with:', notAdmitTarget, notAdmitNote);
-                    await act(notAdmitTarget, 'Not Admitted', notAdmitNote);
-                    console.log('Not Admitted - Success');
+                    console.log('Not Interested - Calling act with:', notInterestedTarget, notInterestedNote);
+                    await act(notInterestedTarget, 'Not Interested', notInterestedNote);
+                    console.log('Not Interested - Success');
                   } catch (error) {
-                    console.error('Not Admitted - Error:', error);
+                    console.error('Not Interested - Error:', error);
                     alert('Error: ' + (error?.message || 'Failed to update status'));
                   }
                 }} 
