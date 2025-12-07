@@ -435,10 +435,11 @@ export const api = {
       nextFollowUpDate !== ""
     )
       body.nextFollowUpDate = nextFollowUpDate;
+    // Use POST to avoid environments that block PATCH in CORS/proxies
     const res = await authFetch(
       `${getApiBase()}/api/admission/leads/${id}/status`,
       {
-        method: "PATCH",
+        method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
