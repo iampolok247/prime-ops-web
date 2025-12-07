@@ -836,14 +836,12 @@ function PipelineTable({ status, canAct }) {
               value={notAdmitNote} 
               onChange={e=>setNotAdmitNote(e.target.value)} 
               placeholder="Enter reason (optional)"
-              disabled={notAdmitSaving}
             />
             <div className="flex justify-end gap-2">
               <button 
                 type="button" 
-                onClick={()=>{ setShowNotAdmitModal(false); setNotAdmitNote(''); setNotAdmitTarget(null); setNotAdmitSaving(false); }} 
+                onClick={()=>{ setShowNotAdmitModal(false); setNotAdmitNote(''); setNotAdmitTarget(null); }} 
                 className="px-3 py-2 rounded-xl border"
-                disabled={notAdmitSaving}
               >
                 Cancel
               </button>
