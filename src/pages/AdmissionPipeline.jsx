@@ -59,47 +59,9 @@ function PipelineTable({ status, canAct }) {
   const [showNotAdmitModal, setShowNotAdmitModal] = useState(false);
   const [notAdmitNote, setNotAdmitNote] = useState('');
   const [notAdmitTarget, setNotAdmitTarget] = useState(null);
-  const [notAdmitSaving, setNotAdmitSaving] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [histLead, setHistLead] = useState(null);
   const [histLoading, setHistLoading] = useState(false);
-
-  // Simple function using the EXISTING api.updateLeadStatus
-  const handleNotAdmitted = async (leadId, reason) => {
-    console.log('========== NOT ADMITTED START ==========');
-    console.log('Lead ID:', leadId);
-    console.log('Reason:', reason);
-    
-    setNotAdmitSaving(true);
-    setErr(null);
-    
-    try {
-      // Use the EXISTING api function that already works for other status updates
-      console.log('Calling api.updateLeadStatus...');
-      const result = await api.updateLeadStatus(leadId, 'Not Admitted', reason || '', '', '', '');
-      console.log('API call successful:', result);
-      
-      // Close modal and reset
-      setShowNotAdmitModal(false);
-      setNotAdmitNote('');
-      setNotAdmitTarget(null);
-      setMsg('Lead marked as Not Admitted');
-      
-      // Reload the list
-      console.log('Reloading leads...');
-      await load();
-      console.log('========== NOT ADMITTED SUCCESS ==========');
-      
-    } catch (error) {
-      console.error('========== NOT ADMITTED FAILED ==========');
-      console.error('Error:', error);
-      console.error('Message:', error?.message);
-      setErr(error?.message || 'Failed to update status');
-      alert('Failed: ' + (error?.message || 'Unknown error'));
-    } finally {
-      setNotAdmitSaving(false);
-    }
-  };
   
   // Course and Batch selection for admission
   const [showAdmitModal, setShowAdmitModal] = useState(false);
@@ -165,7 +127,7 @@ function PipelineTable({ status, canAct }) {
       setMsg(`Status updated to ${action}`);
       setShowFollowModal(false);
       setFollowNote(''); setFollowTarget(null); setFollowNextDate('');
-      setShowNotAdmitModal(false); setNotAdmitNote(''); setNotAdmitTarget(null); setNotAdmitSaving(false);
+      setShowNotAdmitModal(false); setNotAdmitNote(''); setNotAdmitTarget(null);
       setShowAdmitModal(false); setAdmitTarget(null); setSelectedCourse(''); setSelectedBatch('');
       setShowHistory(false); setHistLead(null); setHistLoading(false);
       load();
@@ -887,17 +849,10 @@ function PipelineTable({ status, canAct }) {
               </button>
               <button 
                 type="button" 
-                onClick={async ()=>{
-                  if (!notAdmitTarget) {
-                    alert('No lead selected');
-                    return;
-                  }
-                  await handleNotAdmitted(notAdmitTarget, notAdmitNote);
-                }} 
-                disabled={notAdmitSaving}
-                className="px-3 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={()=>act(notAdmitTarget, 'Not Admitted', notAdmitNote)} 
+                className="px-3 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700"
               >
-                {notAdmitSaving ? 'Saving...' : 'Save'}
+                Save
               </button>
             </div>
           </div>
