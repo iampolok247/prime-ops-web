@@ -81,6 +81,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/admission/counseling', label: 'Counseling', icon: <FolderOpen size={18}/> },
       { to: '/admission/follow-up', label: 'In Follow-Up', icon: <FolderOpen size={18}/> },
       { to: '/admission/admitted', label: 'Admitted', icon: <FolderOpen size={18}/> },
+    { to: '/admission/not-interested', label: 'Not Interested', icon: <FolderOpen size={18}/> },
   // Removed legacy Not Admitted view from sidebar
       { to: '/admission/fees', label: 'Admission Fees', icon: <FolderOpen size={18}/> }
     ],

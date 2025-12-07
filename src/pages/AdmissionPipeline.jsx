@@ -11,7 +11,7 @@ const STATUS_TABS = [
   { key: 'Counseling', path: '/admission/counseling', label: 'Counseling' },
   { key: 'In Follow Up', path: '/admission/follow-up', label: 'In Follow-Up' },
   { key: 'Admitted', path: '/admission/admitted', label: 'Admitted' },
-  // Removed legacy Not Admitted tab
+  { key: 'Not Interested', path: '/admission/not-interested', label: 'Not Interested' }
 ];
 
 export default function AdmissionPipeline() {
