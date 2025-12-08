@@ -120,6 +120,95 @@ function PipelineTable({ status, canAct }) {
 
   useEffect(() => { load(); }, [status]); // eslint-disable-line
 
+  // Direct API call for Not Interested with authentication
+  const handleNotInterested = async (leadId, reason) => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5001' : 'http://31.97.228.226:5000';
+      const url = `${apiBase}/api/admission/leads/${leadId}/status`;
+      
+      console.log('NOT INTERESTED - Request:', url, leadId, reason);
+      
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      
+      const response = await fetch(url, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: headers,
+        body: JSON.stringify({ status: 'Not Interested', notes: reason || '' })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('NOT INTERESTED - Success:', data);
+      
+      setShowNotInterestedModal(false);
+      setNotInterestedNote('');
+      setNotInterestedTarget(null);
+      setMsg('Lead marked as Not Interested');
+      await load();
+      
+      return data;
+    } catch (error) {
+      console.error('NOT INTERESTED - ERROR:', error);
+      setErr(error.message);
+      alert('Error: ' + error.message);
+      throw error;
+    }
+  };
+
+  const handleConfirmAdmission = async (leadId, courseId, batchId) => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5001' : 'http://31.97.228.226:5000';
+      const url = `${apiBase}/api/admission/leads/${leadId}/status`;
+      
+      console.log('CONFIRM ADMISSION - Request:', url, { leadId, courseId, batchId });
+      
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      
+      const response = await fetch(url, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: headers,
+        body: JSON.stringify({ 
+          status: 'Admitted', 
+          notes: '', 
+          courseId: courseId,
+          batchId: batchId
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('CONFIRM ADMISSION - Success:', data);
+      
+      setShowAdmitModal(false);
+      setAdmitTarget(null);
+      setSelectedCourse('');
+      setSelectedBatch('');
+      setMsg('Lead admitted successfully');
+      await load();
+      
+      return data;
+    } catch (error) {
+      console.error('CONFIRM ADMISSION - ERROR:', error);
+      setErr(error.message);
+      alert('Error: ' + error.message);
+      throw error;
+    }
+  };
+
   const act = async (id, action, notes = '', courseId = '', batchId = '', nextFollowUpDate = '') => {
     setMsg(null); setErr(null);
     try {
@@ -127,7 +216,7 @@ function PipelineTable({ status, canAct }) {
       setMsg(`Status updated to ${action}`);
       setShowFollowModal(false);
       setFollowNote(''); setFollowTarget(null); setFollowNextDate('');
-  setShowNotInterestedModal(false); setNotInterestedNote(''); setNotInterestedTarget(null);
+      setShowNotInterestedModal(false); setNotInterestedNote(''); setNotInterestedTarget(null);
       setShowAdmitModal(false); setAdmitTarget(null); setSelectedCourse(''); setSelectedBatch('');
       setShowHistory(false); setHistLead(null); setHistLoading(false);
       load();
@@ -535,7 +624,13 @@ function PipelineTable({ status, canAct }) {
               </button>
               <button 
                 type="button" 
-                onClick={()=>act(admitTarget,'Admitted','', selectedCourse, selectedBatch)} 
+                onClick={async ()=>{
+                  if (!admitTarget || !selectedCourse || !selectedBatch) {
+                    alert('Please select both course and batch');
+                    return;
+                  }
+                  await handleConfirmAdmission(admitTarget, selectedCourse, selectedBatch);
+                }}
                 className="px-4 py-2 rounded-xl bg-gold text-navy font-semibold hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={!selectedCourse || !selectedBatch || coursesLoading || !feeStatus?.hasApprovedFee}
               >
@@ -848,14 +943,16 @@ function PipelineTable({ status, canAct }) {
               <button 
                 type="button" 
                 onClick={async ()=>{
-                  try {
-                    console.log('Not Interested - Calling act with:', notInterestedTarget, notInterestedNote);
-                    await act(notInterestedTarget, 'Not Interested', notInterestedNote);
-                    console.log('Not Interested - Success');
-                  } catch (error) {
-                    console.error('Not Interested - Error:', error);
-                    alert('Error: ' + (error?.message || 'Failed to update status'));
+                  if (!notInterestedTarget) {
+                    alert('No lead selected');
+                    return;
                   }
+                  await handleNotInterested(notInterestedTarget, notInterestedNote);
+                }} 
+                className="px-3 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700"
+              >
+                Save
+              </button>
                 }} 
                 className="px-3 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700"
               >
