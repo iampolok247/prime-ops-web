@@ -953,11 +953,6 @@ function PipelineTable({ status, canAct }) {
               >
                 Save
               </button>
-                }} 
-                className="px-3 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700"
-              >
-                Save
-              </button>
             </div>
           </div>
         </div>
