@@ -159,7 +159,7 @@ export default function AdmissionMetrics() {
       rows.push(['Follow-up Calls', display.followUpCalls]);
       rows.push(['Total Calls', display.totalCalls]);
       rows.push(['Admitted', display.admitted]);
-      rows.push(['Not Admitted', display.notAdmitted]);
+  rows.push(['Not Interested', display.notAdmitted]);
 
       const csvContent = rows.map((r) => r.map((c) => `"${String(c ?? '')}"`).join(',')).join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -327,9 +327,9 @@ export default function AdmissionMetrics() {
           textColor="text-green-600"
         />
 
-        {/* Not Admitted */}
+  {/* Not Interested (aggregates Not Admitted + Not Interested) */}
         <MetricCard
-          label="Not Admitted"
+          label="Not Interested"
           value={display.notAdmitted}
           icon={TrendingUp}
           bgColor="bg-gradient-to-br from-red-50 to-red-100"
@@ -352,7 +352,7 @@ export default function AdmissionMetrics() {
                   <th className="px-6 py-3 text-center font-semibold text-gray-700">Follow-up Calls</th>
                   <th className="px-6 py-3 text-center font-semibold text-gray-700">Total</th>
                   <th className="px-6 py-3 text-center font-semibold text-gray-700">Admitted</th>
-                  <th className="px-6 py-3 text-center font-semibold text-gray-700">Not Admitted</th>
+                  <th className="px-6 py-3 text-center font-semibold text-gray-700">Not Interested</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">

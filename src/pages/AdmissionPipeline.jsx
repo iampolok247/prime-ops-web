@@ -125,20 +125,30 @@ function PipelineTable({ status, canAct }) {
     setMsg(null); 
     setErr(null);
     try {
-      console.log('NOT INTERESTED - Calling API with:', leadId, reason);
-      await api.updateLeadStatus(leadId, 'Not Interested', reason || '');
-      console.log('NOT INTERESTED - Success');
+      console.log('NOT INTERESTED - Starting...');
+      console.log('NOT INTERESTED - Lead ID:', leadId);
+      console.log('NOT INTERESTED - Reason:', reason);
+      
+      const result = await api.updateLeadStatus(leadId, 'Not Interested', reason || '', '', '', '');
+      console.log('NOT INTERESTED - API Success, result:', result);
       
       setShowNotInterestedModal(false);
       setNotInterestedNote('');
       setNotInterestedTarget(null);
       setMsg('Lead marked as Not Interested');
+      
+      console.log('NOT INTERESTED - Reloading data...');
       await load();
+      console.log('NOT INTERESTED - Complete!');
     } catch (error) {
-      console.error('NOT INTERESTED - ERROR:', error);
-      setErr(error.message);
-      alert('Error: ' + error.message);
-      throw error;
+      console.error('NOT INTERESTED - FATAL ERROR:', error);
+      console.error('NOT INTERESTED - Error details:', {
+        message: error?.message,
+        stack: error?.stack,
+        response: error?.response
+      });
+      setErr(error?.message || 'Unknown error');
+      alert('Failed to mark as Not Interested: ' + (error?.message || 'Unknown error'));
     }
   };
 
@@ -146,21 +156,33 @@ function PipelineTable({ status, canAct }) {
     setMsg(null); 
     setErr(null);
     try {
-      console.log('CONFIRM ADMISSION - Calling API with:', leadId, courseId, batchId);
-      await api.updateLeadStatus(leadId, 'Admitted', '', courseId, batchId);
-      console.log('CONFIRM ADMISSION - Success');
+      console.log('CONFIRM ADMISSION - Starting...');
+      console.log('CONFIRM ADMISSION - Lead ID:', leadId);
+      console.log('CONFIRM ADMISSION - Course ID:', courseId);
+      console.log('CONFIRM ADMISSION - Batch ID:', batchId);
+      
+      const result = await api.updateLeadStatus(leadId, 'Admitted', '', courseId, batchId, '');
+      console.log('CONFIRM ADMISSION - API Success, result:', result);
       
       setShowAdmitModal(false);
       setAdmitTarget(null);
       setSelectedCourse('');
       setSelectedBatch('');
+      setFeeStatus(null);
       setMsg('Lead admitted successfully');
+      
+      console.log('CONFIRM ADMISSION - Reloading data...');
       await load();
+      console.log('CONFIRM ADMISSION - Complete!');
     } catch (error) {
-      console.error('CONFIRM ADMISSION - ERROR:', error);
-      setErr(error.message);
-      alert('Error: ' + error.message);
-      throw error;
+      console.error('CONFIRM ADMISSION - FATAL ERROR:', error);
+      console.error('CONFIRM ADMISSION - Error details:', {
+        message: error?.message,
+        stack: error?.stack,
+        response: error?.response
+      });
+      setErr(error?.message || 'Unknown error');
+      alert('Failed to admit student: ' + (error?.message || 'Unknown error'));
     }
   };
 

@@ -40,19 +40,27 @@ async function authFetch(url, options = {}) {
 }
 
 async function handleJson(res, defaultMsg) {
+  console.log('[handleJson] Processing response:', res.status, res.ok);
   if (!res.ok) {
+    console.log('[handleJson] Response NOT OK, reading error...');
     let errBody = {};
     try {
       errBody = await res.json();
     } catch (_) {}
     const msg =
       errBody?.message || errBody?.code || `${defaultMsg} (${res.status})`;
+    console.error('[handleJson] Throwing error:', msg);
     throw new Error(msg);
   }
   let data = {};
   try {
+    console.log('[handleJson] Response OK, parsing JSON...');
     data = await res.json();
-  } catch (_) {}
+    console.log('[handleJson] JSON parsed successfully:', data);
+  } catch (err) {
+    console.warn('[handleJson] Failed to parse JSON:', err.message);
+  }
+  console.log('[handleJson] Returning data:', data);
   return data;
 }
 
@@ -425,6 +433,7 @@ export const api = {
     batchId,
     nextFollowUpDate
   ) {
+    console.log('[updateLeadStatus] Starting with params:', { id, status, notes, courseId, batchId, nextFollowUpDate });
     const body = { status };
     if (notes !== undefined && notes !== null) body.notes = notes;
     if (courseId !== undefined && courseId !== null) body.courseId = courseId;
@@ -435,6 +444,7 @@ export const api = {
       nextFollowUpDate !== ""
     )
       body.nextFollowUpDate = nextFollowUpDate;
+    console.log('[updateLeadStatus] Request body:', body);
     // Use POST to avoid environments that block PATCH in CORS/proxies
     const res = await authFetch(
       `${getApiBase()}/api/admission/leads/${id}/status`,
@@ -445,7 +455,10 @@ export const api = {
         body: JSON.stringify(body),
       }
     );
-    return handleJson(res, "Update lead status failed");
+    console.log('[updateLeadStatus] Received response, calling handleJson...');
+    const result = await handleJson(res, "Update lead status failed");
+    console.log('[updateLeadStatus] handleJson returned:', result);
+    return result;
   },
   async addLeadFollowUp(id, { note, nextFollowUpDate, priority }) {
     const res = await authFetch(

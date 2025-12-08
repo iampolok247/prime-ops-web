@@ -99,7 +99,7 @@ const STATUSES = [
   { key:'Counseling', label:'Counseling' },
   { key:'In Follow Up', label:'In Follow-Up' },
   { key:'Admitted', label:'Admitted' },
-  { key:'Not Admitted', label:'Not Admitted' },
+  { key:'Not Interested', label:'Not Interested' },
 ];
 
 export default function AdmissionDashboard() {
@@ -267,7 +267,7 @@ export default function AdmissionDashboard() {
       counseling: leadsInRange.filter(l => l.status === 'Counseling').length,
       inFollowUp: leadsInRange.filter(l => l.status === 'In Follow Up').length,
       admitted: leadsInRange.filter(l => l.status === 'Admitted').length,
-      notAdmitted: leadsInRange.filter(l => l.status === 'Not Admitted').length
+  notAdmitted: leadsInRange.filter(l => ['Not Admitted','Not Interested'].includes(l.status)).length
     };
     
     const conversionRate = reportMetrics.totalLeads > 0 
@@ -283,7 +283,7 @@ export default function AdmissionDashboard() {
       'Counseling': <PhoneCall className="w-5 h-5 text-white" />,
       'In Follow Up': <Users className="w-5 h-5 text-white" />,
       'Admitted': <GraduationCap className="w-5 h-5 text-white" />,
-      'Not Admitted': <UserX className="w-5 h-5 text-white" />
+  'Not Interested': <UserX className="w-5 h-5 text-white" />
     };
     return icons[key] || <Users className="w-5 h-5 text-white" />;
   };
@@ -294,7 +294,7 @@ export default function AdmissionDashboard() {
       'Counseling': 'from-purple-500 to-violet-600',
       'In Follow Up': 'from-orange-500 to-amber-600',
       'Admitted': 'from-green-500 to-emerald-600',
-      'Not Admitted': 'from-red-500 to-pink-600'
+  'Not Interested': 'from-red-500 to-pink-600'
     };
     return colors[key] || 'from-gray-500 to-slate-600';
   };
@@ -321,7 +321,7 @@ export default function AdmissionDashboard() {
         csvContent += `Counseling,${metrics.reportMetrics?.counseling || 0}\n`;
         csvContent += `In Follow Up,${metrics.reportMetrics?.inFollowUp || 0}\n`;
         csvContent += `Admitted,${metrics.reportMetrics?.admitted || 0}\n`;
-        csvContent += `Not Admitted,${metrics.reportMetrics?.notAdmitted || 0}\n`;
+  csvContent += `Not Interested,${metrics.reportMetrics?.notAdmitted || 0}\n`;
         csvContent += `Conversion Rate,${metrics.conversionRate || '0.00'}%\n\n`;
         
         // Individual Reports by Name (Alphabetically sorted)
@@ -341,7 +341,7 @@ export default function AdmissionDashboard() {
             csvContent += `Counseling,${r.stats.counseling}\n`;
             csvContent += `In Follow Up,${r.stats.inFollowUp}\n`;
             csvContent += `Admitted,${r.stats.admitted}\n`;
-            csvContent += `Not Admitted,${r.stats.notAdmitted}\n`;
+            csvContent += `Not Interested,${r.stats.notAdmitted}\n`;
             csvContent += `Conversion Rate,${r.conversionRate}%\n\n`;
           });
         }
@@ -358,7 +358,7 @@ export default function AdmissionDashboard() {
         csvContent += `Counseling,${reportData.stats.counseling}\n`;
         csvContent += `In Follow Up,${reportData.stats.inFollowUp}\n`;
         csvContent += `Admitted,${reportData.stats.admitted}\n`;
-        csvContent += `Not Admitted,${reportData.stats.notAdmitted}\n`;
+  csvContent += `Not Interested,${reportData.stats.notAdmitted}\n`;
         csvContent += `Conversion Rate,${reportData.conversionRate}%\n\n`;
         
         csvContent += 'LEAD DETAILS\n';
@@ -633,7 +633,7 @@ export default function AdmissionDashboard() {
                   </div>
                 </div>
                 <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-4 text-center border border-red-200">
-                  <div className="text-xs text-red-600 mb-1 font-medium">Not Admitted</div>
+                  <div className="text-xs text-red-600 mb-1 font-medium">Not Interested</div>
                   <div className="text-2xl font-bold text-red-700">{metrics.reportMetrics?.notAdmitted || 0}</div>
                 </div>
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 text-center border border-purple-200">
@@ -669,7 +669,7 @@ export default function AdmissionDashboard() {
                     </div>
                   </div>
                   <div className="bg-white rounded-lg p-3 text-center shadow-sm">
-                    <div className="text-xs text-gray-500 mb-1">Not Admitted</div>
+                    <div className="text-xs text-gray-500 mb-1">Not Interested</div>
                     <div className="text-xl font-bold text-red-600">{reportData.stats?.notAdmitted || 0}</div>
                   </div>
                   <div className="bg-white rounded-lg p-3 text-center shadow-sm">
@@ -701,7 +701,7 @@ export default function AdmissionDashboard() {
                               <td className="px-3 py-2">
                                 <span className={`text-xs px-2 py-0.5 rounded-full ${
                                   lead.status === 'Admitted' ? 'bg-green-100 text-green-700' :
-                                  lead.status === 'Not Admitted' ? 'bg-red-100 text-red-700' :
+                                  ['Not Admitted','Not Interested'].includes(lead.status) ? 'bg-red-100 text-red-700' :
                                   'bg-blue-100 text-blue-700'
                                 }`}>
                                   {lead.status}
