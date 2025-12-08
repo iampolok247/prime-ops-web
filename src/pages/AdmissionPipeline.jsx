@@ -122,38 +122,18 @@ function PipelineTable({ status, canAct }) {
 
   // Direct API call for Not Interested with authentication
   const handleNotInterested = async (leadId, reason) => {
+    setMsg(null); 
+    setErr(null);
     try {
-      const token = localStorage.getItem('auth_token');
-      const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5001' : 'http://31.97.228.226:5000';
-      const url = `${apiBase}/api/admission/leads/${leadId}/status`;
-      
-      console.log('NOT INTERESTED - Request:', url, leadId, reason);
-      
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-      
-      const response = await fetch(url, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: headers,
-        body: JSON.stringify({ status: 'Not Interested', notes: reason || '' })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Failed with status ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('NOT INTERESTED - Success:', data);
+      console.log('NOT INTERESTED - Calling API with:', leadId, reason);
+      await api.updateLeadStatus(leadId, 'Not Interested', reason || '');
+      console.log('NOT INTERESTED - Success');
       
       setShowNotInterestedModal(false);
       setNotInterestedNote('');
       setNotInterestedTarget(null);
       setMsg('Lead marked as Not Interested');
       await load();
-      
-      return data;
     } catch (error) {
       console.error('NOT INTERESTED - ERROR:', error);
       setErr(error.message);
@@ -163,35 +143,12 @@ function PipelineTable({ status, canAct }) {
   };
 
   const handleConfirmAdmission = async (leadId, courseId, batchId) => {
+    setMsg(null); 
+    setErr(null);
     try {
-      const token = localStorage.getItem('auth_token');
-      const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5001' : 'http://31.97.228.226:5000';
-      const url = `${apiBase}/api/admission/leads/${leadId}/status`;
-      
-      console.log('CONFIRM ADMISSION - Request:', url, { leadId, courseId, batchId });
-      
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-      
-      const response = await fetch(url, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: headers,
-        body: JSON.stringify({ 
-          status: 'Admitted', 
-          notes: '', 
-          courseId: courseId,
-          batchId: batchId
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Failed with status ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('CONFIRM ADMISSION - Success:', data);
+      console.log('CONFIRM ADMISSION - Calling API with:', leadId, courseId, batchId);
+      await api.updateLeadStatus(leadId, 'Admitted', '', courseId, batchId);
+      console.log('CONFIRM ADMISSION - Success');
       
       setShowAdmitModal(false);
       setAdmitTarget(null);
@@ -199,8 +156,6 @@ function PipelineTable({ status, canAct }) {
       setSelectedBatch('');
       setMsg('Lead admitted successfully');
       await load();
-      
-      return data;
     } catch (error) {
       console.error('CONFIRM ADMISSION - ERROR:', error);
       setErr(error.message);
