@@ -298,7 +298,15 @@ function TaskCard({ task, onClick, isDragging, onStatusChange, onDeadlineRequest
 }
 
 function KanbanColumn({ column, tasks, onCardClick, onAddTask, activeId, isAdmin, onStatusChange, onDeadlineRequest }) {
-  const columnTasks = tasks.filter(t => t.boardColumn === column);
+  // Use boardColumn if it exists, otherwise fallback to status field
+  const columnTasks = tasks.filter(t => {
+    const taskColumn = t.boardColumn || t.status;
+    // Handle 'Backlog' column specially - only show if boardColumn is explicitly 'Backlog'
+    if (column === 'Backlog') {
+      return taskColumn === 'Backlog';
+    }
+    return taskColumn === column;
+  });
   const taskCount = columnTasks.length;
   const taskIds = columnTasks.map(t => t._id);
 
