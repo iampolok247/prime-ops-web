@@ -25,6 +25,7 @@ export default function Dashboard() {
   if (role === 'Admission') return <AdmissionDashboard />;
   if (role === 'DigitalMarketing') return <DMDashboard />;
   if (role === 'Coordinator') return <CoordinatorDashboard />;
+  if (role === 'ITAdmin') return <MyLite />;  // Simple dashboard for IT Admin
 
   // default fallback
   return <MyLite />;
