@@ -138,8 +138,8 @@ export default function AccountingDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-        {/* Income */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        {/* Total Income */}
         <div className="group relative bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
           <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
           <div className="relative">
@@ -148,12 +148,12 @@ export default function AccountingDashboard() {
                 <TrendingUp className="w-5 h-5 text-white" />
               </div>
             </div>
-            <p className="text-white/80 text-xs font-medium mb-1">Income</p>
+            <p className="text-white/80 text-xs font-medium mb-1">Total Income</p>
             <h3 className="text-2xl font-bold text-white">{fmtBDTEn(data.totalIncome || 0)}</h3>
           </div>
         </div>
 
-        {/* Expense */}
+        {/* Total Expense */}
         <div className="group relative bg-gradient-to-br from-red-500 to-rose-600 rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
           <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
           <div className="relative">
@@ -162,13 +162,13 @@ export default function AccountingDashboard() {
                 <TrendingDown className="w-5 h-5 text-white" />
               </div>
             </div>
-            <p className="text-white/80 text-xs font-medium mb-1">Expense</p>
+            <p className="text-white/80 text-xs font-medium mb-1">Total Expense</p>
             <h3 className="text-2xl font-bold text-white">{fmtBDTEn(data.totalExpense || 0)}</h3>
           </div>
         </div>
 
-        {/* Profit */}
-        <div className="group relative bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
+        {/* Profit/Loss */}
+        <div className={`group relative ${netBalance >= 0 ? 'bg-gradient-to-br from-blue-500 to-indigo-600' : 'bg-gradient-to-br from-red-600 to-rose-700'} rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden`}>
           <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
           <div className="relative">
             <div className="flex items-center justify-between mb-2">
@@ -176,13 +176,27 @@ export default function AccountingDashboard() {
                 <DollarSign className="w-5 h-5 text-white" />
               </div>
             </div>
-            <p className="text-white/80 text-xs font-medium mb-1">Profit</p>
-            <h3 className="text-2xl font-bold text-white">{fmtBDTEn(data.profit || 0)}</h3>
+            <p className="text-white/80 text-xs font-medium mb-1">{netBalance >= 0 ? 'Profit' : 'Loss'}</p>
+            <h3 className="text-2xl font-bold text-white">{fmtBDTEn(Math.abs(netBalance))}</h3>
           </div>
         </div>
 
-        {/* Total Balance */}
-        <div className="group relative bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
+        {/* New Course Sale */}
+        <div className="group relative bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
+          <div className="relative">
+            <div className="flex items-center justify-between mb-2">
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <TrendingUp className="w-5 h-5 text-white" />
+              </div>
+            </div>
+            <p className="text-white/80 text-xs font-medium mb-1">New Course Sale</p>
+            <h3 className="text-2xl font-bold text-white">{fmtBDTEn(data.admissionFeesIncome || 0)}</h3>
+          </div>
+        </div>
+
+        {/* Collected Dues */}
+        <div className="group relative bg-gradient-to-br from-teal-500 to-cyan-600 rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
           <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
           <div className="relative">
             <div className="flex items-center justify-between mb-2">
@@ -190,15 +204,41 @@ export default function AccountingDashboard() {
                 <DollarSign className="w-5 h-5 text-white" />
               </div>
             </div>
-            <p className="text-white/80 text-xs font-medium mb-1">Total Balance</p>
-            <h3 className={`text-2xl font-bold ${(balances.bankBalance + balances.pettyCash) < 0 ? 'text-red-200' : 'text-white'}`}>
-              {fmtBDTEn((balances.bankBalance || 0) + (balances.pettyCash || 0))}
-            </h3>
+            <p className="text-white/80 text-xs font-medium mb-1">Collected Dues</p>
+            <h3 className="text-2xl font-bold text-white">{fmtBDTEn(data.dueCollectionIncome || 0)}</h3>
           </div>
         </div>
 
-        {/* Balance in Bank */}
-        <div className="group relative bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
+        {/* Present Dues */}
+        <div className="group relative bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
+          <div className="relative">
+            <div className="flex items-center justify-between mb-2">
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <Wallet className="w-5 h-5 text-white" />
+              </div>
+            </div>
+            <p className="text-white/80 text-xs font-medium mb-1">Present Dues</p>
+            <h3 className="text-2xl font-bold text-white">{fmtBDTEn(data.presentDues || 0)}</h3>
+          </div>
+        </div>
+
+        {/* Recruitment Income */}
+        <div className="group relative bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
+          <div className="relative">
+            <div className="flex items-center justify-between mb-2">
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <TrendingUp className="w-5 h-5 text-white" />
+              </div>
+            </div>
+            <p className="text-white/80 text-xs font-medium mb-1">Recruitment Income</p>
+            <h3 className="text-2xl font-bold text-white">{fmtBDTEn(data.recruitmentIncome || 0)}</h3>
+          </div>
+        </div>
+
+        {/* Cash in Bank */}
+        <div className="group relative bg-gradient-to-br from-indigo-500 to-blue-600 rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
           <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
           <div className="relative">
             <div className="flex items-center justify-between mb-2">
@@ -206,15 +246,14 @@ export default function AccountingDashboard() {
                 <Building2 className="w-5 h-5 text-white" />
               </div>
             </div>
-            <p className="text-white/80 text-xs font-medium mb-1">Balance in Bank</p>
+            <p className="text-white/80 text-xs font-medium mb-1">Cash in Bank</p>
             <h3 className={`text-2xl font-bold ${balances.bankBalance < 0 ? 'text-red-200' : 'text-white'}`}>
-              {fmtBDTEn(balances.bankBalance || 0)}
-            </h3>
+              {fmtBDTEn(balances.bankBalance || 0)}</h3>
           </div>
         </div>
 
         {/* Petty Cash */}
-        <div className="group relative bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
+        <div className="group relative bg-gradient-to-br from-amber-500 to-yellow-600 rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
           <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
           <div className="relative">
             <div className="flex items-center justify-between mb-2">
