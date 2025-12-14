@@ -52,7 +52,9 @@ export default function AdminTaskReport() {
       // Filter by user if selected
       if (selectedUserId !== 'all') {
         allTasks = allTasks.filter(task => 
-          task.assignedTo && task.assignedTo.includes(selectedUserId)
+          task.assignedTo && task.assignedTo.some(user => 
+            typeof user === 'object' ? user._id === selectedUserId : user === selectedUserId
+          )
         );
       }
       
@@ -180,8 +182,9 @@ export default function AdminTaskReport() {
       task.status,
       task.priority,
       task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'N/A',
-      task.assignedTo?.map(id => {
-        const u = allUsers.find(user => user._id === id);
+      task.assignedTo?.map(userOrId => {
+        if (typeof userOrId === 'object') return userOrId.name || userOrId.fullName || 'Unknown';
+        const u = allUsers.find(user => user._id === userOrId);
         return u?.name || 'Unknown';
       }).join(', ') || 'N/A',
       task.assignedBy?.name || 'N/A',
