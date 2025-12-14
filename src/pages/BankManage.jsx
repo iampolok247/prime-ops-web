@@ -53,7 +53,6 @@ export default function BankManage() {
   const [depositForm, setDepositForm] = useState({
     date: new Date().toISOString().slice(0,10),
     depositFrom: '',
-    depositFromOther: '',
     amount: '',
     notes: ''
   });
@@ -61,7 +60,6 @@ export default function BankManage() {
   const [withdrawForm, setWithdrawForm] = useState({
     date: new Date().toISOString().slice(0,10),
     withdrawPurpose: '',
-    withdrawPurposeOther: '',
     amount: '',
     notes: ''
   });
@@ -103,7 +101,6 @@ export default function BankManage() {
       await api.depositToBank({
         date: depositForm.date,
         depositFrom: depositForm.depositFrom,
-        depositFromOther: depositForm.depositFromOther,
         amount: parseFloat(depositForm.amount),
         notes: depositForm.notes
       });
@@ -112,7 +109,6 @@ export default function BankManage() {
       setDepositForm({
         date: new Date().toISOString().slice(0,10),
         depositFrom: '',
-        depositFromOther: '',
         amount: '',
         notes: ''
       });
@@ -137,7 +133,6 @@ export default function BankManage() {
       await api.withdrawFromBank({
         date: withdrawForm.date,
         withdrawPurpose: withdrawForm.withdrawPurpose,
-        withdrawPurposeOther: withdrawForm.withdrawPurposeOther,
         amount: parseFloat(withdrawForm.amount),
         notes: withdrawForm.notes
       });
@@ -146,7 +141,6 @@ export default function BankManage() {
       setWithdrawForm({
         date: new Date().toISOString().slice(0,10),
         withdrawPurpose: '',
-        withdrawPurposeOther: '',
         amount: '',
         notes: ''
       });
@@ -374,17 +368,12 @@ export default function BankManage() {
                   type="text"
                   value={depositForm.depositFrom}
                   onChange={e => setDepositForm({ ...depositForm, depositFrom: e.target.value })}
-                  placeholder="e.g., Petty Cash, Course Fee, Recruitment Income, etc."
+                  placeholder="Type or select from suggestions..."
                   list="deposit-sources"
                   className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none transition-colors"
                 />
                 <datalist id="deposit-sources">
                   <option value="Petty Cash" />
-                  <option value="Admission Fees" />
-                  <option value="Due Collection" />
-                  <option value="Recruitment Income" />
-                  <option value="Course Fees" />
-                  <option value="Other Income" />
                   {customDepositSources.map((source, idx) => (
                     <option key={idx} value={source} />
                   ))}
@@ -489,19 +478,12 @@ export default function BankManage() {
                   type="text"
                   value={withdrawForm.withdrawPurpose}
                   onChange={e => setWithdrawForm({ ...withdrawForm, withdrawPurpose: e.target.value })}
-                  placeholder="e.g., Petty Cash, Employee Salary, Office Rent, etc."
+                  placeholder="Type or select from suggestions..."
                   list="withdraw-purposes"
                   className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:outline-none transition-colors"
                 />
                 <datalist id="withdraw-purposes">
                   <option value="Petty Cash" />
-                  <option value="Employee Salary" />
-                  <option value="Office Rent" />
-                  <option value="Utilities" />
-                  <option value="Goods Purchase" />
-                  <option value="Office Supplies" />
-                  <option value="Marketing Expense" />
-                  <option value="Other Expense" />
                   {customWithdrawPurposes.map((purpose, idx) => (
                     <option key={idx} value={purpose} />
                   ))}
