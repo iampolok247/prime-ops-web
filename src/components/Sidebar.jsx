@@ -126,6 +126,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/task-report', label: 'Task Report', icon: <FileText size={18}/> },
       { to: '/mg/production', label: 'MG Production', icon: <Activity size={18}/> }
     ],
+    ITAdmin: [
+      { to: '/', label: 'Dashboard', icon: <LayoutDashboard size={18}/> },
+      { to: '/activity', label: 'Activity Log', icon: <Activity size={18}/> }
+    ],
     Coordinator: [
       { to: '/', label: 'Dashboard', icon: <LayoutDashboard size={18}/> },
       { to: '/messages', label: 'Messages', icon: <MessageCircle size={18}/> },

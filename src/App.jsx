@@ -68,6 +68,7 @@ import Batches from './pages/Batches.jsx';
 
 import Login from './pages/Login.jsx';
 import NotFound from './pages/NotFound.jsx';
+import Activity from './pages/Activity.jsx';
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -180,6 +181,11 @@ export default function App() {
 
           <Route element={<RoleRoute roles={['Recruitment','Accountant']} />}>
             <Route path="/recruitment/income" element={<RecruitIncome />} />
+          </Route>
+
+          {/* IT Admin - Activity Tracking */}
+          <Route element={<RoleRoute roles={['ITAdmin','Admin','SuperAdmin']} />}>
+            <Route path="/activity" element={<Activity />} />
           </Route>
 
           {/* Coordinator */}
