@@ -47,6 +47,9 @@ export default function TaskDetailModal({ task: initialTask, taskId, isOpen, onC
   const [newComment, setNewComment] = useState('');
   const [newChecklistItem, setNewChecklistItem] = useState('');
   const [allUsers, setAllUsers] = useState([]);
+  
+  // Get the actual task ID from either prop or task object
+  const actualTaskId = taskId || task?._id;
 
   // Set task from prop if provided
   useEffect(() => {
@@ -66,22 +69,22 @@ export default function TaskDetailModal({ task: initialTask, taskId, isOpen, onC
   }, [initialTask]);
 
   useEffect(() => {
-    if (isOpen && (taskId || initialTask)) {
+    if (isOpen && (actualTaskId || initialTask)) {
       if (!initialTask) {
         loadTask();
       }
       loadUsers();
     }
-  }, [isOpen, taskId, initialTask]);
+  }, [isOpen, actualTaskId, initialTask]);
 
   const loadTask = async () => {
-    if (!taskId) return;
+    if (!actualTaskId) return;
     
     try {
       setLoading(true);
       const isAdmin = ['SuperAdmin', 'Admin'].includes(user?.role);
       const response = isAdmin ? await api.listAllTasks() : await api.listMyTasks();
-      const foundTask = (response.tasks || []).find(t => t._id === taskId);
+      const foundTask = (response.tasks || []).find(t => t._id === actualTaskId);
       
       if (foundTask) {
         setTask(foundTask);
@@ -114,7 +117,7 @@ export default function TaskDetailModal({ task: initialTask, taskId, isOpen, onC
 
   const handleUpdateTask = async () => {
     try {
-      await api.updateTask(taskId, editForm);
+      await api.updateTask(actualTaskId, editForm);
       await loadTask();
       setIsEditing(false);
       if (onUpdate) onUpdate();
@@ -127,7 +130,7 @@ export default function TaskDetailModal({ task: initialTask, taskId, isOpen, onC
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
     try {
-      await api.addTaskComment(taskId, { text: newComment });
+      await api.addTaskComment(actualTaskId, { text: newComment });
       setNewComment('');
       await loadTask();
     } catch (error) {
@@ -138,7 +141,7 @@ export default function TaskDetailModal({ task: initialTask, taskId, isOpen, onC
 
   const handleToggleChecklist = async (itemId, completed) => {
     try {
-      await api.updateChecklistItem(taskId, itemId, completed);
+      await api.updateChecklistItem(actualTaskId, itemId, completed);
       await loadTask();
     } catch (error) {
       console.error('Error updating checklist:', error);
@@ -149,7 +152,7 @@ export default function TaskDetailModal({ task: initialTask, taskId, isOpen, onC
     if (!newChecklistItem.trim()) return;
     try {
       const updatedChecklist = [...(task.checklist || []), { text: newChecklistItem, completed: false }];
-      await api.updateTask(taskId, { checklist: updatedChecklist });
+      await api.updateTask(actualTaskId, { checklist: updatedChecklist });
       setNewChecklistItem('');
       await loadTask();
     } catch (error) {
@@ -160,7 +163,7 @@ export default function TaskDetailModal({ task: initialTask, taskId, isOpen, onC
   const handleDeleteTask = async () => {
     if (!confirm('Are you sure you want to delete this task?')) return;
     try {
-      await api.deleteTask(taskId);
+      await api.deleteTask(actualTaskId);
       if (onUpdate) onUpdate();
       onClose();
     } catch (error) {
