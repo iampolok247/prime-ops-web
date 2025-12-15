@@ -805,7 +805,7 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
     impressions: '',
     reach: '',
     notes: '',
-    campaignDate: new Date().toISOString().slice(0, 7)
+    campaignDate: selectedMonth // Use current filter month as default
   });
 
   // Generate months list for dropdown (November 2025 to 3 months ahead)
@@ -933,7 +933,7 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
         impressions: '',
         reach: '',
         notes: '',
-        campaignDate: new Date().toISOString().slice(0, 7)
+        campaignDate: formData.campaignDate // Keep the same month
       });
       setShowForm(false);
       setEditingId(null);
@@ -1042,7 +1042,7 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
             <Download className="w-4 h-4" /> Download Report
           </button>
           <button 
-            onClick={() => { setShowForm(!showForm); setEditingId(null); setFormData({campaignName: '', platform: 'Meta Ads', boostType: 'Leads', cost: '', leads: '', postEngagements: '', thruPlays: '', impressions: '', reach: '', notes: '', campaignDate: new Date().toISOString().slice(0, 7)}); }}
+            onClick={() => { setShowForm(!showForm); setEditingId(null); setFormData({campaignName: '', platform: 'Meta Ads', boostType: 'Leads', cost: '', leads: '', postEngagements: '', thruPlays: '', impressions: '', reach: '', notes: '', campaignDate: selectedMonth}); }}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
           >
             <Plus className="w-4 h-4" /> {showForm ? 'Cancel' : 'Add Campaign'}
@@ -1137,8 +1137,10 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
                 className="w-full px-3 py-2 border rounded text-sm"
               >
                 {Array.from({ length: 24 }, (_, i) => {
-                  const d = new Date(2025, 10 + i);
-                  const yearMonth = d.toISOString().slice(0, 7);
+                  const year = 2025 + Math.floor((10 + i) / 12);
+                  const month = (10 + i) % 12;
+                  const yearMonth = `${year}-${String(month + 1).padStart(2, '0')}`;
+                  const d = new Date(year, month);
                   const monthName = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
                   return <option key={yearMonth} value={yearMonth}>{monthName}</option>;
                 })}
