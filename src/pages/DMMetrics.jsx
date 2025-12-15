@@ -808,6 +808,22 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
     campaignDate: new Date().toISOString().slice(0, 7)
   });
 
+  // Generate months list for dropdown
+  const generateMonths = () => {
+    const months = [];
+    const startDate = new Date(2025, 10); // November 2025
+    const today = new Date();
+    
+    let current = new Date(startDate);
+    while (current <= today) {
+      const yearMonth = current.toISOString().slice(0, 7);
+      months.push(yearMonth);
+      current.setMonth(current.getMonth() + 1);
+    }
+    
+    return months.reverse(); // Latest first
+  };
+
   // Filter campaigns by selected month
   const filteredCampaigns = useMemo(() => {
     if (!selectedMonth) return campaigns;
@@ -901,9 +917,6 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
       } else {
         await api.createDMCampaign(payload);
       }
-
-      // Set selected month to the campaign's month to show it immediately
-      setSelectedMonth(formData.campaignDate);
       
       setFormData({
         campaignName: '',
@@ -1040,17 +1053,34 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
         </div>
       )}
 
-      {/* Platform Selection */}
-      <div className="mb-6 flex items-center gap-4">
-        <label className="text-sm font-medium">Platform:</label>
-        <select 
-          value={platform} 
-          onChange={e => setPlatform(e.target.value)}
-          className="px-3 py-2 border rounded-lg bg-white text-sm"
-        >
-          <option value="Meta Ads">Meta Ads</option>
-          <option value="LinkedIn Ads">LinkedIn Ads</option>
-        </select>
+      {/* Platform and Month Selection */}
+      <div className="mb-6 flex items-center gap-6">
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium">Month:</label>
+          <select 
+            value={selectedMonth} 
+            onChange={e => setSelectedMonth(e.target.value)}
+            className="px-3 py-2 border rounded-lg bg-white text-sm font-medium"
+          >
+            {generateMonths().map(m => {
+              const [y, mo] = m.split('-');
+              const monthName = new Date(y, mo - 1).toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+              return <option key={m} value={m}>{monthName}</option>;
+            })}
+          </select>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium">Platform:</label>
+          <select 
+            value={platform} 
+            onChange={e => setPlatform(e.target.value)}
+            className="px-3 py-2 border rounded-lg bg-white text-sm"
+          >
+            <option value="Meta Ads">Meta Ads</option>
+            <option value="LinkedIn Ads">LinkedIn Ads</option>
+          </select>
+        </div>
       </div>
 
       {/* Summary Cards */}
