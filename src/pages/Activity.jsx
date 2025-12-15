@@ -21,10 +21,13 @@ export default function Activity() {
       });
       if (res.ok) {
         const data = await res.json();
-        setActivities(data.activities);
+        setActivities(data.activities || []);
+      } else {
+        setActivities([]);
       }
     } catch (error) {
       console.error('Error:', error);
+      setActivities([]);
     } finally {
       setLoading(false);
     }
@@ -40,9 +43,12 @@ export default function Activity() {
       if (res.ok) {
         const data = await res.json();
         setStats(data);
+      } else {
+        setStats(null);
       }
     } catch (error) {
       console.error('Error:', error);
+      setStats(null);
     }
   };
 
@@ -69,9 +75,9 @@ export default function Activity() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white p-4 rounded-lg shadow">
             <div className="text-sm text-gray-600">Total Activities</div>
-            <div className="text-2xl font-bold">{stats.totalActivities}</div>
+            <div className="text-2xl font-bold">{stats.totalActivities || 0}</div>
           </div>
-          {stats.actionStats.map(stat => (
+          {(stats.actionStats || []).map(stat => (
             <div key={stat._id} className="bg-white p-4 rounded-lg shadow">
               <div className="text-sm text-gray-600">{stat._id}</div>
               <div className="text-2xl font-bold">{stat.count}</div>
