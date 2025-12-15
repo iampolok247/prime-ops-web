@@ -97,7 +97,7 @@ export default function DMMetrics() {
         </div>
 
         {/* Ad Campaigns Section */}
-        <Campaigns selectedMonth={selectedMonth} />
+        <Campaigns selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth} />
       </div>
     );
   } catch (error) {
@@ -786,7 +786,7 @@ function SEOReports({ selectedMonth }) {
 }
 
 // =============== Ad Campaigns Component ===============
-function Campaigns({ selectedMonth }) {
+function Campaigns({ selectedMonth, setSelectedMonth }) {
   const [platform, setPlatform] = useState('Meta Ads');
   const [campaigns, setCampaigns] = useState([]);
   const [summary, setSummary] = useState(null);
