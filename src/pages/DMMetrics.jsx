@@ -808,14 +808,15 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
     campaignDate: new Date().toISOString().slice(0, 7)
   });
 
-  // Generate months list for dropdown
+  // Generate months list for dropdown (November 2025 to 3 months ahead)
   const generateMonths = () => {
     const months = [];
     const startDate = new Date(2025, 10); // November 2025
-    const today = new Date();
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + 3); // 3 months ahead
     
     let current = new Date(startDate);
-    while (current <= today) {
+    while (current <= endDate) {
       const yearMonth = current.toISOString().slice(0, 7);
       months.push(yearMonth);
       current.setMonth(current.getMonth() + 1);
@@ -1064,9 +1065,10 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
           >
             {generateMonths().map(m => {
               const [y, mo] = m.split('-');
-              const monthName = new Date(y, mo - 1).toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+              const monthName = new Date(parseInt(y), parseInt(mo) - 1).toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
               return <option key={m} value={m}>{monthName}</option>;
             })}
+            {generateMonths().length === 0 && <option value="">No months available</option>}
           </select>
         </div>
         
