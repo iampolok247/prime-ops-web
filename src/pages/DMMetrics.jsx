@@ -902,6 +902,9 @@ function Campaigns({ selectedMonth }) {
         await api.createDMCampaign(payload);
       }
 
+      // Set selected month to the campaign's month to show it immediately
+      setSelectedMonth(formData.campaignDate);
+      
       setFormData({
         campaignName: '',
         platform: 'Meta Ads',
