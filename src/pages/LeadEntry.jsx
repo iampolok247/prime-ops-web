@@ -19,7 +19,7 @@ import {
 
 export default function LeadEntry() {
   const { user } = useAuth();
-  const [form, setForm] = useState({ name:'', phone:'', email:'', interestedCourse:'', source:'Manually Generated Lead' });
+  const [form, setForm] = useState({ name:'', phone:'', email:'', interestedCourse:'', source:'Manually Generated Lead', specialFilter:'' });
   const [csv, setCsv] = useState('');
   const [msg, setMsg] = useState(null);
   const [err, setErr] = useState(null);
@@ -76,7 +76,7 @@ export default function LeadEntry() {
         // Create new lead
         await api.createLead(form);
         setMsg('Lead added successfully! 🎉');
-        setForm({ name:'', phone:'', email:'', interestedCourse:'', source:'Manually Generated Lead' });
+        setForm({ name:'', phone:'', email:'', interestedCourse:'', source:'Manually Generated Lead', specialFilter:'' });
       }
     } catch (e) { 
       setErr(e.message); 
@@ -261,6 +261,21 @@ export default function LeadEntry() {
                   className: "absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
                 })}
               </div>
+            </div>
+
+            {/* Special Filter Field (Optional) */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                <FileText className="w-4 h-4 text-indigo-600" />
+                Special Filter <span className="text-xs text-gray-500">(Optional)</span>
+              </label>
+              <input 
+                type="text"
+                className="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 focus:border-blue-500 focus:outline-none transition-colors" 
+                placeholder="e.g., Age 25, HSC Pass"
+                value={form.specialFilter} 
+                onChange={e=>setForm(f=>({...f,specialFilter:e.target.value}))}
+              />
             </div>
 
             {/* Submit Button */}

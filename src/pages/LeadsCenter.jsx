@@ -446,6 +446,7 @@ export default function LeadsCenter() {
               <th className="text-left p-3">Phone / Email</th>
               <th className="text-left p-3">Interested Course</th>
               <th className="text-left p-3">Source</th>
+              <th className="text-left p-3">Special Filter</th>
               <th className="text-left p-3">Lead Status</th>
               <th className="text-left p-3">Assigned To</th>
               {(user?.role === 'Admin' || user?.role === 'SuperAdmin' || user?.role === 'Admission' || user?.role === 'DigitalMarketing') && <th className="text-left p-3">History</th>}
@@ -488,6 +489,7 @@ export default function LeadsCenter() {
                 </td>
                 <td className="p-3">{l.interestedCourse || '-'}</td>
                 <td className="p-3">{l.source}</td>
+                <td className="p-3 text-sm text-gray-600">{l.specialFilter || '-'}</td>
                 <td className="p-3">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                     l.status === 'Admitted' ? 'bg-green-100 text-green-700' :

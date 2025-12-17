@@ -943,6 +943,7 @@ function PipelineTable({ status, canAct }) {
               <th className="p-3 text-left">Phone / Email</th>
               <th className="p-3 text-left">Course</th>
               <th className="p-3 text-left">Source</th>
+              <th className="p-3 text-left">Special Filter</th>
           <th className="p-3 text-left">Assigned To</th>
           {status === 'Assigned' && <th className="p-3 text-left">Assigned At</th>}
           {status === 'Counseling' && <th className="p-3 text-left">Counseling At</th>}
@@ -971,6 +972,7 @@ function PipelineTable({ status, canAct }) {
                 </td>
                 <td className="p-3">{r.interestedCourse || '-'}</td>
                 <td className="p-3">{r.source}</td>
+                <td className="p-3 text-sm text-gray-600">{r.specialFilter || '-'}</td>
                 <td className="p-3">{r.assignedTo ? r.assignedTo.name : '-'}</td>
                 {status === 'Assigned' && <td className="p-3">{fmtDT(r.assignedAt || r.updatedAt)}</td>}
                 {status === 'Counseling' && <td className="p-3">{fmtDT(r.counselingAt || r.updatedAt)}</td>}
