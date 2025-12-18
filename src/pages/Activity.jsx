@@ -14,8 +14,8 @@ export default function Activity() {
 
   const fetchActivities = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const apiBase = import.meta.env.PROD ? 'http://31.97.228.226:5001' : 'http://localhost:5001';
+      const token = localStorage.getItem('auth_token');
+      const apiBase = import.meta.env.PROD ? 'http://31.97.228.226:5000' : 'http://localhost:5001';
       const res = await fetch(`${apiBase}/api/activities?limit=100`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -35,8 +35,8 @@ export default function Activity() {
 
   const fetchStats = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const apiBase = import.meta.env.PROD ? 'http://31.97.228.226:5001' : 'http://localhost:5001';
+      const token = localStorage.getItem('auth_token');
+      const apiBase = import.meta.env.PROD ? 'http://31.97.228.226:5000' : 'http://localhost:5001';
       const res = await fetch(`${apiBase}/api/activities/stats`, {
         headers: { Authorization: `Bearer ${token}` }
       });
