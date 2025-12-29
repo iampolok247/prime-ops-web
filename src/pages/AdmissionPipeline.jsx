@@ -23,7 +23,7 @@ export default function AdmissionPipeline() {
     return found ? found.key : 'Assigned';
   }, [loc.pathname]);
 
-  if (user?.role !== 'Admission' && user?.role !== 'Admin' && user?.role !== 'SuperAdmin') {
+  if (user?.role !== 'Admission' && user?.role !== 'Admin' && user?.role !== 'SuperAdmin' && user?.role !== 'ITAdmin') {
     return <div className="text-royal">Access denied</div>;
   }
 

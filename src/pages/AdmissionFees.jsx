@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 
 export default function AdmissionFees() {
   const { user } = useAuth();
-  if (user?.role !== 'Admission' && user?.role !== 'Admin' && user?.role !== 'SuperAdmin' && user?.role !== 'Accountant' && user?.role !== 'Coordinator') {
+  if (user?.role !== 'Admission' && user?.role !== 'Admin' && user?.role !== 'SuperAdmin' && user?.role !== 'Accountant' && user?.role !== 'Coordinator' && user?.role !== 'ITAdmin') {
     return <div className="text-royal">Access denied</div>;
   }
 
