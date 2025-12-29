@@ -91,6 +91,29 @@ export default function LeadHistoryModal({ lead, onClose, onUpdate }) {
     }
   };
 
+  const handleUndoAdmission = async () => {
+    if (!confirm(`⚠️ Undo admission for ${lead.name}?\n\nThis will:\n• Remove from batch\n• Reject admission fees\n• Change status to "In Follow Up"\n\nContinue?`)) {
+      return;
+    }
+    
+    try {
+      setSaving(true);
+      setErr(null);
+      const result = await api.undoAdmission(lead._id);
+      setMsg('✅ Admission reversed successfully!');
+      setTimeout(() => {
+        if (onUpdate) onUpdate();
+        onClose();
+      }, 2000);
+    } catch (e) {
+      setErr(e.message || 'Failed to undo admission');
+      setSaving(false);
+    }
+  };
+
+  // Check if user can undo admission (ITAdmin, Admin, SuperAdmin only)
+  const canUndoAdmission = ['ITAdmin', 'Admin', 'SuperAdmin'].includes(user?.role) && lead.status === 'Admitted';
+
   if (!lead) return null;
 
   return (
@@ -245,6 +268,19 @@ export default function LeadHistoryModal({ lead, onClose, onUpdate }) {
 
         {/* Action Buttons */}
         <div className="flex justify-end gap-2 pt-4 border-t">
+          {canUndoAdmission && (
+            <button
+              onClick={handleUndoAdmission}
+              disabled={saving}
+              className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 font-medium flex items-center gap-2"
+              title="Reverse this admission (Admin/SuperAdmin/ITAdmin only)"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+              </svg>
+              Undo Admission
+            </button>
+          )}
           {isAdmission && lead.status !== 'Admitted' && lead.status !== 'Not Admitted' && (
             <>
               <button
