@@ -6,6 +6,7 @@ import { Users, Eye, Edit, Trash2, Plus } from 'lucide-react';
 export default function Batches() {
   const { user } = useAuth();
   const [batches, setBatches] = useState([]);
+  const [courses, setCourses] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState(null);
@@ -20,8 +21,12 @@ export default function Batches() {
   const load = async () => {
     try {
       setLoading(true);
-      const { batches } = await api.listBatches();
-      setBatches(batches || []);
+      const [batchesResp, coursesResp] = await Promise.all([
+        api.listBatches(),
+        api.listCourses()
+      ]);
+      setBatches(batchesResp?.batches || []);
+      setCourses(coursesResp?.courses || []);
       setErr(null);
     } catch (e) {
       setErr(e.message);
@@ -119,7 +124,7 @@ export default function Batches() {
               <tr>
                 <th className="text-left p-3">Batch ID</th>
                 <th className="text-left p-3">Batch Name</th>
-                <th className="text-left p-3">Category</th>
+                <th className="text-left p-3">Course</th>
                 <th className="text-left p-3">Targeted Students</th>
                 <th className="text-left p-3">Admitted Students</th>
                 <th className="text-left p-3">Progress</th>
@@ -233,16 +238,19 @@ export default function Batches() {
 
               <div>
                 <label className="block text-sm font-medium text-royal mb-1">
-                  Category *
+                  Course *
                 </label>
-                <input
-                  type="text"
+                <select
                   required
                   value={form.category}
                   onChange={e => setForm({...form, category: e.target.value})}
-                  className="w-full border rounded-xl px-3 py-2"
-                  placeholder="e.g., Graphics Design"
-                />
+                  className="w-full border rounded-xl px-3 py-2 bg-white"
+                >
+                  <option value="">Select Course...</option>
+                  {courses.map(c => (
+                    <option key={c._id} value={c.category}>{c.name}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -324,7 +332,7 @@ export default function Batches() {
                 </div>
               </div>
               <div className="bg-purple-50 p-4 rounded-xl">
-                <div className="text-sm text-purple-600 mb-1">Category</div>
+                <div className="text-sm text-purple-600 mb-1">Course</div>
                 <div className="text-lg font-bold text-purple-800">{selectedBatch.category}</div>
               </div>
             </div>
