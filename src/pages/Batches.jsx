@@ -248,7 +248,7 @@ export default function Batches() {
                 >
                   <option value="">Select Course...</option>
                   {courses.map(c => (
-                    <option key={c._id} value={c.category}>{c.name}</option>
+                    <option key={c._id} value={c.name}>{c.name}</option>
                   ))}
                 </select>
               </div>
