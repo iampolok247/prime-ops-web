@@ -128,7 +128,15 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     ],
     ITAdmin: [
       { to: '/', label: 'Dashboard', icon: <LayoutDashboard size={18}/> },
-      { to: '/activity', label: 'Activity Log', icon: <Activity size={18}/> }
+      { to: '/activity', label: 'Activity Log', icon: <Activity size={18}/> },
+      { to: '/employees', label: 'Employees', icon: <Users size={18}/> },
+      { to: '/courses', label: 'Courses', icon: <BookOpen size={18}/> },
+      { to: '/batches', label: 'Batches', icon: <Layers size={18}/> },
+      { to: '/leads-center-view', label: 'Leads Center', icon: <FolderOpen size={18}/> },
+      { to: '/admission/assigned', label: 'Admission Pipeline', icon: <FolderOpen size={18}/> },
+      { to: '/admission/fees', label: 'Admission Fees', icon: <Wallet size={18}/> },
+      { to: '/accounting/fees', label: 'Fees Approval', icon: <CreditCard size={18}/> },
+      { to: '/accounting/income', label: 'Income', icon: <DollarSign size={18}/> }
     ],
     Coordinator: [
       { to: '/', label: 'Dashboard', icon: <LayoutDashboard size={18}/> },
