@@ -19,8 +19,12 @@ export default function AdmissionFees() {
   const [msg, setMsg] = useState(null);
   const [err, setErr] = useState(null);
   const [form, setForm] = useState({
-    leadId: '', courseName:'', totalAmount:'', nowPaying:'', method:'Bkash',
-    paymentDate: new Date().toISOString().slice(0,10), nextPaymentDate:'', note:''
+    leadId: '', 
+    courses: [{ courseName:'', totalAmount:'', nowPaying:'' }], // Array of courses
+    method:'Bkash',
+    paymentDate: new Date().toISOString().slice(0,10), 
+    nextPaymentDate:'', 
+    note:''
   });
 
   const canSubmit = user?.role === 'Admission';
@@ -47,22 +51,61 @@ export default function AdmissionFees() {
   const submit = async (e) => {
     e.preventDefault(); setMsg(null); setErr(null);
     try {
-      // Convert to numbers and calculate due
-      const totalAmt = Number(form.totalAmount) || 0;
-      const nowPay = Number(form.nowPaying) || 0;
-      const payload = {
-        ...form,
-        amount: nowPay,
-        totalAmount: totalAmt,
-        dueAmount: totalAmt - nowPay
-      };
-      await api.createAdmissionFee(payload);
-      setMsg('Fee submitted for review');
+      // Submit each course fee separately
+      const submissions = form.courses.map(course => {
+        const totalAmt = Number(course.totalAmount) || 0;
+        const nowPay = Number(course.nowPaying) || 0;
+        return {
+          leadId: form.leadId,
+          courseName: course.courseName,
+          amount: nowPay,
+          totalAmount: totalAmt,
+          dueAmount: totalAmt - nowPay,
+          method: form.method,
+          paymentDate: form.paymentDate,
+          nextPaymentDate: form.nextPaymentDate,
+          note: form.note
+        };
+      });
+
+      // Submit all fees
+      await Promise.all(submissions.map(payload => api.createAdmissionFee(payload)));
+      
+      setMsg(`${submissions.length} fee(s) submitted for review`);
       setOpen(false);
-      setForm({ leadId:'', courseName:'', totalAmount:'', nowPaying:'', method:'Bkash', paymentDate:new Date().toISOString().slice(0,10), nextPaymentDate:'', note:'' });
+      setForm({ 
+        leadId:'', 
+        courses: [{ courseName:'', totalAmount:'', nowPaying:'' }],
+        method:'Bkash', 
+        paymentDate:new Date().toISOString().slice(0,10), 
+        nextPaymentDate:'', 
+        note:'' 
+      });
       setSearchTerm(''); // Reset search
       load();
     } catch (e) { setErr(e.message); }
+  };
+
+  const addCourse = () => {
+    setForm(f => ({
+      ...f,
+      courses: [...f.courses, { courseName:'', totalAmount:'', nowPaying:'' }]
+    }));
+  };
+
+  const removeCourse = (index) => {
+    if (form.courses.length === 1) return; // Keep at least one
+    setForm(f => ({
+      ...f,
+      courses: f.courses.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateCourse = (index, field, value) => {
+    setForm(f => ({
+      ...f,
+      courses: f.courses.map((c, i) => i === index ? {...c, [field]: value} : c)
+    }));
   };
 
   // Filter leads based on search term
@@ -218,47 +261,97 @@ export default function AdmissionFees() {
                 </label>
               </div>
 
-              <div>
-                <label className="block">
-                  <span className="text-xs font-semibold text-[#053867] mb-1.5 block">Course Name *</span>
-                  <select 
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white" 
-                    required
-                    value={form.courseName} 
-                    onChange={e=>setForm(f=>({...f,courseName:e.target.value}))}
+              {/* Courses Section - Multiple Courses Support */}
+              <div className="border-t border-gray-200 pt-3">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-bold text-[#053867]">📚 Course(s) & Payment Details</h4>
+                  <button
+                    type="button"
+                    onClick={addCourse}
+                    className="px-3 py-1 text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-1"
                   >
-                    <option value="">Select Course...</option>
-                    {courses.map(c => (
-                      <option key={c._id} value={c.name}>{c.name}</option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block">
-                    <span className="text-xs font-semibold text-[#053867] mb-1.5 block">Total Amount *</span>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">৳</span>
-                      <input type="number" className="w-full border border-green-300 rounded-lg pl-7 pr-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-green-400 bg-green-50" 
-                        required placeholder="0" min="0"
-                        value={form.totalAmount || ''} onChange={e=>setForm(f=>({...f,totalAmount:e.target.value}))}/>
-                    </div>
-                  </label>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Another Course
+                  </button>
                 </div>
 
-                <div>
-                  <label className="block">
-                    <span className="text-xs font-semibold text-[#053867] mb-1.5 block">Now Paying *</span>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">৳</span>
-                      <input type="number" className="w-full border border-orange-300 rounded-lg pl-7 pr-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-orange-400 bg-orange-50" 
-                        required placeholder="0" min="0"
-                        value={form.nowPaying || ''} onChange={e=>setForm(f=>({...f,nowPaying:e.target.value}))}/>
+                {form.courses.map((course, index) => (
+                  <div key={index} className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-semibold text-gray-600">Course #{index + 1}</span>
+                      {form.courses.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeCourse(index)}
+                          className="text-red-500 hover:text-red-700 transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
-                  </label>
-                </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block">
+                          <span className="text-xs font-semibold text-[#053867] mb-1.5 block">Course Name *</span>
+                          <select 
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white" 
+                            required
+                            value={course.courseName} 
+                            onChange={e => updateCourse(index, 'courseName', e.target.value)}
+                          >
+                            <option value="">Select Course...</option>
+                            {courses.map(c => (
+                              <option key={c._id} value={c.name}>{c.name}</option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block">
+                            <span className="text-xs font-semibold text-[#053867] mb-1.5 block">Total Amount *</span>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">৳</span>
+                              <input 
+                                type="number" 
+                                className="w-full border border-green-300 rounded-lg pl-7 pr-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-green-400 bg-green-50" 
+                                required 
+                                placeholder="0" 
+                                min="0"
+                                value={course.totalAmount || ''} 
+                                onChange={e => updateCourse(index, 'totalAmount', e.target.value)}
+                              />
+                            </div>
+                          </label>
+                        </div>
+
+                        <div>
+                          <label className="block">
+                            <span className="text-xs font-semibold text-[#053867] mb-1.5 block">Now Paying *</span>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">৳</span>
+                              <input 
+                                type="number" 
+                                className="w-full border border-orange-300 rounded-lg pl-7 pr-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-orange-400 bg-orange-50" 
+                                required 
+                                placeholder="0" 
+                                min="0"
+                                value={course.nowPaying || ''} 
+                                onChange={e => updateCourse(index, 'nowPaying', e.target.value)}
+                              />
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
