@@ -989,7 +989,7 @@ function PipelineTable({ status, canAct, user }) {
                       <option value="">Choose a batch...</option>
                       {batches
                         .filter(b => b.status === 'Active')
-                        .filter(b => !anotherCourse || b.category === courses.find(c => c._id === anotherCourse)?.category)
+                        .filter(b => !anotherCourse || b.category === courses.find(c => c._id === anotherCourse)?.name)
                         .map(b => (
                           <option key={b._id} value={b._id}>
                             {b.name} - {b.category} ({b.admittedStudents?.length || 0}/{b.targetedStudent} students)
@@ -997,7 +997,7 @@ function PipelineTable({ status, canAct, user }) {
                         ))}
                     </select>
                     <p className="text-xs text-gray-500 mt-1">
-                      💡 Batches are filtered by selected course category
+                      💡 Batches are filtered by selected course
                     </p>
                   </label>
                 </div>
