@@ -41,12 +41,12 @@ export default function AdmissionPipeline() {
           <Link to="/admission/fees" className="ml-auto px-3 py-1.5 rounded-xl bg-gold text-navy font-semibold">Admission Fees</Link>
         )}
       </div>
-      <PipelineTable status={active} canAct={user?.role === 'Admission'} />
+      <PipelineTable status={active} canAct={user?.role === 'Admission' || user?.role === 'ITAdmin' || user?.role === 'Admin' || user?.role === 'SuperAdmin'} user={user} />
     </div>
   );
 }
 
-function PipelineTable({ status, canAct }) {
+function PipelineTable({ status, canAct, user }) {
   const [rows, setRows] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [msg, setMsg] = useState(null);
@@ -372,6 +372,20 @@ function PipelineTable({ status, canAct }) {
             }}>{histLoading ? 'Loading…' : 'History'}</ActionBtn>
           </div>
         );
+    }
+    if (status === 'Admitted' || status === 'Not Interested') {
+      return (
+        <ActionBtn onClick={async ()=>{
+          try {
+            setErr(null);
+            setHistLoading(true);
+            const res = await api.getLeadHistory(row._id);
+            setHistLead(res.lead || res);
+            setShowHistory(true);
+          } catch (e) { setErr(e.message); }
+          finally { setHistLoading(false); }
+        }}>{histLoading ? 'Loading…' : 'History'}</ActionBtn>
+      );
     }
     return <span className="text-royal/60">—</span>;
   };
