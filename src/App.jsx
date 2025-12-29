@@ -107,17 +107,21 @@ export default function App() {
           {/* SA/Admin */}
           <Route element={<RoleRoute roles={['SuperAdmin', 'Admin']} />}>
             <Route path="/assign-tasks" element={<AssignTasks />} />
-            <Route path="/employees" element={<Employees />} />
             <Route path="/reports-view" element={<ReportsView />} />
-            <Route path="/leads-center-view" element={<LeadsCenterView />} />
             <Route path="/admin-task-report" element={<AdminTaskReport />} />
             <Route path="/admission-targets" element={<Targets />} />
-            <Route path="/batches" element={<Batches />} />
             <Route path="/admin/approvals" element={<AdminApprovals />} />
           </Route>
 
+          {/* SA/Admin/ITAdmin */}
+          <Route element={<RoleRoute roles={['SuperAdmin', 'Admin', 'ITAdmin']} />}>
+            <Route path="/employees" element={<Employees />} />
+            <Route path="/leads-center-view" element={<LeadsCenterView />} />
+            <Route path="/batches" element={<Batches />} />
+          </Route>
+
           {/* Courses - viewable by all except Accountant */}
-          <Route element={<RoleRoute roles={['SuperAdmin', 'Admin', 'DigitalMarketing', 'Admission', 'Recruitment', 'MotionGraphics']} />}>
+          <Route element={<RoleRoute roles={['SuperAdmin', 'Admin', 'ITAdmin', 'DigitalMarketing', 'Admission', 'Recruitment', 'MotionGraphics']} />}>
             <Route path="/courses" element={<Courses />} />
           </Route>
 
@@ -134,7 +138,7 @@ export default function App() {
           </Route>
 
           {/* Admission */}
-         <Route element={<RoleRoute roles={['Admission','Admin','SuperAdmin']} />}>
+         <Route element={<RoleRoute roles={['Admission','Admin','SuperAdmin','ITAdmin']} />}>
          <Route path="/admission/dashboard" element={<AdmissionDashboard />} />   {/* <-- NEW */}
          <Route path="/admission/metrics" element={<AdmissionMetrics />} />
          <Route path="/my-targets" element={<MyTargets />} />
@@ -148,7 +152,7 @@ export default function App() {
 </Route>
 
           {/* Accountant */}
-          <Route element={<RoleRoute roles={['Accountant','Admin','SuperAdmin']} />}>
+          <Route element={<RoleRoute roles={['Accountant','Admin','SuperAdmin','ITAdmin']} />}>
             <Route path="/accounting/dashboard" element={<AccountingDashboard />} />
             <Route path="/accounting/fees" element={<FeesApproval />} />
             <Route path="/accounting/due-collections" element={<DueCollectionApproval />} />
