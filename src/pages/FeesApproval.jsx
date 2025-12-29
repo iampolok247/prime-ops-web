@@ -318,7 +318,7 @@ export default function FeesApproval() {
           <div className="bg-white rounded-xl p-6 z-10 w-full max-w-md shadow-xl">
             <h3 className="text-lg font-bold text-navy mb-4">Cancel Payment</h3>
             <p className="text-sm text-gray-600 mb-4">
-              This will revert the fee status to <strong>Pending</strong> for re-approval. Please provide a reason for cancellation.
+              This will mark the fee as <strong>Rejected</strong> with a cancellation note. Please provide a reason.
             </p>
             
             <div className="mb-4">
