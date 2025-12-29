@@ -670,9 +670,17 @@ function PipelineTable({ status, canAct, user }) {
               <div>
                 <label className="block">
                   <span className="text-xs font-semibold text-[#053867] mb-1.5 block">Course Name *</span>
-                  <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" 
-                    required placeholder="e.g., Graphics Design Professional"
-                    value={feeForm.courseName} onChange={e=>setFeeForm(f=>({...f,courseName:e.target.value}))}/>
+                  <select 
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white" 
+                    required
+                    value={feeForm.courseName} 
+                    onChange={e=>setFeeForm(f=>({...f,courseName:e.target.value}))}
+                  >
+                    <option value="">Select Course...</option>
+                    {courses.map(c => (
+                      <option key={c._id} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
                 </label>
               </div>
 

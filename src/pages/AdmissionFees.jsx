@@ -11,6 +11,7 @@ export default function AdmissionFees() {
 
   const [fees, setFees] = useState([]);
   const [assignedLeads, setAssignedLeads] = useState([]);
+  const [courses, setCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [open, setOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -26,11 +27,13 @@ export default function AdmissionFees() {
 
   const load = async () => {
     try {
-      const [{ fees }, leadsResp] = await Promise.all([
+      const [{ fees }, leadsResp, coursesResp] = await Promise.all([
         api.listAdmissionFees(),
-        api.listAdmissionLeads() // Get all assigned leads (will be filtered by backend)
+        api.listAdmissionLeads(), // Get all assigned leads (will be filtered by backend)
+        api.listCourses() // Load courses for dropdown
       ]);
       setFees(fees || []);
+      setCourses(coursesResp?.courses || []);
       // Filter out "Admitted" and "Not Admitted" leads - only show leads that can still be processed
       const eligibleLeads = (leadsResp?.leads || []).filter(
         lead => lead.status !== 'Admitted' && lead.status !== 'Not Admitted'
@@ -218,9 +221,17 @@ export default function AdmissionFees() {
               <div>
                 <label className="block">
                   <span className="text-xs font-semibold text-[#053867] mb-1.5 block">Course Name *</span>
-                  <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" 
-                    required placeholder="e.g., Graphics Design Professional"
-                    value={form.courseName} onChange={e=>setForm(f=>({...f,courseName:e.target.value}))}/>
+                  <select 
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white" 
+                    required
+                    value={form.courseName} 
+                    onChange={e=>setForm(f=>({...f,courseName:e.target.value}))}
+                  >
+                    <option value="">Select Course...</option>
+                    {courses.map(c => (
+                      <option key={c._id} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
                 </label>
               </div>
 
