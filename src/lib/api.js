@@ -589,6 +589,18 @@ export const api = {
     );
     return handleJson(res, "Reject failed");
   },
+  async cancelFee(id, reason) {
+    const res = await authFetch(
+      `${getApiBase()}/api/accounting/fees/${id}/cancel`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ reason }),
+      }
+    );
+    return handleJson(res, "Cancel failed");
+  },
 
   async listIncome() {
     const res = await authFetch(`${getApiBase()}/api/accounting/income`, {

@@ -14,6 +14,9 @@ export default function FeesApproval() {
   const [selectedFee, setSelectedFee] = useState(null);
   const [msg, setMsg] = useState(null);
   const [err, setErr] = useState(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelling, setCancelling] = useState(false);
 
   const load = async () => {
     try {
@@ -32,6 +35,26 @@ export default function FeesApproval() {
   const reject = async (id) => {
     setMsg(null); setErr(null);
     try { await api.rejectFee(id); setMsg('Rejected'); load(); } catch (e) { setErr(e.message); }
+  };
+  const cancelPayment = async () => {
+    if (!cancelReason.trim()) {
+      setErr('Please provide a cancellation reason');
+      return;
+    }
+    setMsg(null); setErr(null); setCancelling(true);
+    try {
+      await api.cancelFee(selectedFee._id, cancelReason);
+      setMsg('Payment cancelled successfully');
+      setShowCancelModal(false);
+      setCancelReason('');
+      setDetailsOpen(false);
+      setSelectedFee(null);
+      load();
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setCancelling(false);
+    }
   };
 
   return (
@@ -268,10 +291,64 @@ export default function FeesApproval() {
                   </button>
                 </>
               )}
+              {status === 'Approved' && (
+                <button 
+                  onClick={()=>{ setShowCancelModal(true); }}
+                  className="px-5 py-2 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Cancel Payment
+                </button>
+              )}
               <button 
                 onClick={()=>{setDetailsOpen(false); setSelectedFee(null);}}
                 className="px-6 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 transition-colors">
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Payment Modal */}
+      {showCancelModal && selectedFee && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-black opacity-40" onClick={()=>!cancelling && setShowCancelModal(false)} />
+          <div className="bg-white rounded-xl p-6 z-10 w-full max-w-md shadow-xl">
+            <h3 className="text-lg font-bold text-navy mb-4">Cancel Payment</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              This will revert the fee status to <strong>Pending</strong> for re-approval. Please provide a reason for cancellation.
+            </p>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Cancellation Reason <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                disabled={cancelling}
+                rows={4}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
+                placeholder="Enter the reason for cancelling this approved payment..."
+              />
+            </div>
+
+            {err && <div className="mb-3 text-red-600 text-sm">{err}</div>}
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => { setShowCancelModal(false); setCancelReason(''); setErr(null); }}
+                disabled={cancelling}
+                className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-50">
+                Close
+              </button>
+              <button
+                onClick={cancelPayment}
+                disabled={cancelling || !cancelReason.trim()}
+                className="px-4 py-2 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                {cancelling ? 'Cancelling...' : 'Confirm Cancel'}
               </button>
             </div>
           </div>
