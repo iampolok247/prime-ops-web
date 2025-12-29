@@ -42,9 +42,31 @@ export default function LeadEntry() {
     };
     loadCourses();
 
-    // Check if we're editing a lead
+    // Check if we're editing a lead OR prefilling from another enrollment
     const params = new URLSearchParams(window.location.search);
-    if (params.has('edit')) {
+    
+    // Check for prefill (from "Another Course" button)
+    if (params.has('prefill') && params.get('prefill') === 'true') {
+      const name = params.get('name') || '';
+      const phone = params.get('phone') || '';
+      const email = params.get('email') || '';
+      const source = params.get('source') || 'Manually Generated Lead';
+      const referenceLeadId = params.get('referenceLeadId') || '';
+      
+      setForm({
+        name: decodeURIComponent(name),
+        phone: decodeURIComponent(phone),
+        email: decodeURIComponent(email),
+        interestedCourse: '',
+        source: decodeURIComponent(source),
+        specialFilter: referenceLeadId ? `Related to ${referenceLeadId}` : ''
+      });
+      
+      // Show info message
+      setMsg(`📝 Pre-filled from existing enrollment. Please select the new course and complete the form.`);
+    }
+    // Check if we're editing a lead
+    else if (params.has('edit')) {
       const editId = params.get('edit');
       const editLead = sessionStorage.getItem('editLead');
       if (editLead) {

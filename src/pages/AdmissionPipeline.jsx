@@ -1,6 +1,6 @@
 // web/src/pages/AdmissionPipeline.jsx
 import React, { useEffect, useMemo, useState } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import LeadHistoryModal from '../components/LeadHistoryModal.jsx';
@@ -48,6 +48,7 @@ export default function AdmissionPipeline() {
 }
 
 function PipelineTable({ status, canAct, user }) {
+  const navigate = useNavigate();
   const [rows, setRows] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [msg, setMsg] = useState(null);
@@ -83,12 +84,6 @@ function PipelineTable({ status, canAct, user }) {
   const [feeMsg, setFeeMsg] = useState(null);
   const [feeErr, setFeeErr] = useState(null);
   const [feeLoading, setFeeLoading] = useState(false);
-  
-  // Another course admission modal
-  const [showAnotherCourseModal, setShowAnotherCourseModal] = useState(false);
-  const [anotherCourseTarget, setAnotherCourseTarget] = useState(null);
-  const [anotherCourse, setAnotherCourse] = useState('');
-  const [anotherBatch, setAnotherBatch] = useState('');
   
   // Filter states
   const [selectedCourseFilter, setSelectedCourseFilter] = useState('');
@@ -279,46 +274,9 @@ function PipelineTable({ status, canAct, user }) {
     }
   };
 
-  const handleAdmitAnotherCourse = async (lead) => {
-    setAnotherCourseTarget(lead);
-    setAnotherCourse('');
-    setAnotherBatch('');
-    setCoursesLoading(true);
-    setShowAnotherCourseModal(true);
-    try {
-      const [coursesResp, batchesResp] = await Promise.all([
-        api.listCourses(),
-        api.listBatches()
-      ]);
-      setCourses(coursesResp?.courses || []);
-      setBatches(batchesResp?.batches || []);
-    } catch (e) {
-      setErr(e.message);
-    } finally {
-      setCoursesLoading(false);
-    }
-  };
-
-  const submitAnotherCourseAdmission = async () => {
-    if (!anotherCourse || !anotherBatch) {
-      setErr('Please select both course and batch');
-      return;
-    }
-    setMsg(null); setErr(null);
-    try {
-      await api.updateLeadStatus(anotherCourseTarget._id, 'Admitted', '', anotherCourse, anotherBatch, '');
-      setMsg(`✅ Admitted to another course successfully!`);
-      setShowAnotherCourseModal(false);
-      setAnotherCourseTarget(null);
-      // Now open fee collection modal
-      openFeesModal({
-        ...anotherCourseTarget,
-        interestedCourse: courses.find(c => c._id === anotherCourse)?.name || ''
-      });
-      load();
-    } catch (e) { 
-      setErr(e.message); 
-    }
+  const handleAdmitAnotherCourse = (lead) => {
+    // Navigate to Assigned Lead page with pre-filled data
+    navigate(`/admission/assigned?prefill=true&name=${encodeURIComponent(lead.name)}&phone=${encodeURIComponent(lead.phone || '')}&email=${encodeURIComponent(lead.email || '')}&source=${encodeURIComponent(lead.source || '')}&referenceLeadId=${encodeURIComponent(lead.leadId || '')}`);
   };
 
   // Filter rows based on search term, course, and follow-up dates
@@ -942,88 +900,6 @@ function PipelineTable({ status, canAct, user }) {
                 Save
               </button>
             </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Another Course Admission Modal */}
-      {showAnotherCourseModal && anotherCourseTarget && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="absolute inset-0 bg-black opacity-30" onClick={()=>setShowAnotherCourseModal(false)} />
-          <div className="bg-white rounded-xl p-6 z-10 w-full max-w-lg shadow-lg">
-            <h3 className="text-xl font-bold mb-4 text-[#053867]">Admit to Another Course</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Student: <strong>{anotherCourseTarget.name}</strong> ({anotherCourseTarget.leadId})
-            </p>
-            
-            {coursesLoading ? (
-              <div className="text-center py-8 text-gray-500">Loading courses and batches...</div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <label className="block">
-                    <span className="text-sm font-semibold text-[#053867] mb-2 block">Select Course *</span>
-                    <select 
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                      value={anotherCourse}
-                      onChange={e => setAnotherCourse(e.target.value)}
-                      required
-                    >
-                      <option value="">Choose a course...</option>
-                      {courses.map(c => (
-                        <option key={c._id} value={c._id}>{c.name}</option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-
-                <div>
-                  <label className="block">
-                    <span className="text-sm font-semibold text-[#053867] mb-2 block">Select Batch *</span>
-                    <select 
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                      value={anotherBatch}
-                      onChange={e => setAnotherBatch(e.target.value)}
-                      required
-                    >
-                      <option value="">Choose a batch...</option>
-                      {batches
-                        .filter(b => b.status === 'Active')
-                        .filter(b => !anotherCourse || b.category === courses.find(c => c._id === anotherCourse)?.name)
-                        .map(b => (
-                          <option key={b._id} value={b._id}>
-                            {b.name} - {b.category} ({b.admittedStudents?.length || 0}/{b.targetedStudent} students)
-                          </option>
-                        ))}
-                    </select>
-                    <p className="text-xs text-gray-500 mt-1">
-                      💡 Batches are filtered by selected course
-                    </p>
-                  </label>
-                </div>
-
-                {err && <div className="text-red-600 text-sm">{err}</div>}
-                {msg && <div className="text-green-600 text-sm">{msg}</div>}
-
-                <div className="flex justify-end gap-2 pt-4 border-t">
-                  <button 
-                    type="button" 
-                    onClick={() => { setShowAnotherCourseModal(false); setAnotherCourseTarget(null); setErr(null); setMsg(null); }} 
-                    className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={submitAnotherCourseAdmission}
-                    disabled={!anotherCourse || !anotherBatch}
-                    className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Admit & Collect Fees
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}
