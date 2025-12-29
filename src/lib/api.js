@@ -460,6 +460,17 @@ export const api = {
     console.log('[updateLeadStatus] handleJson returned:', result);
     return result;
   },
+  async undoAdmission(id) {
+    const res = await authFetch(
+      `${getApiBase()}/api/admission/leads/${id}/undo-admission`,
+      {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+    return handleJson(res, "Undo admission failed");
+  },
   async addLeadFollowUp(id, { note, nextFollowUpDate, priority }) {
     const res = await authFetch(
       `${getApiBase()}/api/admission/leads/${id}/follow-up`,
