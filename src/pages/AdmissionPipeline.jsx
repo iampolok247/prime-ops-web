@@ -275,8 +275,8 @@ function PipelineTable({ status, canAct, user }) {
   };
 
   const handleAdmitAnotherCourse = (lead) => {
-    // Navigate to Assigned Lead page with pre-filled data
-    navigate(`/admission/assigned?prefill=true&name=${encodeURIComponent(lead.name)}&phone=${encodeURIComponent(lead.phone || '')}&email=${encodeURIComponent(lead.email || '')}&source=${encodeURIComponent(lead.source || '')}&referenceLeadId=${encodeURIComponent(lead.leadId || '')}`);
+    // Navigate to Lead Entry page with pre-filled data
+    navigate(`/lead-entry?prefill=true&name=${encodeURIComponent(lead.name)}&phone=${encodeURIComponent(lead.phone || '')}&email=${encodeURIComponent(lead.email || '')}&source=${encodeURIComponent(lead.source || '')}&referenceLeadId=${encodeURIComponent(lead.leadId || '')}`);
   };
 
   // Filter rows based on search term, course, and follow-up dates
