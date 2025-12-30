@@ -23,6 +23,12 @@ export default function LeadsCenter() {
   const [todayTotal, setTodayTotal] = useState(0);
   const [distributeSelectedMembers, setDistributeSelectedMembers] = useState([]);
   const [showDistributeModal, setShowDistributeModal] = useState(false);
+  
+  // Duplicate lead for another course
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [duplicateTarget, setDuplicateTarget] = useState(null);
+  const [duplicateCourse, setDuplicateCourse] = useState('');
+  const [duplicating, setDuplicating] = useState(false);
 
   const canAssign = user?.role === 'DigitalMarketing';
 
@@ -95,6 +101,42 @@ export default function LeadsCenter() {
       setMsg('Lead deleted successfully');
       load();
     } catch (e) { setErr(e.message); }
+  };
+
+  const openDuplicateModal = (lead) => {
+    setDuplicateTarget(lead);
+    setDuplicateCourse('');
+    setShowDuplicateModal(true);
+  };
+
+  const submitDuplicateLead = async () => {
+    if (!duplicateCourse) {
+      setErr('Please select a course');
+      return;
+    }
+    setMsg(null); setErr(null); setDuplicating(true);
+    try {
+      const selectedCourseObj = courses.find(c => c._id === duplicateCourse);
+      const newLeadData = {
+        name: duplicateTarget.name,
+        phone: duplicateTarget.phone,
+        email: duplicateTarget.email || '',
+        interestedCourse: selectedCourseObj?.name || '',
+        source: duplicateTarget.source || 'Manually Generated Lead',
+        specialFilter: `Related to ${duplicateTarget.leadId}`
+      };
+      
+      const response = await api.createLead(newLeadData);
+      setMsg(`✅ New lead created successfully! Lead ID: ${response.leadId || response.lead?.leadId || 'Generated'}`);
+      setShowDuplicateModal(false);
+      setDuplicateTarget(null);
+      setDuplicateCourse('');
+      load(); // Reload leads
+    } catch (e) { 
+      setErr(e.message); 
+    } finally {
+      setDuplicating(false);
+    }
   };
 
   const distributeEquallyBulk = async () => {
@@ -530,6 +572,13 @@ export default function LeadsCenter() {
                         ✎ Edit
                       </button>
                       <button
+                        onClick={() => openDuplicateModal(l)}
+                        className="px-2 py-1 text-sm rounded-lg border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100 transition whitespace-nowrap"
+                        title="Duplicate this lead for another course"
+                      >
+                        📋 Duplicate for Another Course
+                      </button>
+                      <button
                         onClick={() => deleteLead(l._id)}
                         className="px-2 py-1 text-sm rounded-lg border border-red-300 bg-red-50 text-red-700 hover:bg-red-100 transition"
                         title="Delete lead"
@@ -643,6 +692,65 @@ export default function LeadsCenter() {
             </div>
             <div className="mt-4 text-right">
               <button onClick={()=>setShowHistory(false)} className="px-4 py-2 bg-royal text-white rounded-xl hover:bg-royal/90">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Duplicate Lead Modal */}
+      {showDuplicateModal && duplicateTarget && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-black opacity-30" onClick={()=>setShowDuplicateModal(false)} />
+          <div className="bg-white rounded-xl p-6 z-10 w-full max-w-lg shadow-lg">
+            <h3 className="text-xl font-bold mb-4 text-[#053867]">Duplicate Lead for Another Course</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Student: <strong>{duplicateTarget.name}</strong> ({duplicateTarget.leadId})<br/>
+              Phone: <strong>{duplicateTarget.phone}</strong><br/>
+              Email: <strong>{duplicateTarget.email || 'N/A'}</strong>
+            </p>
+            <p className="text-sm bg-blue-50 text-blue-800 p-3 rounded-lg mb-4">
+              💡 This will create a new lead with a new Lead ID for the selected course. The student can then be assigned and admitted separately.
+            </p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block">
+                  <span className="text-sm font-semibold text-[#053867] mb-2 block">Select New Course *</span>
+                  <select 
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    value={duplicateCourse}
+                    onChange={e => setDuplicateCourse(e.target.value)}
+                    required
+                  >
+                    <option value="">Choose a course...</option>
+                    {courses.map(c => (
+                      <option key={c._id} value={c._id}>{c.name}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              {err && <div className="text-red-600 text-sm">{err}</div>}
+              {msg && <div className="text-green-600 text-sm">{msg}</div>}
+
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <button 
+                  type="button" 
+                  onClick={() => { setShowDuplicateModal(false); setDuplicateTarget(null); setErr(null); setMsg(null); }} 
+                  className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+                  disabled={duplicating}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  onClick={submitDuplicateLead}
+                  disabled={!duplicateCourse || duplicating}
+                  className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {duplicating ? 'Creating...' : 'Create New Lead'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
