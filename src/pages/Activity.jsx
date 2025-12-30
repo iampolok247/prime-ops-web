@@ -6,6 +6,8 @@ export default function Activity() {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
+  const [pagination, setPagination] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({
     action: '',
     userId: '',
@@ -16,22 +18,27 @@ export default function Activity() {
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
-    fetchActivities();
+    fetchActivities(1);
     fetchStats();
     fetchUsers();
   }, []);
 
   useEffect(() => {
-    fetchActivities();
+    setCurrentPage(1); // Reset to page 1 when filters change
+    fetchActivities(1);
   }, [filters]);
 
-  const fetchActivities = async () => {
+  const fetchActivities = async (page = 1) => {
+    setLoading(page === 1); // Only show loading on first page
     try {
       const token = localStorage.getItem('auth_token');
       const apiBase = import.meta.env.PROD ? 'http://31.97.228.226:5000' : 'http://localhost:5001';
       
-      // Build query string with filters
-      const params = new URLSearchParams({ limit: '100' });
+      // Build query string with filters and pagination
+      const params = new URLSearchParams({ 
+        limit: '100',
+        page: page.toString()
+      });
       if (filters.action) params.append('action', filters.action);
       if (filters.userId) params.append('userId', filters.userId);
       if (filters.startDate) params.append('startDate', filters.startDate);
@@ -43,14 +50,33 @@ export default function Activity() {
       if (res.ok) {
         const data = await res.json();
         setActivities(data.activities || []);
+        setPagination(data.pagination || null);
       } else {
         setActivities([]);
+        setPagination(null);
       }
     } catch (error) {
       console.error('Error:', error);
       setActivities([]);
+      setPagination(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadNextPage = () => {
+    if (pagination && currentPage < pagination.pages) {
+      const nextPage = currentPage + 1;
+      setCurrentPage(nextPage);
+      fetchActivities(nextPage);
+    }
+  };
+
+  const loadPrevPage = () => {
+    if (currentPage > 1) {
+      const prevPage = currentPage - 1;
+      setCurrentPage(prevPage);
+      fetchActivities(prevPage);
     }
   };
 
@@ -333,6 +359,43 @@ export default function Activity() {
             )}
           </tbody>
         </table>
+
+        {/* Pagination Controls */}
+        {pagination && pagination.pages > 1 && (
+          <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-700">
+                Showing <span className="font-medium">{((currentPage - 1) * pagination.limit) + 1}</span> to{' '}
+                <span className="font-medium">
+                  {Math.min(currentPage * pagination.limit, pagination.total)}
+                </span> of{' '}
+                <span className="font-medium">{pagination.total}</span> results
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={loadPrevPage}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  ← Previous
+                </button>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-700">
+                    Page <span className="font-medium">{currentPage}</span> of{' '}
+                    <span className="font-medium">{pagination.pages}</span>
+                  </span>
+                </div>
+                <button
+                  onClick={loadNextPage}
+                  disabled={currentPage === pagination.pages}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
