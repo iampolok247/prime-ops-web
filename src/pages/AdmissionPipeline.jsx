@@ -85,6 +85,12 @@ function PipelineTable({ status, canAct, user }) {
   const [feeErr, setFeeErr] = useState(null);
   const [feeLoading, setFeeLoading] = useState(false);
   
+  // Duplicate lead for another course
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [duplicateTarget, setDuplicateTarget] = useState(null);
+  const [duplicateCourse, setDuplicateCourse] = useState('');
+  const [duplicating, setDuplicating] = useState(false);
+  
   // Filter states
   const [selectedCourseFilter, setSelectedCourseFilter] = useState('');
   const [followUpDateFilter, setFollowUpDateFilter] = useState('all'); // 'all', 'today', 'yesterday', 'nextday', 'bydate'
@@ -274,9 +280,51 @@ function PipelineTable({ status, canAct, user }) {
     }
   };
 
-  const handleAdmitAnotherCourse = (lead) => {
-    // Navigate to Lead Entry page with pre-filled data
-    navigate(`/lead-entry?prefill=true&name=${encodeURIComponent(lead.name)}&phone=${encodeURIComponent(lead.phone || '')}&email=${encodeURIComponent(lead.email || '')}&source=${encodeURIComponent(lead.source || '')}&referenceLeadId=${encodeURIComponent(lead.leadId || '')}`);
+  const handleAdmitAnotherCourse = async (lead) => {
+    // Open modal to select course and duplicate lead
+    setDuplicateTarget(lead);
+    setDuplicateCourse('');
+    setShowDuplicateModal(true);
+    // Load courses if not already loaded
+    if (courses.length === 0) {
+      await loadCourses();
+    }
+  };
+
+  const submitDuplicateLead = async () => {
+    if (!duplicateCourse) {
+      setErr('Please select a course');
+      return;
+    }
+    setMsg(null); setErr(null); setDuplicating(true);
+    try {
+      // Create new lead with same data but different course
+      const selectedCourseObj = courses.find(c => c._id === duplicateCourse);
+      const newLeadData = {
+        name: duplicateTarget.name,
+        phone: duplicateTarget.phone,
+        email: duplicateTarget.email || '',
+        interestedCourse: selectedCourseObj?.name || '',
+        source: duplicateTarget.source || 'Manually Generated Lead',
+        specialFilter: `Related to ${duplicateTarget.leadId}`
+      };
+      
+      const response = await api.createLead(newLeadData);
+      setMsg(`✅ New lead created successfully! Lead ID: ${response.leadId || response.lead?.leadId || 'Generated'}`);
+      setShowDuplicateModal(false);
+      setDuplicateTarget(null);
+      setDuplicateCourse('');
+      
+      // Show success message for a few seconds
+      setTimeout(() => {
+        setMsg(`✅ Lead duplicated! Now you can assign it to a batch and collect fees from the "Assigned Lead" tab.`);
+      }, 2000);
+      
+    } catch (e) { 
+      setErr(e.message); 
+    } finally {
+      setDuplicating(false);
+    }
   };
 
   // Filter rows based on search term, course, and follow-up dates
@@ -866,6 +914,65 @@ function PipelineTable({ status, canAct, user }) {
           onClose={() => { setShowHistory(false); setHistLead(null); load(); }} 
         />
       )}
+      
+      {/* Duplicate Lead Modal */}
+      {showDuplicateModal && duplicateTarget && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-black opacity-30" onClick={()=>setShowDuplicateModal(false)} />
+          <div className="bg-white rounded-xl p-6 z-10 w-full max-w-lg shadow-lg">
+            <h3 className="text-xl font-bold mb-4 text-[#053867]">Enroll in Another Course</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Student: <strong>{duplicateTarget.name}</strong> ({duplicateTarget.leadId})<br/>
+              Phone: <strong>{duplicateTarget.phone}</strong>
+            </p>
+            <p className="text-sm bg-blue-50 text-blue-800 p-3 rounded-lg mb-4">
+              💡 This will create a new lead with a new Lead ID for the selected course. The student can then be admitted to a batch and fees can be collected separately.
+            </p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block">
+                  <span className="text-sm font-semibold text-[#053867] mb-2 block">Select New Course *</span>
+                  <select 
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    value={duplicateCourse}
+                    onChange={e => setDuplicateCourse(e.target.value)}
+                    required
+                  >
+                    <option value="">Choose a course...</option>
+                    {courses.map(c => (
+                      <option key={c._id} value={c._id}>{c.name}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              {err && <div className="text-red-600 text-sm">{err}</div>}
+              {msg && <div className="text-green-600 text-sm">{msg}</div>}
+
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <button 
+                  type="button" 
+                  onClick={() => { setShowDuplicateModal(false); setDuplicateTarget(null); setErr(null); setMsg(null); }} 
+                  className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+                  disabled={duplicating}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  onClick={submitDuplicateLead}
+                  disabled={!duplicateCourse || duplicating}
+                  className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {duplicating ? 'Creating...' : 'Create New Lead'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {showNotInterestedModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50">
           <div className="absolute inset-0 bg-black opacity-30" onClick={()=>setShowNotInterestedModal(false)} />
