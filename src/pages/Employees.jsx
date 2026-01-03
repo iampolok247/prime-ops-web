@@ -85,11 +85,53 @@ export default function Employees() {
     } catch (e) { setErr(e?.message || 'Delete failed'); }
   };
 
+  const downloadCSV = () => {
+    // Prepare CSV data
+    const headers = ['Order', 'Name', 'Role', 'Department', 'Designation', 'Email', 'Phone'];
+    const rows = sortedList.map(u => [
+      u.displayOrder || 0,
+      u.name || '',
+      u.role || '',
+      u.department || '',
+      u.designation || '',
+      u.email || '',
+      u.phone || ''
+    ]);
+
+    // Create CSV content
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `employees_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
         <h1 className="text-2xl font-bold text-navy">Employee List</h1>
-        {canEdit && <button onClick={startAdd} className="bg-gold text-navy rounded-xl px-4 py-2 font-semibold hover:bg-lightgold">+ Add Employee</button>}
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={downloadCSV} 
+            className="bg-royal text-white rounded-xl px-4 py-2 font-semibold hover:bg-royal/90 flex items-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+            Download CSV
+          </button>
+          {canEdit && <button onClick={startAdd} className="bg-gold text-navy rounded-xl px-4 py-2 font-semibold hover:bg-lightgold">+ Add Employee</button>}
+        </div>
       </div>
 
       {ok && <div className="mb-2 text-green-700">{ok}</div>}
