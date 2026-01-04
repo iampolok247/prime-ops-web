@@ -1,6 +1,6 @@
 // web/src/pages/RecruitIncome.jsx
 import { useEffect, useMemo, useState } from "react";
-import { api, fmtBDT } from "../lib/api";
+import { api, fmtBDTEn } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react";
 
@@ -120,11 +120,11 @@ export default function RecruitIncome() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-4 text-white shadow-lg">
           <div className="text-sm opacity-90">Approved Income</div>
-          <div className="text-2xl font-bold mt-1">{fmtBDT(totalApproved)}</div>
+          <div className="text-2xl font-bold mt-1">{fmtBDTEn(totalApproved)}</div>
         </div>
         <div className="bg-gradient-to-br from-yellow-500 to-orange-600 rounded-2xl p-4 text-white shadow-lg">
           <div className="text-sm opacity-90">Pending Approval</div>
-          <div className="text-2xl font-bold mt-1">{fmtBDT(totalPending)}</div>
+          <div className="text-2xl font-bold mt-1">{fmtBDTEn(totalPending)}</div>
         </div>
         <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-4 text-white shadow-lg">
           <div className="text-sm opacity-90">Total Entries</div>
@@ -168,7 +168,7 @@ export default function RecruitIncome() {
                 <td className="py-3 px-2 text-gray-600">{r.incomeFrom?.name || '-'}</td>
                 <td className="py-3 px-2 text-gray-600">{r.incomeFor?.name || '-'}</td>
                 <td className="py-3 px-2 text-gray-600">{r.description || '-'}</td>
-                <td className="py-3 px-2 font-semibold">{fmtBDT(r.amount)}</td>
+                <td className="py-3 px-2 font-semibold">{fmtBDTEn(r.amount)}</td>
                 <td className="py-3 px-2">{getStatusBadge(r.status)}</td>
                 <td className="py-3 px-2 text-gray-600">{r.submittedBy?.name || '-'}</td>
                 {isAccountant && (
