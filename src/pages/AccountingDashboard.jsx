@@ -36,18 +36,43 @@ export default function AccountingDashboard() {
   const load = async () => {
     try {
       let qFrom, qTo;
-      if (range.period === 'custom') { qFrom = range.from; qTo = range.to; }
-      else if (range.period === 'lifetime') { qFrom = undefined; qTo = undefined; }
-      else {
-        const now = new Date();
-        const f = new Date();
-        if (range.period === 'daily') f.setDate(now.getDate() - 1);
-        else if (range.period === 'weekly') f.setDate(now.getDate() - 7);
-        else if (range.period === 'monthly') f.setMonth(now.getMonth() - 1);
-        else if (range.period === 'yearly') f.setFullYear(now.getFullYear() - 1);
-        qFrom = f.toISOString().slice(0,10);
+      const now = new Date();
+      
+      if (range.period === 'custom') { 
+        qFrom = range.from; 
+        qTo = range.to; 
+      }
+      else if (range.period === 'lifetime') { 
+        qFrom = undefined; 
+        qTo = undefined; 
+      }
+      else if (range.period === 'daily') {
+        // Today only
+        qFrom = now.toISOString().slice(0,10);
         qTo = now.toISOString().slice(0,10);
       }
+      else if (range.period === 'weekly') {
+        // This week (Monday to Sunday)
+        const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, ...
+        const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        const monday = new Date(now);
+        monday.setDate(now.getDate() - mondayOffset);
+        qFrom = monday.toISOString().slice(0,10);
+        qTo = now.toISOString().slice(0,10);
+      }
+      else if (range.period === 'monthly') {
+        // This month (e.g., January 1 - January 31)
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        qFrom = firstDay.toISOString().slice(0,10);
+        qTo = now.toISOString().slice(0,10);
+      }
+      else if (range.period === 'yearly') {
+        // This year (January 1 - December 31)
+        const firstDay = new Date(now.getFullYear(), 0, 1);
+        qFrom = firstDay.toISOString().slice(0,10);
+        qTo = now.toISOString().slice(0,10);
+      }
+      
       const [d, incResp, expResp, balResp] = await Promise.all([
         api.accountingSummary(qFrom, qTo),
         api.listIncome().catch(()=>({ income: [] })),
@@ -62,6 +87,13 @@ export default function AccountingDashboard() {
   };
 
   useEffect(() => { load(); }, []); // eslint-disable-line
+  
+  // Reload when period or custom dates change
+  useEffect(() => { 
+    if (range.period !== 'custom') {
+      load(); 
+    }
+  }, [range.period]); // eslint-disable-line
 
   const location = useLocation();
   useEffect(() => {
