@@ -2,12 +2,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, fmtBDTEn } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
-import { CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react";
+import { CheckCircle, XCircle, Clock, AlertCircle, Edit2 } from "lucide-react";
 
 export default function RecruitIncome() {
   const { user } = useAuth();
   const [items, setItems] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
+  const [editingIncome, setEditingIncome] = useState(null);
   const [loading, setLoading] = useState(false);
   const [filterStatus, setFilterStatus] = useState('All');
   const [showRejectModal, setShowRejectModal] = useState(null);
@@ -174,6 +175,16 @@ export default function RecruitIncome() {
                 {isAccountant && (
                   <td className="py-3 px-2">
                     <div className="flex gap-2">
+                      {/* Edit button for Recruitment role when not approved */}
+                      {isRecruitment && r.status !== 'Approved' && (
+                        <button 
+                          onClick={() => setEditingIncome(r)} 
+                          className="px-3 py-1 rounded-xl bg-blue-100 text-blue-700 hover:bg-blue-200 text-xs font-medium flex items-center gap-1"
+                        >
+                          <Edit2 size={12} />
+                          Edit
+                        </button>
+                      )}
                       {r.status === 'Pending' && (
                         <>
                           <button onClick={() => approve(r._id)} className="px-3 py-1 rounded-xl bg-green-100 text-green-700 hover:bg-green-200 text-xs font-medium">
@@ -204,6 +215,7 @@ export default function RecruitIncome() {
       </div>
 
       {showAdd && <AddModal onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); load(); }} />}
+      {editingIncome && <EditModal income={editingIncome} onClose={() => setEditingIncome(null)} onSaved={() => { setEditingIncome(null); load(); }} />}
       {showRejectModal && (
         <RejectModal
           income={showRejectModal}
@@ -310,6 +322,110 @@ function AddModal({ onClose, onSaved }) {
               </button>
               <button onClick={submit} className="px-4 py-2 rounded-2xl bg-[#F7BA23] text-[#053867] hover:bg-[#F3CE49] font-medium">
                 Submit for Approval
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EditModal({ income, onClose, onSaved }) {
+  const [form, setForm] = useState({
+    date: income.date ? new Date(income.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+    source: income.source || "",
+    amount: income.amount?.toString() || "",
+    description: income.description || "",
+    incomeFrom: income.incomeFrom?._id || "",
+    incomeFor: income.incomeFor?._id || ""
+  });
+  const [employers, setEmployers] = useState([]);
+  const [recruitedCandidates, setRecruitedCandidates] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [empData, candData] = await Promise.all([
+          api.listEmployers(),
+          api.listRecruited()
+        ]);
+        setEmployers(Array.isArray(empData) ? empData : []);
+        setRecruitedCandidates(Array.isArray(candData) ? candData : []);
+      } catch (e) {
+        console.error('Failed to load dropdown data:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  const submit = async () => {
+    if (!form.source) return alert("Source is required");
+    const amount = Number(form.amount);
+    if (!amount || amount <= 0) return alert("Enter a valid amount");
+    if (!form.incomeFrom) return alert("Income From (Employer) is required");
+    if (!form.incomeFor) return alert("Income For (Candidate) is required");
+    try {
+      await api.updateRecIncome(income._id, { 
+        date: form.date, 
+        source: form.source, 
+        amount,
+        description: form.description,
+        incomeFrom: form.incomeFrom,
+        incomeFor: form.incomeFor
+      });
+      onSaved();
+    } catch (e) {
+      alert(e.message || 'Failed to update income');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center gap-2">
+          <Edit2 className="text-[#253985]" size={24} />
+          <h3 className="text-lg font-semibold text-[#253985]">Edit Income Entry</h3>
+        </div>
+        <p className="text-sm text-gray-600">
+          Update the income details. Changes will remain pending until approved.
+        </p>
+        
+        {loading ? (
+          <div className="text-center py-4 text-gray-500">Loading form data...</div>
+        ) : (
+          <>
+            <Field label="Date" type="date" value={form.date} onChange={(v)=>setForm(f=>({...f, date:v}))} />
+            <Field label="Source" value={form.source} onChange={(v)=>setForm(f=>({...f, source:v}))} placeholder="Commission, Training Fee, Placement Fee, etc." />
+            
+            <SearchableSelect
+              label="Income From (Employer) *"
+              value={form.incomeFrom}
+              onChange={(v)=>setForm(f=>({...f, incomeFrom:v}))}
+              options={employers.map(emp => ({ value: emp._id, label: emp.name }))}
+              placeholder="Select employer..."
+            />
+            
+            <SearchableSelect
+              label="Income For (Recruited Candidate) *"
+              value={form.incomeFor}
+              onChange={(v)=>setForm(f=>({...f, incomeFor:v}))}
+              options={recruitedCandidates.map(cand => ({ value: cand._id, label: `${cand.name} (${cand.canId})` }))}
+              placeholder="Select candidate..."
+            />
+            
+            <Field label="Amount (BDT)" type="number" value={form.amount} onChange={(v)=>setForm(f=>({...f, amount:v}))} />
+            <Field label="Description (Optional)" value={form.description} onChange={(v)=>setForm(f=>({...f, description:v}))} placeholder="Additional details about this income" multiline />
+            
+            <div className="flex justify-end gap-2 pt-2">
+              <button onClick={onClose} className="px-4 py-2 rounded-2xl bg-gray-100 hover:bg-gray-200 font-medium">
+                Cancel
+              </button>
+              <button onClick={submit} className="px-4 py-2 rounded-2xl bg-blue-600 text-white hover:bg-blue-700 font-medium">
+                Update Income
               </button>
             </div>
           </>

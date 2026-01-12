@@ -910,10 +910,13 @@ export const api = {
     );
     return handleJson(res, "Delete recruitment income failed");
   },
-  async updateRecIncome() {
-    throw new Error(
-      "updateRecIncome is not supported by the backend (use add/delete)."
-    );
+  async updateRecIncome(id, payload) {
+    const res = await fetch(`${BASE}/api/recruitment/income/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...authHeader() },
+      body: JSON.stringify(payload),
+    });
+    return handleJson(res, "Update recruitment income failed");
   },
 
   // ---- Recruitment Expenses ----
