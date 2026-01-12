@@ -794,6 +794,11 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [err, setErr] = useState(null);
+  const [showDateRangeModal, setShowDateRangeModal] = useState(false);
+  const [dateRange, setDateRange] = useState({
+    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10),
+    to: new Date().toISOString().slice(0, 10)
+  });
   const [formData, setFormData] = useState({
     campaignName: '',
     platform: 'Meta Ads',
@@ -1026,6 +1031,87 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
     document.body.removeChild(link);
   }
 
+  function downloadDateRangeReport() {
+    // Filter campaigns by date range
+    const rangeStart = new Date(dateRange.from);
+    const rangeEnd = new Date(dateRange.to);
+    
+    const campaignsInRange = campaigns.filter(c => {
+      const campaignDate = new Date(c.campaignDate || c.createdAt);
+      return campaignDate >= rangeStart && campaignDate <= rangeEnd;
+    });
+
+    if (campaignsInRange.length === 0) {
+      alert('No campaigns found in this date range');
+      return;
+    }
+
+    // Calculate summary for date range
+    let totalCost = 0;
+    let totalLeads = 0;
+    let totalImpressions = 0;
+    let totalReach = 0;
+
+    campaignsInRange.forEach(c => {
+      totalCost += Number(c.cost) || 0;
+      totalLeads += Number(c.leads) || 0;
+      totalImpressions += Number(c.impressions) || 0;
+      totalReach += Number(c.reach) || 0;
+    });
+
+    const avgCPL = totalLeads > 0 ? totalCost / totalLeads : 0;
+
+    // Create CSV content
+    const headers = ['Date', 'Campaign Name', 'Platform', 'Type', 'Cost (৳)', 'Leads', 'Engagements', 'ThruPlays', 'Impressions', 'Reach', 'CPL (৳)', 'Notes'];
+    const rows = campaignsInRange.map(c => [
+      new Date(c.campaignDate || c.createdAt).toLocaleDateString('en-GB'),
+      c.campaignName || '',
+      c.platform || '',
+      c.boostType || '',
+      (c.cost || 0).toFixed(2),
+      c.leads || 0,
+      c.postEngagements || 0,
+      c.thruPlays || 0,
+      c.impressions || 0,
+      c.reach || 0,
+      c.costPerLead ? c.costPerLead.toFixed(2) : '0',
+      c.notes || ''
+    ]);
+
+    // Add summary
+    const summaryRows = [
+      [],
+      ['SUMMARY'],
+      ['Date Range', `${new Date(dateRange.from).toLocaleDateString('en-GB')} to ${new Date(dateRange.to).toLocaleDateString('en-GB')}`],
+      ['Total Campaigns', campaignsInRange.length],
+      ['Total Cost', totalCost.toFixed(2)],
+      ['Total Leads', totalLeads],
+      ['Average CPL', avgCPL.toFixed(2)],
+      ['Total Impressions', totalImpressions],
+      ['Total Reach', totalReach]
+    ];
+
+    const csvContent = [
+      [`Campaign Report - ${new Date(dateRange.from).toLocaleDateString('en-GB')} to ${new Date(dateRange.to).toLocaleDateString('en-GB')}`],
+      [],
+      [headers.join(',')],
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
+      ...summaryRows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Campaign-Report-${dateRange.from}-to-${dateRange.to}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setShowDateRangeModal(false);
+  }
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
       <div className="flex items-center justify-between mb-6">
@@ -1034,13 +1120,27 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
           Ad Campaigns
         </h2>
         <div className="flex items-center gap-3">
-          <button 
-            onClick={downloadReport}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium"
-            title="Download monthwise report"
-          >
-            <Download className="w-4 h-4" /> Download Report
-          </button>
+          <div className="relative group">
+            <button 
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium"
+            >
+              <Download className="w-4 h-4" /> Download Report
+            </button>
+            <div className="hidden group-hover:block absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[200px] z-10">
+              <button 
+                onClick={downloadReport}
+                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700"
+              >
+                📅 Current Month
+              </button>
+              <button 
+                onClick={() => setShowDateRangeModal(true)}
+                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700"
+              >
+                📆 Date Range
+              </button>
+            </div>
+          </div>
           <button 
             onClick={() => { setShowForm(!showForm); setEditingId(null); setFormData({campaignName: '', platform: 'Meta Ads', boostType: 'Leads', cost: '', leads: '', postEngagements: '', thruPlays: '', impressions: '', reach: '', notes: '', campaignDate: selectedMonth}); }}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
@@ -1321,6 +1421,53 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
           </table>
         )}
       </div>
+
+      {/* Date Range Download Modal */}
+      {showDateRangeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-bold mb-4">Download by Date Range</h3>
+            
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium mb-2">From Date</label>
+                <input
+                  type="date"
+                  value={dateRange.from}
+                  onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">To Date</label>
+                <input
+                  type="date"
+                  value={dateRange.to}
+                  onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={() => setShowDateRangeModal(false)}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={downloadDateRangeReport}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Download
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
