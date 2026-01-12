@@ -799,11 +799,13 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
     from: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10),
     to: new Date().toISOString().slice(0, 10)
   });
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   const [formData, setFormData] = useState({
     campaignName: '',
     platform: 'Meta Ads',
     boostType: 'Leads',
     cost: '',
+    currency: 'BDT',
     leads: '',
     postEngagements: '',
     thruPlays: '',
@@ -963,6 +965,7 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
       campaignName: campaign.campaignName || '',
       platform: campaign.platform || 'Meta Ads',
       boostType: campaign.boostType || 'Leads',
+      currency: campaign.currency || 'BDT',
       cost: (campaign.cost || 0).toString(),
       leads: (campaign.leads || 0).toString(),
       postEngagements: (campaign.postEngagements || 0).toString(),
@@ -986,11 +989,12 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
     const monthName = new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
     
     // Create CSV content
-    const headers = ['Campaign Name', 'Platform', 'Type', 'Cost (৳)', 'Leads', 'Engagements', 'ThruPlays', 'Impressions', 'Reach', 'CPL (৳)', 'Notes'];
+    const headers = ['Campaign Name', 'Platform', 'Type', 'Currency', 'Cost', 'Leads', 'Engagements', 'ThruPlays', 'Impressions', 'Reach', 'CPL', 'Notes'];
     const rows = filteredCampaigns.map(c => [
       c.campaignName || '',
       c.platform || '',
       c.boostType || '',
+      c.currency || 'BDT',
       (c.cost || 0).toFixed(2),
       c.leads || 0,
       c.postEngagements || 0,
@@ -1062,12 +1066,13 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
     const avgCPL = totalLeads > 0 ? totalCost / totalLeads : 0;
 
     // Create CSV content
-    const headers = ['Date', 'Campaign Name', 'Platform', 'Type', 'Cost (৳)', 'Leads', 'Engagements', 'ThruPlays', 'Impressions', 'Reach', 'CPL (৳)', 'Notes'];
+    const headers = ['Date', 'Campaign Name', 'Platform', 'Type', 'Currency', 'Cost', 'Leads', 'Engagements', 'ThruPlays', 'Impressions', 'Reach', 'CPL', 'Notes'];
     const rows = campaignsInRange.map(c => [
       new Date(c.campaignDate || c.createdAt).toLocaleDateString('en-GB'),
       c.campaignName || '',
       c.platform || '',
       c.boostType || '',
+      c.currency || 'BDT',
       (c.cost || 0).toFixed(2),
       c.leads || 0,
       c.postEngagements || 0,
@@ -1120,29 +1125,32 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
           Ad Campaigns
         </h2>
         <div className="flex items-center gap-3">
-          <div className="relative group">
+          <div className="relative">
             <button 
+              onClick={() => setShowDownloadMenu(!showDownloadMenu)}
               className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium"
             >
               <Download className="w-4 h-4" /> Download Report
             </button>
-            <div className="hidden group-hover:block absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[200px] z-10">
-              <button 
-                onClick={downloadReport}
-                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700"
-              >
-                📅 Current Month
-              </button>
-              <button 
-                onClick={() => setShowDateRangeModal(true)}
-                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700"
-              >
-                📆 Date Range
-              </button>
-            </div>
+            {showDownloadMenu && (
+              <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[200px] z-10">
+                <button 
+                  onClick={() => { downloadReport(); setShowDownloadMenu(false); }}
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700"
+                >
+                  📅 Current Month
+                </button>
+                <button 
+                  onClick={() => { setShowDateRangeModal(true); setShowDownloadMenu(false); }}
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700"
+                >
+                  📆 Date Range
+                </button>
+              </div>
+            )}
           </div>
           <button 
-            onClick={() => { setShowForm(!showForm); setEditingId(null); setFormData({campaignName: '', platform: 'Meta Ads', boostType: 'Leads', cost: '', leads: '', postEngagements: '', thruPlays: '', impressions: '', reach: '', notes: '', campaignDate: selectedMonth}); }}
+            onClick={() => { setShowForm(!showForm); setEditingId(null); setFormData({campaignName: '', platform: 'Meta Ads', boostType: 'Leads', cost: '', currency: 'BDT', leads: '', postEngagements: '', thruPlays: '', impressions: '', reach: '', notes: '', campaignDate: selectedMonth}); }}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
           >
             <Plus className="w-4 h-4" /> {showForm ? 'Cancel' : 'Add Campaign'}
@@ -1275,7 +1283,21 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
             </div>
 
             <div>
-              <label className="block text-xs font-medium mb-1">Cost (৳) *</label>
+              <label className="block text-xs font-medium mb-1">Currency *</label>
+              <select 
+                name="currency"
+                value={formData.currency}
+                onChange={handleFormChange}
+                required
+                className="w-full px-3 py-2 border rounded text-sm"
+              >
+                <option value="BDT">BDT (৳)</option>
+                <option value="USD">USD ($)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium mb-1">Cost *</label>
               <input 
                 type="number" 
                 name="cost" 
@@ -1284,6 +1306,7 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
                 required 
                 step="0.01"
                 className="w-full px-3 py-2 border rounded text-sm"
+                placeholder={formData.currency === 'USD' ? 'Amount in $' : 'Amount in ৳'}
               />
             </div>
 
@@ -1373,7 +1396,7 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
               <tr>
                 <th className="px-3 py-2 text-left font-semibold">Campaign</th>
                 <th className="px-3 py-2 text-left font-semibold">Type</th>
-                <th className="px-3 py-2 text-right font-semibold">Cost (৳)</th>
+                <th className="px-3 py-2 text-right font-semibold">Cost</th>
                 <th className="px-3 py-2 text-right font-semibold">Leads</th>
                 <th className="px-3 py-2 text-right font-semibold">Eng</th>
                 <th className="px-3 py-2 text-right font-semibold">Impressions</th>
@@ -1391,13 +1414,15 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
                       {campaign.boostType || 'N/A'}
                     </span>
                   </td>
-                  <td className="px-3 py-2 text-right font-semibold">{(campaign.cost || 0).toLocaleString('en-IN')}</td>
+                  <td className="px-3 py-2 text-right font-semibold">
+                    {campaign.currency === 'USD' ? '$' : '৳'}{(campaign.cost || 0).toLocaleString('en-IN')}
+                  </td>
                   <td className="px-3 py-2 text-right">{campaign.leads || 0}</td>
                   <td className="px-3 py-2 text-right">{campaign.postEngagements || 0}</td>
                   <td className="px-3 py-2 text-right">{((campaign.impressions || 0) / 1000).toFixed(1)}K</td>
                   <td className="px-3 py-2 text-right">{((campaign.reach || 0) / 1000).toFixed(1)}K</td>
                   <td className="px-3 py-2 text-right font-semibold text-green-700">
-                    {campaign.costPerLead ? `৳${Number(campaign.costPerLead).toFixed(2)}` : '—'}
+                    {campaign.costPerLead ? `${campaign.currency === 'USD' ? '$' : '৳'}${Number(campaign.costPerLead).toFixed(2)}` : '—'}
                   </td>
                   <td className="px-3 py-2 text-center">
                     <button 
