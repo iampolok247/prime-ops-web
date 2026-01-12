@@ -845,20 +845,37 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
   const filteredSummary = useMemo(() => {
     if (!filteredCampaigns.length || !summary) return summary;
     
-    let totalCost = 0;
+    let totalCostBDT = 0;
+    let totalCostUSD = 0;
+    let totalLeadsBDT = 0;
+    let totalLeadsUSD = 0;
     let totalLeads = 0;
     let totalImpressions = 0;
     
     filteredCampaigns.forEach(campaign => {
-      totalCost += Number(campaign.cost) || 0;
-      totalLeads += Number(campaign.leads) || 0;
+      const cost = Number(campaign.cost) || 0;
+      const leads = Number(campaign.leads) || 0;
+      
+      if (campaign.currency === 'USD') {
+        totalCostUSD += cost;
+        totalLeadsUSD += leads;
+      } else {
+        totalCostBDT += cost;
+        totalLeadsBDT += leads;
+      }
+      
+      totalLeads += leads;
       totalImpressions += Number(campaign.impressions) || 0;
     });
     
     return {
-      totalCost,
+      totalCostBDT,
+      totalCostUSD,
+      totalLeadsBDT,
+      totalLeadsUSD,
       totalLeads,
-      avgCostPerLead: totalLeads > 0 ? totalCost / totalLeads : 0,
+      avgCostPerLeadBDT: totalLeadsBDT > 0 ? totalCostBDT / totalLeadsBDT : 0,
+      avgCostPerLeadUSD: totalLeadsUSD > 0 ? totalCostUSD / totalLeadsUSD : 0,
       totalImpressions
     };
   }, [filteredCampaigns, summary]);
@@ -1008,13 +1025,17 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
       c.notes || ''
     ]);
 
-    // Add summary
+    // Add summary with separate currency totals
     const summaryRows = [
       [],
       ['SUMMARY'],
-      ['Total Cost', (Number(filteredSummary?.totalCost) || 0).toFixed(2)],
+      ['Total Cost (BDT)', (Number(filteredSummary?.totalCostBDT) || 0).toFixed(2)],
+      ['Total Cost (USD)', (Number(filteredSummary?.totalCostUSD) || 0).toFixed(2)],
+      ['Total Leads (BDT)', Number(filteredSummary?.totalLeadsBDT) || 0],
+      ['Total Leads (USD)', Number(filteredSummary?.totalLeadsUSD) || 0],
       ['Total Leads', Number(filteredSummary?.totalLeads) || 0],
-      ['Average CPL', (Number(filteredSummary?.avgCostPerLead) || 0).toFixed(2)],
+      ['Average CPL (BDT)', (Number(filteredSummary?.avgCostPerLeadBDT) || 0).toFixed(2)],
+      ['Average CPL (USD)', (Number(filteredSummary?.avgCostPerLeadUSD) || 0).toFixed(2)],
       ['Total Impressions', Number(filteredSummary?.totalImpressions) || 0]
     ];
 
@@ -1053,20 +1074,34 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
       return;
     }
 
-    // Calculate summary for date range
-    let totalCost = 0;
+    // Calculate summary for date range with separate currencies
+    let totalCostBDT = 0;
+    let totalCostUSD = 0;
+    let totalLeadsBDT = 0;
+    let totalLeadsUSD = 0;
     let totalLeads = 0;
     let totalImpressions = 0;
     let totalReach = 0;
 
     campaignsInRange.forEach(c => {
-      totalCost += Number(c.cost) || 0;
-      totalLeads += Number(c.leads) || 0;
+      const cost = Number(c.cost) || 0;
+      const leads = Number(c.leads) || 0;
+      
+      if (c.currency === 'USD') {
+        totalCostUSD += cost;
+        totalLeadsUSD += leads;
+      } else {
+        totalCostBDT += cost;
+        totalLeadsBDT += leads;
+      }
+      
+      totalLeads += leads;
       totalImpressions += Number(c.impressions) || 0;
       totalReach += Number(c.reach) || 0;
     });
 
-    const avgCPL = totalLeads > 0 ? totalCost / totalLeads : 0;
+    const avgCPL_BDT = totalLeadsBDT > 0 ? totalCostBDT / totalLeadsBDT : 0;
+    const avgCPL_USD = totalLeadsUSD > 0 ? totalCostUSD / totalLeadsUSD : 0;
 
     // Create CSV content
     const headers = ['Date', 'Campaign Name', 'Platform', 'Type', 'Currency', 'Cost', 'Leads', 'Engagements', 'ThruPlays', 'Impressions', 'Reach', 'CPL', 'Notes'];
@@ -1086,15 +1121,19 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
       c.notes || ''
     ]);
 
-    // Add summary
+    // Add summary with separate currency totals
     const summaryRows = [
       [],
       ['SUMMARY'],
       ['Date Range', `${new Date(dateRange.from).toLocaleDateString('en-GB')} to ${new Date(dateRange.to).toLocaleDateString('en-GB')}`],
       ['Total Campaigns', campaignsInRange.length],
-      ['Total Cost', totalCost.toFixed(2)],
+      ['Total Cost (BDT)', totalCostBDT.toFixed(2)],
+      ['Total Cost (USD)', totalCostUSD.toFixed(2)],
+      ['Total Leads (BDT)', totalLeadsBDT],
+      ['Total Leads (USD)', totalLeadsUSD],
       ['Total Leads', totalLeads],
-      ['Average CPL', avgCPL.toFixed(2)],
+      ['Average CPL (BDT)', avgCPL_BDT.toFixed(2)],
+      ['Average CPL (USD)', avgCPL_USD.toFixed(2)],
       ['Total Impressions', totalImpressions],
       ['Total Reach', totalReach]
     ];
@@ -1204,7 +1243,17 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 border border-blue-200">
             <div className="text-xs text-blue-600 font-semibold uppercase">Total Cost</div>
-            <div className="text-xl font-bold text-blue-900 mt-1">৳{(Number(filteredSummary.totalCost) || 0).toLocaleString('en-IN')}</div>
+            <div className="text-lg font-bold text-blue-900 mt-1">
+              {filteredSummary.totalCostBDT > 0 && (
+                <div>৳{(Number(filteredSummary.totalCostBDT) || 0).toLocaleString('en-IN')}</div>
+              )}
+              {filteredSummary.totalCostUSD > 0 && (
+                <div className="text-sm">${(Number(filteredSummary.totalCostUSD) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+              )}
+              {filteredSummary.totalCostBDT === 0 && filteredSummary.totalCostUSD === 0 && (
+                <div>৳0</div>
+              )}
+            </div>
           </div>
           <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3 border border-green-200">
             <div className="text-xs text-green-600 font-semibold uppercase">Total Leads</div>
@@ -1212,7 +1261,17 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
           </div>
           <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3 border border-purple-200">
             <div className="text-xs text-purple-600 font-semibold uppercase">Avg CPL</div>
-            <div className="text-xl font-bold text-purple-900 mt-1">৳{(Number(filteredSummary.avgCostPerLead) || 0).toFixed(2)}</div>
+            <div className="text-lg font-bold text-purple-900 mt-1">
+              {filteredSummary.totalCostBDT > 0 && filteredSummary.totalLeadsBDT > 0 && (
+                <div>৳{(Number(filteredSummary.avgCostPerLeadBDT) || 0).toFixed(2)}</div>
+              )}
+              {filteredSummary.totalCostUSD > 0 && filteredSummary.totalLeadsUSD > 0 && (
+                <div className="text-sm">${(Number(filteredSummary.avgCostPerLeadUSD) || 0).toFixed(2)}</div>
+              )}
+              {(!filteredSummary.totalLeadsBDT && !filteredSummary.totalLeadsUSD) && (
+                <div>—</div>
+              )}
+            </div>
           </div>
           <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-3 border border-orange-200">
             <div className="text-xs text-orange-600 font-semibold uppercase">Impressions</div>
