@@ -35,10 +35,28 @@ export default function DMDashboard() {
     if (period === 'custom' && from && to) return { from: new Date(from), to: new Date(to) };
     const now = new Date();
     let f = new Date();
-    if (period === 'daily') { f.setDate(now.getDate() - 1); }
-    else if (period === 'weekly') { f.setDate(now.getDate() - 7); }
-    else if (period === 'monthly') { f.setMonth(now.getMonth() - 1); }
-    else if (period === 'yearly') { f.setFullYear(now.getFullYear() - 1); }
+    if (period === 'daily') { 
+      // Today only
+      f = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      return { from: f, to: now };
+    }
+    else if (period === 'weekly') { 
+      // This week (Monday to today)
+      const day = now.getDay();
+      const diff = day === 0 ? 6 : day - 1; // Monday is start of week
+      f = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff, 0, 0, 0, 0);
+      return { from: f, to: now };
+    }
+    else if (period === 'monthly') { 
+      // This month (1st to today)
+      f = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      return { from: f, to: now };
+    }
+    else if (period === 'yearly') { 
+      // This year (Jan 1 to today)
+      f = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+      return { from: f, to: now };
+    }
     return { from: f, to: now };
   };
 
