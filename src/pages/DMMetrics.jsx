@@ -812,7 +812,7 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
     impressions: '',
     reach: '',
     notes: '',
-    campaignDate: selectedMonth // Use current filter month as default
+    campaignDate: new Date().toISOString().slice(0, 10) // Default to today
   });
 
   // Generate months list for dropdown (November 2025 to 3 months ahead)
@@ -927,20 +927,22 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
       }
       
       // Switch to the campaign's month to show it immediately
-      setSelectedMonth(formData.campaignDate);
+      const campaignMonth = formData.campaignDate.slice(0, 7); // Extract YYYY-MM from YYYY-MM-DD
+      setSelectedMonth(campaignMonth);
       
       setFormData({
         campaignName: '',
         platform: 'Meta Ads',
         boostType: 'Leads',
         cost: '',
+        currency: 'BDT',
         leads: '',
         postEngagements: '',
         thruPlays: '',
         impressions: '',
         reach: '',
         notes: '',
-        campaignDate: formData.campaignDate // Keep the same month
+        campaignDate: new Date().toISOString().slice(0, 10) // Reset to today
       });
       setShowForm(false);
       setEditingId(null);
@@ -973,7 +975,7 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
       impressions: (campaign.impressions || 0).toString(),
       reach: (campaign.reach || 0).toString(),
       notes: campaign.notes || '',
-      campaignDate: campaign.campaignDate || new Date().toISOString().slice(0, 7)
+      campaignDate: campaign.campaignDate ? new Date(campaign.campaignDate).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)
     });
     setEditingId(campaign._id);
     setShowForm(true);
@@ -989,9 +991,10 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
     const monthName = new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
     
     // Create CSV content
-    const headers = ['Campaign Name', 'Platform', 'Type', 'Currency', 'Cost', 'Leads', 'Engagements', 'ThruPlays', 'Impressions', 'Reach', 'CPL', 'Notes'];
+    const headers = ['Campaign Name', 'Date', 'Platform', 'Type', 'Currency', 'Cost', 'Leads', 'Engagements', 'ThruPlays', 'Impressions', 'Reach', 'CPL', 'Notes'];
     const rows = filteredCampaigns.map(c => [
       c.campaignName || '',
+      c.campaignDate ? new Date(c.campaignDate).toLocaleDateString('en-GB') : '',
       c.platform || '',
       c.boostType || '',
       c.currency || 'BDT',
@@ -1150,7 +1153,7 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
             )}
           </div>
           <button 
-            onClick={() => { setShowForm(!showForm); setEditingId(null); setFormData({campaignName: '', platform: 'Meta Ads', boostType: 'Leads', cost: '', currency: 'BDT', leads: '', postEngagements: '', thruPlays: '', impressions: '', reach: '', notes: '', campaignDate: selectedMonth}); }}
+            onClick={() => { setShowForm(!showForm); setEditingId(null); setFormData({campaignName: '', platform: 'Meta Ads', boostType: 'Leads', cost: '', currency: 'BDT', leads: '', postEngagements: '', thruPlays: '', impressions: '', reach: '', notes: '', campaignDate: new Date().toISOString().slice(0, 10)}); }}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
           >
             <Plus className="w-4 h-4" /> {showForm ? 'Cancel' : 'Add Campaign'}
@@ -1237,22 +1240,15 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
             </div>
 
             <div>
-              <label className="block text-xs font-medium mb-1">Campaign Month *</label>
-              <select 
+              <label className="block text-xs font-medium mb-1">Campaign Date *</label>
+              <input 
+                type="date" 
                 name="campaignDate" 
                 value={formData.campaignDate}
                 onChange={handleFormChange}
+                required
                 className="w-full px-3 py-2 border rounded text-sm"
-              >
-                {Array.from({ length: 24 }, (_, i) => {
-                  const year = 2025 + Math.floor((10 + i) / 12);
-                  const month = (10 + i) % 12;
-                  const yearMonth = `${year}-${String(month + 1).padStart(2, '0')}`;
-                  const d = new Date(year, month);
-                  const monthName = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-                  return <option key={yearMonth} value={yearMonth}>{monthName}</option>;
-                })}
-              </select>
+              />
             </div>
 
             <div>
@@ -1395,6 +1391,7 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
             <thead className="bg-gray-100 border-b border-gray-300">
               <tr>
                 <th className="px-3 py-2 text-left font-semibold">Campaign</th>
+                <th className="px-3 py-2 text-left font-semibold">Date</th>
                 <th className="px-3 py-2 text-left font-semibold">Type</th>
                 <th className="px-3 py-2 text-right font-semibold">Cost</th>
                 <th className="px-3 py-2 text-right font-semibold">Leads</th>
@@ -1409,6 +1406,9 @@ function Campaigns({ selectedMonth, setSelectedMonth }) {
               {filteredCampaigns.map((campaign, idx) => (
                 <tr key={campaign._id} className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50`}>
                   <td className="px-3 py-2">{campaign.campaignName || '—'}</td>
+                  <td className="px-3 py-2 text-gray-600">
+                    {campaign.campaignDate ? new Date(campaign.campaignDate).toLocaleDateString('en-GB') : '—'}
+                  </td>
                   <td className="px-3 py-2">
                     <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
                       {campaign.boostType || 'N/A'}
