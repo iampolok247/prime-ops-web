@@ -25,6 +25,7 @@ import DMDashboard from './pages/dash/DMDashboard.jsx';
 import AdmissionPipeline from './pages/AdmissionPipeline.jsx';
 import AdmissionFees from './pages/AdmissionFees.jsx';
 import AdmissionMetrics from './pages/AdmissionMetrics.jsx';
+import AdmissionTeamMetrics from './pages/AdmissionTeamMetrics.jsx';
 
 import AccountingDashboard from './pages/AccountingDashboard.jsx';
 import FeesApproval from './pages/FeesApproval.jsx';
@@ -135,6 +136,11 @@ export default function App() {
           {/* Digital Marketing dashboard (viewable by DM + Admin/SA) */}
           <Route element={<RoleRoute roles={['DigitalMarketing','Admin','SuperAdmin']} />}>
             <Route path="/dm/dashboard" element={<DMDashboard />} />
+          </Route>
+
+          {/* Admission Team Metrics (Admin/SuperAdmin only) */}
+          <Route element={<RoleRoute roles={['Admin','SuperAdmin']} />}>
+            <Route path="/admission/team-metrics" element={<AdmissionTeamMetrics />} />
           </Route>
 
           {/* Admission */}
