@@ -78,10 +78,9 @@ export default function AdmissionMetrics() {
       return { from: toISODate(f), to: toISODate(t) };
     }
     
-    // Monthly: last 30 days from today
+    // Monthly: 1st of current month to today
     if (period === 'monthly') {
-      const f = new Date(now);
-      f.setDate(now.getDate() - 30);
+      const f = new Date(now.getFullYear(), now.getMonth(), 1);
       f.setHours(0, 0, 0, 0);
       const t = new Date(now);
       t.setHours(23, 59, 59, 999);
@@ -215,7 +214,7 @@ export default function AdmissionMetrics() {
               <option value="daily">Today</option>
               <option value="yesterday">Yesterday</option>
               <option value="weekly">Last 7 Days</option>
-              <option value="monthly">Last 30 Days</option>
+              <option value="monthly">Monthly (Current Month)</option>
               <option value="custom">Custom Range</option>
             </select>
           </div>
