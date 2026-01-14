@@ -87,10 +87,37 @@ export default function AdmissionTeamMetrics() {
 
       const metricsResp = await api.getAdmissionMetrics(userId, range.from, range.to).catch(err => {
         console.error('Failed to fetch metrics:', err);
-        return { metrics: null };
+        return null;
       });
 
-      setMetrics(metricsResp?.metrics || null);
+      if (!metricsResp) {
+        setMetrics(null);
+        return;
+      }
+
+      // Handle different response formats
+      if (userId) {
+        // Single user metrics - response has counselingCount, followUpCount, admittedCount, notAdmittedCount
+        setMetrics({
+          newCalls: metricsResp.counselingCount || 0,
+          followUpCalls: metricsResp.followUpCount || 0,
+          admitted: metricsResp.admittedCount || 0,
+          notAdmitted: metricsResp.notAdmittedCount || 0
+        });
+      } else {
+        // All team members - response has array in 'metrics' field
+        const teamMetrics = metricsResp.metrics || [];
+        
+        // Sum up all team members' metrics
+        const combined = teamMetrics.reduce((acc, member) => ({
+          newCalls: acc.newCalls + (member.counselingCount || 0),
+          followUpCalls: acc.followUpCalls + (member.followUpCount || 0),
+          admitted: acc.admitted + (member.admittedCount || 0),
+          notAdmitted: acc.notAdmitted + (member.notAdmittedCount || 0)
+        }), { newCalls: 0, followUpCalls: 0, admitted: 0, notAdmitted: 0 });
+
+        setMetrics(combined);
+      }
     } catch (e) {
       console.error('Error fetching metrics:', e);
       setMetrics(null);
