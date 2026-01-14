@@ -48,32 +48,23 @@ export default function AdmissionTeamMetrics() {
       return { from: null, to: null };
     }
     
-    // Today
+    // Today - same date for both from and to
     if (period === 'daily') {
-      const f = new Date(now);
-      f.setHours(0, 0, 0, 0);
-      const t = new Date(now);
-      t.setHours(23, 59, 59, 999);
-      return { from: toISODate(f), to: toISODate(t) };
+      const today = toISODate(now);
+      return { from: today, to: today };
     }
     
     // Last 7 Days
     if (period === 'weekly') {
       const f = new Date(now);
       f.setDate(now.getDate() - 7);
-      f.setHours(0, 0, 0, 0);
-      const t = new Date(now);
-      t.setHours(23, 59, 59, 999);
-      return { from: toISODate(f), to: toISODate(t) };
+      return { from: toISODate(f), to: toISODate(now) };
     }
     
     // Monthly: 1st of current month to today
     if (period === 'monthly') {
       const f = new Date(now.getFullYear(), now.getMonth(), 1);
-      f.setHours(0, 0, 0, 0);
-      const t = new Date(now);
-      t.setHours(23, 59, 59, 999);
-      return { from: toISODate(f), to: toISODate(t) };
+      return { from: toISODate(f), to: toISODate(now) };
     }
     
     return { from: null, to: null };
