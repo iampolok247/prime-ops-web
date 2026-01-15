@@ -1717,4 +1717,34 @@ export const api = {
     });
     return handleJson(res, "Delete bank transaction failed");
   },
+
+  // ---- Dashboard APIs for HeadOfCreative ----
+  async getDMDashboard(from, to) {
+    const params = new URLSearchParams();
+    if (from) params.append("from", from);
+    if (to) params.append("to", to);
+    const q = params.toString() ? `?${params.toString()}` : "";
+    const res = await authFetch(`${getApiBase()}/api/dm/dashboard${q}`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load DM dashboard failed");
+  },
+
+  async getMGStats() {
+    const res = await authFetch(`${getApiBase()}/api/mg/stats`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load MG stats failed");
+  },
+
+  async getAdmissionDashboard(from, to) {
+    const params = new URLSearchParams();
+    if (from) params.append("from", from);
+    if (to) params.append("to", to);
+    const q = params.toString() ? `?${params.toString()}` : "";
+    const res = await authFetch(`${getApiBase()}/api/admission/dashboard${q}`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load admission dashboard failed");
+  },
 };

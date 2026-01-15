@@ -51,6 +51,7 @@ import MGProduction from './pages/MGProduction.jsx';
 
 // === Coordinator pages ===
 import CoordinatorDashboard from './pages/CoordinatorDashboard.jsx';
+import HeadOfCreativeDashboard from './pages/HeadOfCreativeDashboard.jsx';
 import DueFeesCollection from './pages/DueFeesCollection.jsx';
 import PaymentNotifications from './pages/PaymentNotifications.jsx';
 

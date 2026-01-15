@@ -7,6 +7,7 @@ import AccountingDashboard from './AccountingDashboard.jsx';
 import RecruitmentDashboard from './RecruitmentDashboard.jsx';
 import MGDashboard from './MGDashboard.jsx';
 import CoordinatorDashboard from './CoordinatorDashboard.jsx';
+import HeadOfCreativeDashboard from './HeadOfCreativeDashboard.jsx';
 
 // new lightweight dashboards below
 import AdminOverview from './dash/AdminOverview.jsx';
@@ -24,6 +25,7 @@ export default function Dashboard() {
   if (role === 'MotionGraphics') return <MGDashboard />;
   if (role === 'Admission') return <AdmissionDashboard />;
   if (role === 'DigitalMarketing') return <DMDashboard />;
+  if (role === 'HeadOfCreative') return <HeadOfCreativeDashboard />;
   if (role === 'Coordinator') return <CoordinatorDashboard />;
   if (role === 'ITAdmin') return <MyLite />;  // Simple dashboard for IT Admin
 
