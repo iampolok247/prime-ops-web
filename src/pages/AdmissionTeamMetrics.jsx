@@ -24,7 +24,7 @@ export default function AdmissionTeamMetrics() {
   const [selectedUser, setSelectedUser] = useState('all');
   const [downloading, setDownloading] = useState(false);
 
-  const isAdmin = user?.role === 'Admin' || user?.role === 'SuperAdmin';
+  const isAdmin = user?.role === 'Admin' || user?.role === 'SuperAdmin' || user?.role === 'HeadOfCreative';
 
   // Fetch admission team members
   useEffect(() => {
