@@ -214,6 +214,7 @@ export default function Employees() {
                 <select className="w-full border rounded-xl px-3 py-2" value={form.role} onChange={e=>setForm(f=>({...f,role:e.target.value}))}>
                   {user?.role === 'SuperAdmin' && <option>SuperAdmin</option>}
                   <option>Admin</option>
+                  <option>HeadOfCreative</option>
                   <option>Accountant</option>
                   <option>Admission</option>
                   <option>Recruitment</option>
