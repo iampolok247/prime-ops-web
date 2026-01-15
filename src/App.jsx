@@ -98,7 +98,7 @@ export default function App() {
           <Route path="/task-report" element={<TaskReport />} />
 
           {/* My Applications - All employees except SuperAdmin */}
-          <Route element={<RoleRoute roles={['Admin', 'Accountant', 'Admission', 'Recruitment', 'DigitalMarketing', 'MotionGraphics', 'Coordinator']} />}>
+          <Route element={<RoleRoute roles={['Admin', 'Accountant', 'Admission', 'Recruitment', 'DigitalMarketing', 'MotionGraphics', 'HeadOfCreative', 'Coordinator']} />}>
             <Route path="/my-applications" element={<MyApplications />} />
           </Route>
 
@@ -115,7 +115,7 @@ export default function App() {
           </Route>
 
           {/* SA/Admin/ITAdmin */}
-          <Route element={<RoleRoute roles={['SuperAdmin', 'Admin', 'ITAdmin']} />}>
+          <Route element={<RoleRoute roles={['SuperAdmin', 'Admin', 'ITAdmin', 'HeadOfCreative']} />}>
             <Route path="/employees" element={<Employees />} />
             <Route path="/leads-center-view" element={<LeadsCenterView />} />
             <Route path="/batches" element={<Batches />} />
@@ -133,18 +133,18 @@ export default function App() {
             <Route path="/dm-metrics" element={<DMMetrics />} />
           </Route>
 
-          {/* Digital Marketing dashboard (viewable by DM + Admin/SA) */}
-          <Route element={<RoleRoute roles={['DigitalMarketing','Admin','SuperAdmin']} />}>
+          {/* Digital Marketing dashboard (viewable by DM + Admin/SA + HeadOfCreative) */}
+          <Route element={<RoleRoute roles={['DigitalMarketing','Admin','SuperAdmin','HeadOfCreative']} />}>
             <Route path="/dm/dashboard" element={<DMDashboard />} />
           </Route>
 
-          {/* Admission Team Metrics (Admin/SuperAdmin only) */}
-          <Route element={<RoleRoute roles={['Admin','SuperAdmin']} />}>
+          {/* Admission Team Metrics (Admin/SuperAdmin/HeadOfCreative only) */}
+          <Route element={<RoleRoute roles={['Admin','SuperAdmin','HeadOfCreative']} />}>
             <Route path="/admission/team-metrics" element={<AdmissionTeamMetrics />} />
           </Route>
 
           {/* Admission */}
-         <Route element={<RoleRoute roles={['Admission','Admin','SuperAdmin','ITAdmin']} />}>
+         <Route element={<RoleRoute roles={['Admission','Admin','SuperAdmin','ITAdmin','HeadOfCreative']} />}>
          <Route path="/admission/dashboard" element={<AdmissionDashboard />} />   {/* <-- NEW */}
          <Route path="/admission/metrics" element={<AdmissionMetrics />} />
          <Route path="/my-targets" element={<MyTargets />} />
@@ -175,7 +175,7 @@ export default function App() {
           </Route>
 
           {/* Motion Graphics */}
-          <Route element={<RoleRoute roles={['MotionGraphics','Admin','SuperAdmin']} />}>
+          <Route element={<RoleRoute roles={['MotionGraphics','Admin','SuperAdmin','HeadOfCreative']} />}>
             <Route path="/mg/dashboard" element={<MGDashboard />} />
             <Route path="/mg/production" element={<MGProduction />} />
           </Route>

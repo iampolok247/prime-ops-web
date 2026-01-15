@@ -128,6 +128,18 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/task-report', label: 'Task Report', icon: <FileText size={18}/> },
       { to: '/mg/production', label: 'MG Production', icon: <Activity size={18}/> }
     ],
+    HeadOfCreative: [
+      { to: '/', label: 'Dashboard', icon: <LayoutDashboard size={18}/> },
+      { to: '/messages', label: 'Messages', icon: <MessageCircle size={18}/> },
+      { to: '/my-applications', label: 'My Applications', icon: <ClipboardList size={18}/> },
+      { to: '/tasks-board', label: 'Task Board', icon: <Kanban size={18}/> },
+      { to: '/task-report', label: 'Task Report', icon: <FileText size={18}/> },
+      { to: '/leads-center-view', label: 'Leads Center', icon: <FolderOpen size={18}/> },
+      { to: '/dm/dashboard', label: 'Digital Marketing Reports', icon: <BarChart2 size={18}/> },
+      { to: '/mg/dashboard', label: 'Motion Graphics Report', icon: <Film size={18}/> },
+      { to: '/admission/dashboard', label: 'Admission Reports', icon: <FolderOpen size={18}/> },
+      { to: '/admission/team-metrics', label: 'Admission Team Metrics', icon: <Activity size={18}/> }
+    ],
     ITAdmin: [
       { to: '/', label: 'Dashboard', icon: <LayoutDashboard size={18}/> },
       { to: '/activity', label: 'Activity Log', icon: <Activity size={18}/> },
