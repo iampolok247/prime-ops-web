@@ -418,6 +418,12 @@ export const api = {
   },
 
   // ---- Admission pipeline ----
+  async getAdmissionLeadCounts() {
+    const res = await authFetch(`${getApiBase()}/api/admission/leads/counts`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load admission lead counts failed");
+  },
   async listAdmissionLeads(status) {
     const q = status ? `?status=${encodeURIComponent(status)}` : "";
     const res = await authFetch(`${getApiBase()}/api/admission/leads${q}`, {

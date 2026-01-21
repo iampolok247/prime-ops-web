@@ -18,11 +18,25 @@ const STATUS_TABS = [
 export default function AdmissionPipeline() {
   const { user } = useAuth();
   const loc = useLocation();
+  const [counts, setCounts] = useState({});
 
   const active = useMemo(() => {
     const found = STATUS_TABS.find(t => t.path === loc.pathname);
     return found ? found.key : 'Assigned';
   }, [loc.pathname]);
+
+  // Load counts on mount
+  useEffect(() => {
+    const loadCounts = async () => {
+      try {
+        const { counts } = await api.getAdmissionLeadCounts();
+        setCounts(counts || {});
+      } catch (e) {
+        console.error('Failed to load counts:', e);
+      }
+    };
+    loadCounts();
+  }, []);
 
   if (user?.role !== 'Admission' && user?.role !== 'Admin' && user?.role !== 'SuperAdmin' && user?.role !== 'ITAdmin') {
     return <div className="text-royal">Access denied</div>;
@@ -36,6 +50,11 @@ export default function AdmissionPipeline() {
           <Link key={t.key} to={t.path}
             className={`px-3 py-1.5 rounded-xl border ${active===t.key ? 'bg-gold text-navy border-gold' : 'hover:bg-[#f3f6ff]'}`}>
             {t.label}
+            {counts[t.key] !== undefined && (
+              <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-semibold ${active===t.key ? 'bg-navy text-white' : 'bg-gold text-navy'}`}>
+                {counts[t.key]}
+              </span>
+            )}
           </Link>
         ))}
         {active === 'Admitted' && user?.role === 'Admission' && (
