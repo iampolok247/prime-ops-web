@@ -120,6 +120,7 @@ export default function AdmissionDashboard() {
   const [downloadingReport, setDownloadingReport] = useState(false);
 
   const isAdminOrSA = user?.role === 'Admin' || user?.role === 'SuperAdmin';
+  const isAdmission = user?.role === 'Admission';
 
   // Load all leads and batches once
   useEffect(()=> {
@@ -150,7 +151,10 @@ export default function AdmissionDashboard() {
       if (isAdminOrSA && usersResp) {
         const users = usersResp?.users || [];
         setAdmissionUsers(Array.isArray(users) ? users : []);
-        // Load initial report data
+      }
+      
+      // Load initial report data for both Admin/SuperAdmin and Admission
+      if (isAdminOrSA || isAdmission) {
         loadReports();
       }
       
@@ -163,14 +167,15 @@ export default function AdmissionDashboard() {
   }
 
   async function loadReports() {
-    if (!isAdminOrSA) return;
+    if (!isAdminOrSA && !isAdmission) return;
     
     try {
       const { from: rangeFrom, to: rangeTo } = parseRange();
       const fromDate = rangeFrom ? rangeFrom.toISOString().slice(0, 10) : undefined;
       const toDate = rangeTo ? rangeTo.toISOString().slice(0, 10) : undefined;
       
-      const userId = selectedUser === 'all' ? undefined : selectedUser;
+      // For Admission users, use their own ID. For Admin/SuperAdmin, use selectedUser
+      const userId = isAdmission ? user._id : (selectedUser === 'all' ? undefined : selectedUser);
       const data = await api.getAdmissionReports(userId, fromDate, toDate);
       setReportData(data);
     } catch(e) {
@@ -180,7 +185,7 @@ export default function AdmissionDashboard() {
 
   // Reload reports when filters change
   useEffect(() => {
-    if (isAdminOrSA && admissionUsers.length > 0) {
+    if (isAdmission || (isAdminOrSA && admissionUsers.length > 0)) {
       loadReports();
     }
   }, [selectedUser, period, from, to]);
@@ -234,9 +239,24 @@ export default function AdmissionDashboard() {
     // "Assigned" card shows TOTAL leads created in the period (all statuses)
     counts['Assigned'] = leadsInRange.length;
     
+    // Counseling count from API (LeadActivity based)
+    const counselingFromStats = reportData?.stats?.counseling;
+    const counselingFromReports = reportData?.reports?.reduce((sum, r) => sum + (r.stats?.counseling || 0), 0);
+    counts['Counseling'] = counselingFromStats || counselingFromReports || 0;
+    
+    console.log('[Dashboard] Metrics calculation:', {
+      period,
+      rangeFrom: rangeFrom?.toISOString(),
+      rangeTo: rangeTo?.toISOString(),
+      reportData: reportData ? 'exists' : 'null',
+      counselingFromStats,
+      counselingFromReports,
+      finalCounseling: counts['Counseling']
+    });
+    
     // Other cards show current status counts
     STATUSES.forEach(s => {
-      if (s.key !== 'Assigned') {
+      if (s.key !== 'Assigned' && s.key !== 'Counseling') {
         counts[s.key] = leadsInRange.filter(l => l.status === s.key).length;
       }
     });
@@ -264,7 +284,7 @@ export default function AdmissionDashboard() {
     const reportMetrics = {
       totalLeads: leadsInRange.length,
       assigned: leadsInRange.filter(l => l.status === 'Assigned').length,
-      counseling: leadsInRange.filter(l => l.status === 'Counseling').length,
+      counseling: counts['Counseling'] || 0, // Use API count (from LeadActivity)
       inFollowUp: leadsInRange.filter(l => l.status === 'In Follow Up').length,
       admitted: leadsInRange.filter(l => l.status === 'Admitted').length,
   notAdmitted: leadsInRange.filter(l => ['Not Admitted','Not Interested'].includes(l.status)).length
@@ -275,7 +295,7 @@ export default function AdmissionDashboard() {
       : '0.00';
 
     return { counts, series, reportMetrics, conversionRate };
-  }, [allLeads, rangeFrom, rangeTo]);
+  }, [allLeads, rangeFrom, rangeTo, reportData]);
 
   const getStatusIcon = (key) => {
     const icons = {

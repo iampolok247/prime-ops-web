@@ -80,7 +80,6 @@ export default function Sidebar({ isOpen, setIsOpen }) {
   { to: '/my-targets', label: 'My Targets', icon: <Target size={18}/> },
   { to: '/admission/metrics', label: 'My Metrics', icon: <BarChart2 size={18}/> },
       { to: '/admission/assigned', label: 'Assigned Lead', icon: <FolderOpen size={18}/> },
-      { to: '/admission/counseling', label: 'Counseling', icon: <FolderOpen size={18}/> },
       { to: '/admission/follow-up', label: 'In Follow-Up', icon: <FolderOpen size={18}/> },
       { to: '/admission/admitted', label: 'Admitted', icon: <FolderOpen size={18}/> },
     { to: '/admission/not-interested', label: 'Not Interested', icon: <FolderOpen size={18}/> },

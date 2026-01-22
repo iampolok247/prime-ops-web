@@ -437,9 +437,10 @@ export const api = {
     notes,
     courseId,
     batchId,
-    nextFollowUpDate
+    nextFollowUpDate,
+    priority
   ) {
-    console.log('[updateLeadStatus] Starting with params:', { id, status, notes, courseId, batchId, nextFollowUpDate });
+    console.log('[updateLeadStatus] Starting with params:', { id, status, notes, courseId, batchId, nextFollowUpDate, priority });
     const body = { status };
     if (notes !== undefined && notes !== null) body.notes = notes;
     if (courseId !== undefined && courseId !== null) body.courseId = courseId;
@@ -450,6 +451,8 @@ export const api = {
       nextFollowUpDate !== ""
     )
       body.nextFollowUpDate = nextFollowUpDate;
+    if (priority !== undefined && priority !== null && priority !== "")
+      body.priority = priority;
     console.log('[updateLeadStatus] Request body:', body);
     // Use POST to avoid environments that block PATCH in CORS/proxies
     const res = await authFetch(

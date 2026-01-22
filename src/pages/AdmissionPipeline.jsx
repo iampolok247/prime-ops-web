@@ -9,7 +9,6 @@ function fmtDT(d){ if (!d) return '-'; try { return new Date(d).toLocaleString()
 
 const STATUS_TABS = [
   { key: 'Assigned', path: '/admission/assigned', label: 'Assigned Lead' },
-  { key: 'Counseling', path: '/admission/counseling', label: 'Counseling' },
   { key: 'In Follow Up', path: '/admission/follow-up', label: 'In Follow-Up' },
   { key: 'Admitted', path: '/admission/admitted', label: 'Admitted' },
   { key: 'Not Interested', path: '/admission/not-interested', label: 'Not Interested' }
@@ -83,6 +82,12 @@ function PipelineTable({ status, canAct, user }) {
   const [histLead, setHistLead] = useState(null);
   const [histLoading, setHistLoading] = useState(false);
   
+  // Counseling modal (replaces moving to Counseling page)
+  const [showCounselingModal, setShowCounselingModal] = useState(false);
+  const [counselingTarget, setCounselingTarget] = useState(null);
+  const [counselingNote, setCounselingNote] = useState('');
+  const [counselingPriority, setCounselingPriority] = useState('Interested');
+  
   // Course and Batch selection for admission
   const [showAdmitModal, setShowAdmitModal] = useState(false);
   const [admitTarget, setAdmitTarget] = useState(null);
@@ -109,6 +114,10 @@ function PipelineTable({ status, canAct, user }) {
   const [followUpCustomDate, setFollowUpCustomDate] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [availableCourses, setAvailableCourses] = useState([]);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(100);
 
   const load = async () => {
     try {
@@ -216,10 +225,40 @@ function PipelineTable({ status, canAct, user }) {
       setShowNotInterestedModal(false); setNotInterestedNote(''); setNotInterestedTarget(null);
       setShowAdmitModal(false); setAdmitTarget(null); setSelectedCourse(''); setSelectedBatch('');
       setShowHistory(false); setHistLead(null); setHistLoading(false);
+      setShowCounselingModal(false); setCounselingNote(''); setCounselingTarget(null);
       load();
     } catch (e) { 
       setErr(e.message);
       throw e; // Re-throw so the caller can handle it
+    }
+  };
+  
+  const submitCounseling = async () => {
+    if (!counselingTarget) return;
+    if (!counselingNote.trim()) {
+      setErr('Counseling note is required');
+      return;
+    }
+    
+    try {
+      // Move directly to "In Follow Up" with counseling note and priority
+      await api.updateLeadStatus(
+        counselingTarget, 
+        'In Follow Up', 
+        counselingNote.trim(), 
+        '', 
+        '', 
+        '', 
+        counselingPriority
+      );
+      setMsg('Lead moved to Follow-Up with counseling note');
+      setShowCounselingModal(false);
+      setCounselingNote('');
+      setCounselingTarget(null);
+      setCounselingPriority('Interested');
+      load();
+    } catch (e) {
+      setErr(e.message || 'Failed to update lead');
     }
   };
   
@@ -350,29 +389,28 @@ function PipelineTable({ status, canAct, user }) {
     return filtered;
   }, [rows, searchTerm, selectedCourseFilter, priorityFilter, status, followUpDateFilter, followUpCustomDate]);
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+  const paginatedRows = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredRows.slice(startIndex, endIndex);
+  }, [filteredRows, currentPage, itemsPerPage]);
+  
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCourseFilter, priorityFilter, followUpDateFilter, followUpCustomDate, status]);
+
   const actions = (row) => {
     if (!canAct) return null;
     if (status === 'Assigned') {
-      return <ActionBtn onClick={()=>act(row._id,'Counseling')}>Start Counseling</ActionBtn>;
-    }
-    if (status === 'Counseling') {
-      return (
-        <div className="flex gap-2">
-          <ActionBtn onClick={()=>handleAdmitClick(row._id)}>Admitted</ActionBtn>
-          <ActionBtn onClick={()=>{ setFollowTarget(row._id); setFollowNote(''); setFollowNextDate(''); setFollowPriority(row.priority || 'Interested'); setShowFollowModal(true); }}>Follow-Up</ActionBtn>
-          <ActionBtn variant="danger" onClick={()=>{ setNotInterestedTarget(row._id); setNotInterestedNote(''); setShowNotInterestedModal(true); }}>Not Interested</ActionBtn>
-          <ActionBtn onClick={async ()=>{
-            try {
-              setErr(null);
-              setHistLoading(true);
-              const res = await api.getLeadHistory(row._id);
-              setHistLead(res.lead || res);
-              setShowHistory(true);
-            } catch (e) { setErr(e.message); }
-            finally { setHistLoading(false); }
-          }}>{histLoading ? 'Loading…' : 'History'}</ActionBtn>
-        </div>
-      );
+      return <ActionBtn onClick={()=>{ 
+        setCounselingTarget(row._id); 
+        setCounselingNote(''); 
+        setCounselingPriority('Interested'); 
+        setShowCounselingModal(true); 
+      }}>Start Counseling</ActionBtn>;
     }
     if (status === 'In Follow Up') {
         return (
@@ -813,6 +851,68 @@ function PipelineTable({ status, canAct, user }) {
           </form>
         </div>
       )}
+      {showCounselingModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-black opacity-30" onClick={()=>setShowCounselingModal(false)} />
+          <div className="bg-white rounded-xl p-6 z-10 w-full max-w-lg shadow-lg">
+            <h3 className="text-xl font-bold text-navy mb-4">Start Counseling</h3>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Counseling Note <span className="text-red-500">*</span>
+              </label>
+              <textarea 
+                rows={5} 
+                className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-gold focus:border-gold" 
+                value={counselingNote} 
+                onChange={e=>setCounselingNote(e.target.value)} 
+                placeholder="Enter counseling details, student's interest level, discussion points..."
+                required
+              />
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Priority <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={counselingPriority}
+                onChange={e => setCounselingPriority(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold"
+              >
+                <option value="Very Interested">Very Interested</option>
+                <option value="Interested">Interested</option>
+                <option value="Few Interested">Few Interested</option>
+                <option value="Not Interested">Not Interested</option>
+              </select>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button 
+                type="button" 
+                onClick={()=>{ 
+                  setShowCounselingModal(false); 
+                  setCounselingNote(''); 
+                  setCounselingTarget(null); 
+                  setCounselingPriority('Interested'); 
+                }} 
+                className="px-4 py-2 rounded-xl border border-gray-300 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                onClick={submitCounseling} 
+                className="px-4 py-2 rounded-xl bg-gold text-navy font-semibold hover:bg-yellow-500"
+                disabled={!counselingNote.trim()}
+              >
+                Submit & Move to Follow-Up
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showFollowModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50">
           <div className="absolute inset-0 bg-black opacity-30" onClick={()=>setShowFollowModal(false)} />
@@ -937,7 +1037,7 @@ function PipelineTable({ status, canAct, user }) {
             </tr>
           </thead>
           <tbody>
-            {filteredRows.map(r => (
+            {paginatedRows.map(r => (
               <tr key={r._id} className="border-t">
                 <td className="p-3">
                   <div className="flex items-center gap-2">
@@ -1031,6 +1131,62 @@ function PipelineTable({ status, canAct, user }) {
           </tbody>
         </table>
       </div>
+      
+      {/* Pagination */}
+      {filteredRows.length > itemsPerPage && (
+        <div className="mt-4 flex items-center justify-between">
+          <div className="text-sm text-gray-600">
+            Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredRows.length)} of {filteredRows.length} leads
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 rounded-lg border hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            
+            {/* Page numbers */}
+            <div className="flex gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`px-3 py-1 rounded-lg border ${
+                      currentPage === pageNum
+                        ? 'bg-gold text-navy font-semibold'
+                        : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
+            
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 rounded-lg border hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -29,6 +29,10 @@ export default function LeadsCenter() {
   const [duplicateTarget, setDuplicateTarget] = useState(null);
   const [duplicateCourse, setDuplicateCourse] = useState('');
   const [duplicating, setDuplicating] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(100);
 
   const canAssign = user?.role === 'DigitalMarketing';
 
@@ -251,6 +255,19 @@ export default function LeadsCenter() {
     
     return sorted;
   }, [leads, courseFilter, assignedToFilter, sortBy]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
+  const paginatedLeads = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredLeads.slice(startIndex, endIndex);
+  }, [filteredLeads, currentPage, itemsPerPage]);
+
+  // Reset to page 1 when filters or status change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [status, courseFilter, assignedToFilter, sortBy]);
 
   return (
     <div>
@@ -496,7 +513,7 @@ export default function LeadsCenter() {
             </tr>
           </thead>
           <tbody>
-            {filteredLeads.map(l => (
+            {paginatedLeads.map(l => (
               <tr key={l._id} className="border-t hover:bg-gray-50">
                 {canAssign && (
                   <td className="p-3">
@@ -610,6 +627,61 @@ export default function LeadsCenter() {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      {filteredLeads.length > itemsPerPage && (
+        <div className="mt-4 flex items-center justify-between">
+          <div className="text-sm text-gray-600">
+            Showing {Math.min((currentPage - 1) * itemsPerPage + 1, filteredLeads.length)} to {Math.min(currentPage * itemsPerPage, filteredLeads.length)} of {filteredLeads.length} leads
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 rounded-xl border hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            
+            {/* Page numbers - show up to 5 page buttons */}
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              let pageNum;
+              if (totalPages <= 5) {
+                pageNum = i + 1;
+              } else if (currentPage <= 3) {
+                pageNum = i + 1;
+              } else if (currentPage >= totalPages - 2) {
+                pageNum = totalPages - 4 + i;
+              } else {
+                pageNum = currentPage - 2 + i;
+              }
+              
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`px-3 py-1 rounded-xl border ${
+                    currentPage === pageNum
+                      ? 'bg-gold text-white border-gold'
+                      : 'hover:bg-gray-100'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+            
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 rounded-xl border hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+
       {showHistory && histLead && (
         <div className="fixed inset-0 flex items-center justify-center z-50">
           <div className="absolute inset-0 bg-black opacity-30" onClick={()=>setShowHistory(false)} />
