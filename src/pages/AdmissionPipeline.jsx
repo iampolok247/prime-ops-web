@@ -87,6 +87,7 @@ function PipelineTable({ status, canAct, user }) {
   const [counselingTarget, setCounselingTarget] = useState(null);
   const [counselingNote, setCounselingNote] = useState('');
   const [counselingPriority, setCounselingPriority] = useState('Interested');
+  const [counselingFollowUpDate, setCounselingFollowUpDate] = useState('');
   
   // Course and Batch selection for admission
   const [showAdmitModal, setShowAdmitModal] = useState(false);
@@ -241,12 +242,12 @@ function PipelineTable({ status, canAct, user }) {
     }
     
     try {
-      // Move directly to "In Follow Up" with counseling note and priority
+      // Move directly to "In Follow Up" with counseling note, priority, and follow-up date
       await api.updateLeadStatus(
         counselingTarget, 
         'In Follow Up', 
         counselingNote.trim(), 
-        '', 
+        counselingFollowUpDate || '', // nextFollowUpDate parameter
         '', 
         '', 
         counselingPriority
@@ -256,6 +257,7 @@ function PipelineTable({ status, canAct, user }) {
       setCounselingNote('');
       setCounselingTarget(null);
       setCounselingPriority('Interested');
+      setCounselingFollowUpDate('');
       load();
     } catch (e) {
       setErr(e.message || 'Failed to update lead');
@@ -887,6 +889,18 @@ function PipelineTable({ status, canAct, user }) {
               </select>
             </div>
 
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Next Follow-Up Date
+              </label>
+              <input
+                type="date"
+                value={counselingFollowUpDate}
+                onChange={e => setCounselingFollowUpDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold"
+              />
+            </div>
+
             <div className="flex justify-end gap-2">
               <button 
                 type="button" 
@@ -895,6 +909,7 @@ function PipelineTable({ status, canAct, user }) {
                   setCounselingNote(''); 
                   setCounselingTarget(null); 
                   setCounselingPriority('Interested'); 
+                  setCounselingFollowUpDate('');
                 }} 
                 className="px-4 py-2 rounded-xl border border-gray-300 hover:bg-gray-50"
               >
