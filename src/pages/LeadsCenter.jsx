@@ -217,6 +217,68 @@ export default function LeadsCenter() {
     );
   };
 
+  // Download selected leads as CSV
+  const downloadSelectedAsCSV = () => {
+    if (selectedLeads.length === 0) {
+      setErr('No leads selected to download');
+      return;
+    }
+
+    // Get the selected lead objects
+    const selectedLeadObjects = leads.filter(l => selectedLeads.includes(l._id));
+
+    // CSV header
+    const headers = [
+      'Lead ID',
+      'Name',
+      'Phone',
+      'Email',
+      'Interested Course',
+      'Source',
+      'Special Filter',
+      'Status',
+      'Assigned To',
+      'Assigned To Email',
+      'Created Date',
+      'Priority'
+    ];
+
+    // CSV rows
+    const rows = selectedLeadObjects.map(lead => [
+      lead.leadId || '',
+      lead.name || '',
+      lead.phone || '',
+      lead.email || '',
+      lead.interestedCourse || '',
+      lead.source || '',
+      lead.specialFilter || '',
+      lead.status || '',
+      lead.assignedTo?.name || 'Unassigned',
+      lead.assignedTo?.email || '',
+      lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : '',
+      lead.priority || ''
+    ]);
+
+    // Create CSV content
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `leads_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    setMsg(`✓ Downloaded ${selectedLeads.length} leads as CSV`);
+  };
+
   // Filter and sort leads
   const filteredLeads = useMemo(() => {
     let filtered = leads;
@@ -410,6 +472,13 @@ export default function LeadsCenter() {
               title="Distribute leads equally among selected members"
             >
               📊 Distribute Equally
+            </button>
+            <button 
+              onClick={downloadSelectedAsCSV}
+              className="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 font-medium"
+              title="Download selected leads as CSV"
+            >
+              📥 Download CSV
             </button>
             <button 
               onClick={() => setSelectedLeads([])}
