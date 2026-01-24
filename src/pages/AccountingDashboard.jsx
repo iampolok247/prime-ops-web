@@ -269,23 +269,8 @@ export default function AccountingDashboard() {
           </div>
         </div>
 
-        {/* Cash in Bank */}
+        {/* Balances (Income - Expense) */}
         <div className="group relative bg-gradient-to-br from-indigo-500 to-blue-600 rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
-          <div className="relative">
-            <div className="flex items-center justify-between mb-2">
-              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                <Building2 className="w-5 h-5 text-white" />
-              </div>
-            </div>
-            <p className="text-white/80 text-xs font-medium mb-1">Cash in Bank</p>
-            <h3 className={`text-2xl font-bold ${balances.bankBalance < 0 ? 'text-red-200' : 'text-white'}`}>
-              {fmtBDTEn(balances.bankBalance || 0)}</h3>
-          </div>
-        </div>
-
-        {/* Petty Cash */}
-        <div className="group relative bg-gradient-to-br from-amber-500 to-yellow-600 rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
           <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
           <div className="relative">
             <div className="flex items-center justify-between mb-2">
@@ -293,8 +278,10 @@ export default function AccountingDashboard() {
                 <Wallet className="w-5 h-5 text-white" />
               </div>
             </div>
-            <p className="text-white/80 text-xs font-medium mb-1">Petty Cash</p>
-            <h3 className="text-2xl font-bold text-white">{fmtBDTEn(balances.pettyCash || 0)}</h3>
+            <p className="text-white/80 text-xs font-medium mb-1">Balances</p>
+            <h3 className={`text-2xl font-bold ${(data.totalIncome - data.totalExpense) < 0 ? 'text-red-200' : 'text-white'}`}>
+              {fmtBDTEn((data.totalIncome || 0) - (data.totalExpense || 0))}
+            </h3>
           </div>
         </div>
       </div>
