@@ -83,6 +83,13 @@ export default function AccountingDashboard() {
       setIncomes(Array.isArray(incResp) ? incResp : (incResp?.income || []));
       setExpenses(Array.isArray(expResp) ? expResp : (expResp?.expenses || []));
       setBalances(balResp || { bankBalance: 0, pettyCash: 0 });
+      
+      // Debug: Check if recruitment income is included in total
+      console.log('[ACCOUNTING DEBUG] Total Income:', d?.totalIncome);
+      console.log('[ACCOUNTING DEBUG] Recruitment Income:', d?.recruitmentIncome);
+      console.log('[ACCOUNTING DEBUG] Admission Fees:', d?.admissionFeesIncome);
+      console.log('[ACCOUNTING DEBUG] Due Collection:', d?.dueCollectionIncome);
+      console.log('[ACCOUNTING DEBUG] Other Income:', d?.otherIncome);
     } catch (e) { setErr(e.message); }
   };
 
