@@ -247,9 +247,9 @@ function PipelineTable({ status, canAct, user }) {
         counselingTarget, 
         'In Follow Up', 
         counselingNote.trim(), 
+        '', // courseId
+        '', // batchId
         counselingFollowUpDate || '', // nextFollowUpDate parameter
-        '', 
-        '', 
         counselingPriority
       );
       setMsg('Lead moved to Follow-Up with counseling note');
