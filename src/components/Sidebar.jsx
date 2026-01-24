@@ -92,13 +92,15 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/my-applications', label: 'My Applications', icon: <ClipboardList size={18}/> },
       { to: '/tasks-board', label: 'Task Board', icon: <Kanban size={18}/> },
       { to: '/task-report', label: 'Task Report', icon: <FileText size={18}/> },
+      { to: '/admission/team-metrics', label: 'Admission Team Metrics', icon: <Activity size={18}/> },
       { to: '/accounting/fees', label: 'Admission Fees Approval', icon: <FolderOpen size={18}/> },
       { to: '/accounting/due-collections', label: 'Due Collection Approval', icon: <FolderOpen size={18}/> },
       { to: '/recruitment/income', label: 'Recruitment Income Approval', icon: <Wallet size={18}/> },
       { to: '/accounting/income', label: 'Income', icon: <DollarSign size={18}/> },
       { to: '/accounting/expense', label: 'Expense', icon: <FolderOpen size={18}/> },
       { to: '/accounting/bank-manage', label: 'Cash Manage', icon: <Wallet size={18}/> },
-      { to: '/accounting/tada-payments', label: 'TA/DA Payments', icon: <DollarSign size={18}/> }
+      { to: '/accounting/tada-payments', label: 'TA/DA Payments', icon: <DollarSign size={18}/> },
+      { to: '/activity', label: 'Activity Log', icon: <Activity size={18}/> }
     ],
     // make employee accounts also easily reachable by accountant
     AccountantExtra: [

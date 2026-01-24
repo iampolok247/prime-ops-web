@@ -139,8 +139,8 @@ export default function App() {
             <Route path="/dm/dashboard" element={<DMDashboard />} />
           </Route>
 
-          {/* Admission Team Metrics (Admin/SuperAdmin/HeadOfCreative only) */}
-          <Route element={<RoleRoute roles={['Admin','SuperAdmin','HeadOfCreative']} />}>
+          {/* Admission Team Metrics (Admin/SuperAdmin/HeadOfCreative/Accountant only) */}
+          <Route element={<RoleRoute roles={['Admin','SuperAdmin','HeadOfCreative','Accountant']} />}>
             <Route path="/admission/team-metrics" element={<AdmissionTeamMetrics />} />
           </Route>
 
@@ -194,7 +194,7 @@ export default function App() {
           </Route>
 
           {/* IT Admin - Activity Tracking */}
-          <Route element={<RoleRoute roles={['ITAdmin','Admin','SuperAdmin']} />}>
+          <Route element={<RoleRoute roles={['ITAdmin','Admin','SuperAdmin','Accountant']} />}>
             <Route path="/activity" element={<Activity />} />
           </Route>
 
