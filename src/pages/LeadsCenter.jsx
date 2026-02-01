@@ -107,6 +107,32 @@ export default function LeadsCenter() {
     } catch (e) { setErr(e.message); }
   };
 
+  const bulkDeleteLeads = async () => {
+    if (selectedLeads.length === 0) {
+      alert('Please select leads to delete');
+      return;
+    }
+    
+    if (!window.confirm(`Are you sure you want to delete ${selectedLeads.length} selected lead(s)? This action cannot be undone.`)) {
+      return;
+    }
+    
+    setMsg(null); setErr(null);
+    setBulkAssigning(true);
+    try {
+      // Delete each lead
+      await Promise.all(selectedLeads.map(id => api.deleteLead(id)));
+      
+      setMsg(`✓ Successfully deleted ${selectedLeads.length} lead(s)`);
+      setSelectedLeads([]);
+      load();
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setBulkAssigning(false);
+    }
+  };
+
   const openDuplicateModal = (lead) => {
     setDuplicateTarget(lead);
     setDuplicateCourse('');
@@ -479,6 +505,14 @@ export default function LeadsCenter() {
               title="Download selected leads as CSV"
             >
               📥 Download CSV
+            </button>
+            <button 
+              onClick={bulkDeleteLeads}
+              disabled={bulkAssigning}
+              className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              title="Delete selected leads permanently"
+            >
+              {bulkAssigning ? 'Deleting...' : '🗑️ Delete Selected'}
             </button>
             <button 
               onClick={() => setSelectedLeads([])}
