@@ -1,0 +1,3 @@
+n
+pm2 list
+pm2 restart prime.client

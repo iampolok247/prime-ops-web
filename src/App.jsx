@@ -21,6 +21,9 @@ import LeadEntry from './pages/LeadEntry.jsx';
 import LeadsCenter from './pages/LeadsCenter.jsx';
 import DMMetrics from './pages/DMMetrics.jsx';
 import DMDashboard from './pages/dash/DMDashboard.jsx';
+import DMDailyChecklist from './pages/DMDailyChecklist.jsx';
+import DMDailyChecklistTest from './pages/DMDailyChecklistTest.jsx';
+import DMChecklistReports from './pages/DMChecklistReports.jsx';
 
 import AdmissionPipeline from './pages/AdmissionPipeline.jsx';
 import AdmissionFees from './pages/AdmissionFees.jsx';
@@ -132,6 +135,9 @@ export default function App() {
             <Route path="/lead-entry" element={<LeadEntry />} />
             <Route path="/leads-center" element={<LeadsCenter />} />
             <Route path="/dm-metrics" element={<DMMetrics />} />
+            <Route path="/dm/daily-checklist-test" element={<DMDailyChecklistTest />} />
+            <Route path="/dm/daily-checklist" element={<DMDailyChecklist />} />
+            <Route path="/dm/checklist-reports" element={<DMChecklistReports />} />
           </Route>
 
           {/* Digital Marketing dashboard (viewable by DM + Admin/SA + HeadOfCreative) */}

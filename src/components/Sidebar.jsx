@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { LayoutDashboard, ListChecks, Users, BookOpen, FolderOpen, Wallet, BarChart2, Film, CreditCard, Menu, X, Kanban, DollarSign, Video, Activity, MessageCircle, FileText, Target, Layers, ClipboardList, CheckSquare } from 'lucide-react';
+import { LayoutDashboard, ListChecks, Users, BookOpen, FolderOpen, Wallet, BarChart2, Film, CreditCard, Menu, X, Kanban, DollarSign, Video, Activity, MessageCircle, FileText, Target, Layers, ClipboardList, CheckSquare, ClipboardCheck } from 'lucide-react';
 
 const Item = ({ to, icon, label, onClick }) => (
   <NavLink
@@ -64,6 +64,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/my-applications', label: 'My Applications', icon: <ClipboardList size={18}/> },
       { to: '/tasks-board', label: 'Task Board', icon: <Kanban size={18}/> },
       { to: '/task-report', label: 'Task Report', icon: <FileText size={18}/> },
+      { to: '/dm/daily-checklist', label: 'Daily Checklist', icon: <CheckSquare size={18}/> },
+      { to: '/dm/checklist-reports', label: 'Checklist Reports', icon: <ClipboardCheck size={18}/> },
       { to: '/courses', label: 'Courses', icon: <BookOpen size={18}/> },
       { to: '/lead-entry', label: 'Lead Entry / CSV', icon: <FolderOpen size={18}/> },
       { to: '/leads-center', label: 'Leads Center', icon: <FolderOpen size={18}/> },

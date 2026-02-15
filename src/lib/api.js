@@ -1757,3 +1757,5 @@ export const api = {
     return handleJson(res, "Load admission dashboard failed");
   },
 };
+
+export default api;
