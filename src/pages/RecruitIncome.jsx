@@ -1,6 +1,6 @@
 // web/src/pages/RecruitIncome.jsx
 import { useEffect, useMemo, useState } from "react";
-import { api, fmtBDTEn } from "../lib/api";
+import { api, fmtBDTEn, fmtBDT } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { CheckCircle, XCircle, Clock, AlertCircle, Edit2 } from "lucide-react";
 
