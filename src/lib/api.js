@@ -492,6 +492,27 @@ export const api = {
     );
     return handleJson(res, "Add follow-up failed");
   },
+  async bulkUpdateLeadStatus(leadIds, status, notes) {
+    console.log('[bulkUpdateLeadStatus] Starting with params:', { leadIds, status, notes });
+    const body = { leadIds, status };
+    if (notes !== undefined && notes !== null && notes !== '') {
+      body.notes = notes;
+    }
+    console.log('[bulkUpdateLeadStatus] Request body:', body);
+    const res = await authFetch(
+      `${getApiBase()}/api/admission/leads/bulk-update`,
+      {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }
+    );
+    console.log('[bulkUpdateLeadStatus] Received response, calling handleJson...');
+    const result = await handleJson(res, "Bulk update leads failed");
+    console.log('[bulkUpdateLeadStatus] handleJson returned:', result);
+    return result;
+  },
 
   // ---- Admission fees ----
   async listAdmissionFees() {

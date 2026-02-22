@@ -11,7 +11,8 @@ const STATUS_TABS = [
   { key: 'Assigned', path: '/admission/assigned', label: 'Assigned Lead' },
   { key: 'In Follow Up', path: '/admission/follow-up', label: 'In Follow-Up' },
   { key: 'Admitted', path: '/admission/admitted', label: 'Admitted' },
-  { key: 'Not Interested', path: '/admission/not-interested', label: 'Not Interested' }
+  { key: 'Not Interested', path: '/admission/not-interested', label: 'Not Interested' },
+  { key: 'Archived', path: '/admission/archived', label: 'Archived' }
 ];
 
 export default function AdmissionPipeline() {
@@ -119,6 +120,13 @@ function PipelineTable({ status, canAct, user }) {
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(100);
+
+  // Bulk selection states
+  const [selectedLeads, setSelectedLeads] = useState([]);
+  const [showBulkMoveModal, setShowBulkMoveModal] = useState(false);
+  const [bulkMoveTargetStatus, setBulkMoveTargetStatus] = useState('');
+  const [bulkMoveNote, setBulkMoveNote] = useState('');
+  const [bulkMoveLoading, setBulkMoveLoading] = useState(false);
 
   const load = async () => {
     try {
@@ -272,6 +280,35 @@ function PipelineTable({ status, canAct, user }) {
     setShowAdmitModal(true);
     loadCourses();
     checkFeeStatus(rowId);
+  };
+
+  const handleBulkMove = async () => {
+    if (!bulkMoveTargetStatus) {
+      setErr('Please select a destination status');
+      return;
+    }
+    if (selectedLeads.length === 0) {
+      setErr('No leads selected');
+      return;
+    }
+
+    setBulkMoveLoading(true);
+    setMsg(null);
+    setErr(null);
+
+    try {
+      await api.bulkUpdateLeadStatus(selectedLeads, bulkMoveTargetStatus, bulkMoveNote.trim());
+      setMsg(`Successfully moved ${selectedLeads.length} lead(s) to ${bulkMoveTargetStatus}`);
+      setShowBulkMoveModal(false);
+      setBulkMoveTargetStatus('');
+      setBulkMoveNote('');
+      setSelectedLeads([]);
+      await load();
+    } catch (e) {
+      setErr(e.message || 'Failed to move leads');
+    } finally {
+      setBulkMoveLoading(false);
+    }
   };
 
   const checkFeeStatus = async (leadId) => {
@@ -461,6 +498,20 @@ function PipelineTable({ status, canAct, user }) {
         }}>{histLoading ? 'Loading…' : 'History'}</ActionBtn>
       );
     }
+    if (status === 'Archived') {
+      return (
+        <ActionBtn onClick={async ()=>{
+          try {
+            setErr(null);
+            setHistLoading(true);
+            const res = await api.getLeadHistory(row._id);
+            setHistLead(res.lead || res);
+            setShowHistory(true);
+          } catch (e) { setErr(e.message); }
+          finally { setHistLoading(false); }
+        }}>{histLoading ? 'Loading…' : 'History'}</ActionBtn>
+      );
+    }
     return <span className="text-royal/60">—</span>;
   };
 
@@ -585,6 +636,72 @@ function PipelineTable({ status, canAct, user }) {
           </p>
         )}
       </div>
+
+      {/* Bulk Move Modal */}
+      {showBulkMoveModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-xl font-bold text-navy mb-4">Move {selectedLeads.length} Lead(s)</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Move to <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={bulkMoveTargetStatus}
+                  onChange={e => setBulkMoveTargetStatus(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  required
+                >
+                  <option value="">-- Select Status --</option>
+                  <option value="Assigned">Assigned Lead</option>
+                  <option value="In Follow Up">In Follow-Up</option>
+                  <option value="Admitted">Admitted</option>
+                  <option value="Not Interested">Not Interested</option>
+                  <option value="Archived">Archived</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Note (Optional)
+                </label>
+                <textarea
+                  value={bulkMoveNote}
+                  onChange={e => setBulkMoveNote(e.target.value)}
+                  rows={4}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  placeholder="Add a note about this bulk move (optional)..."
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowBulkMoveModal(false);
+                    setBulkMoveTargetStatus('');
+                    setBulkMoveNote('');
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={bulkMoveLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBulkMove}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+                  disabled={bulkMoveLoading || !bulkMoveTargetStatus}
+                >
+                  {bulkMoveLoading ? 'Moving...' : `Move ${selectedLeads.length} Lead(s)`}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showAdmitModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50">
@@ -1030,10 +1147,51 @@ function PipelineTable({ status, canAct, user }) {
         </div>
       )}
       
+      {/* Bulk Actions Bar */}
+      {selectedLeads.length > 0 && (
+        <div className="mb-4 bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold text-blue-900">
+              {selectedLeads.length} lead(s) selected
+            </span>
+            <button
+              onClick={() => setSelectedLeads([])}
+              className="text-sm text-blue-600 hover:text-blue-800 underline"
+            >
+              Clear selection
+            </button>
+          </div>
+          <button
+            onClick={() => {
+              setShowBulkMoveModal(true);
+              setBulkMoveTargetStatus('');
+              setBulkMoveNote('');
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
+          >
+            Move Selected to...
+          </button>
+        </div>
+      )}
+      
       <div className="bg-white rounded-2xl shadow-soft overflow-auto">
         <table className="min-w-full text-sm">
           <thead className="bg-[#f3f6ff] text-royal">
             <tr>
+              <th className="p-3 text-center w-12">
+                <input
+                  type="checkbox"
+                  checked={selectedLeads.length > 0 && selectedLeads.length === filteredRows.length}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedLeads(filteredRows.map(r => r._id));
+                    } else {
+                      setSelectedLeads([]);
+                    }
+                  }}
+                  className="w-4 h-4 cursor-pointer"
+                />
+              </th>
               <th className="p-3 text-left">Lead ID</th>
               <th className="p-3 text-left">Name</th>
               <th className="p-3 text-left">Phone / Email</th>
@@ -1048,12 +1206,27 @@ function PipelineTable({ status, canAct, user }) {
           {status === 'In Follow Up' && <th className="p-3 text-left">Priority</th>}
           {status === 'In Follow Up' && <th className="p-3 text-left">Next Follow-Up Date</th>}
           {status === 'Admitted' && <th className="p-3 text-left">Admitted At</th>}
+          {status === 'Archived' && <th className="p-3 text-left">Updated At</th>}
             <th className="p-3 text-left">Action</th>
             </tr>
           </thead>
           <tbody>
             {paginatedRows.map(r => (
               <tr key={r._id} className="border-t">
+                <td className="p-3 text-center">
+                  <input
+                    type="checkbox"
+                    checked={selectedLeads.includes(r._id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedLeads([...selectedLeads, r._id]);
+                      } else {
+                        setSelectedLeads(selectedLeads.filter(id => id !== r._id));
+                      }
+                    }}
+                    className="w-4 h-4 cursor-pointer"
+                  />
+                </td>
                 <td className="p-3">
                   <div className="flex items-center gap-2">
                     <div>{r.leadId}</div>
@@ -1132,14 +1305,15 @@ function PipelineTable({ status, canAct, user }) {
                   )}
                 </td>}
                 {status === 'Admitted' && <td className="p-3">{fmtDT(r.admittedAt || r.updatedAt)}</td>}
+                {status === 'Archived' && <td className="p-3">{fmtDT(r.updatedAt)}</td>}
                 <td className="p-3">{actions(r)}</td>
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td className="p-4 text-royal/70" colSpan={status === 'In Follow Up' ? '10' : '8'}>No leads</td></tr>
+              <tr><td className="p-4 text-royal/70" colSpan={status === 'In Follow Up' ? '11' : '9'}>No leads</td></tr>
             )}
             {rows.length > 0 && filteredRows.length === 0 && (
-              <tr><td className="p-4 text-royal/70 text-center" colSpan={status === 'In Follow Up' ? '10' : '8'}>
+              <tr><td className="p-4 text-royal/70 text-center" colSpan={status === 'In Follow Up' ? '11' : '9'}>
                 No leads found matching your filters
               </td></tr>
             )}

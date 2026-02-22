@@ -159,6 +159,7 @@ export default function App() {
          <Route path="/admission/follow-up" element={<AdmissionPipeline />} />
          <Route path="/admission/admitted" element={<AdmissionPipeline />} />
          <Route path="/admission/not-interested" element={<AdmissionPipeline />} />
+         <Route path="/admission/archived" element={<AdmissionPipeline />} />
          {/* Removed legacy Not Admitted route and Counseling route */}
          <Route path="/admission/fees" element={<AdmissionFees />} />
 </Route>
