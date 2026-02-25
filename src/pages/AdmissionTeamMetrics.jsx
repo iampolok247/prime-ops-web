@@ -181,7 +181,7 @@ export default function AdmissionTeamMetrics() {
   const display = metrics ? {
     newCalls: metrics.newCalls || 0,
     followUpCalls: metrics.followUpCalls || 0,
-    totalCalls: (metrics.newCalls || 0) + (metrics.followUpCalls || 0),
+    totalCalls: (metrics.newCalls || 0) + (metrics.followUpCalls || 0) + (metrics.admitted || 0) + (metrics.notAdmitted || 0),
     admitted: metrics.admitted || 0,
     notAdmitted: metrics.notAdmitted || 0
   } : { newCalls: 0, followUpCalls: 0, totalCalls: 0, admitted: 0, notAdmitted: 0 };
