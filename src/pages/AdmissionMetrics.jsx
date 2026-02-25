@@ -124,16 +124,18 @@ export default function AdmissionMetrics() {
       // Team view - sum all metrics
       display.newCalls = metrics.metrics.reduce((sum, m) => sum + (m.counselingCount || 0), 0);
       display.followUpCalls = metrics.metrics.reduce((sum, m) => sum + (m.followUpCount || 0), 0);
-      display.totalCalls = metrics.metrics.reduce((sum, m) => sum + (m.totalCalls || 0), 0);
       display.admitted = metrics.metrics.reduce((sum, m) => sum + (m.admittedCount || 0), 0);
       display.notAdmitted = metrics.metrics.reduce((sum, m) => sum + (m.notAdmittedCount || 0), 0);
+      // Total calls = sum of all call activities (new + follow-up + admitted + not interested)
+      display.totalCalls = display.newCalls + display.followUpCalls + display.admitted + display.notAdmitted;
     } else {
       // Individual user view
       display.newCalls = metrics.counselingCount || 0;
       display.followUpCalls = metrics.followUpCount || 0;
-      display.totalCalls = metrics.totalCalls || 0;
       display.admitted = metrics.admittedCount || 0;
       display.notAdmitted = metrics.notAdmittedCount || 0;
+      // Total calls = sum of all call activities
+      display.totalCalls = display.newCalls + display.followUpCalls + display.admitted + display.notAdmitted;
     }
   }
 
