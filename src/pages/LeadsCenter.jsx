@@ -24,6 +24,10 @@ export default function LeadsCenter() {
   const [distributeSelectedMembers, setDistributeSelectedMembers] = useState([]);
   const [showDistributeModal, setShowDistributeModal] = useState(false);
   
+  // Date range filter state
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  
   // Duplicate lead for another course
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [duplicateTarget, setDuplicateTarget] = useState(null);
@@ -309,6 +313,28 @@ export default function LeadsCenter() {
   const filteredLeads = useMemo(() => {
     let filtered = leads;
     
+    // Apply date range filter
+    if (fromDate || toDate) {
+      filtered = filtered.filter(l => {
+        const leadDate = new Date(l.createdAt);
+        leadDate.setHours(0, 0, 0, 0); // Start of day for lead
+        
+        if (fromDate) {
+          const from = new Date(fromDate);
+          from.setHours(0, 0, 0, 0);
+          if (leadDate < from) return false;
+        }
+        
+        if (toDate) {
+          const to = new Date(toDate);
+          to.setHours(23, 59, 59, 999); // End of day
+          if (leadDate > to) return false;
+        }
+        
+        return true;
+      });
+    }
+    
     // Apply course filter
     if (courseFilter !== 'All') {
       filtered = filtered.filter(l => l.interestedCourse === courseFilter);
@@ -342,7 +368,7 @@ export default function LeadsCenter() {
     });
     
     return sorted;
-  }, [leads, courseFilter, assignedToFilter, sortBy]);
+  }, [leads, courseFilter, assignedToFilter, sortBy, fromDate, toDate]);
 
   // Pagination logic
   const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
@@ -355,13 +381,41 @@ export default function LeadsCenter() {
   // Reset to page 1 when filters or status change
   useEffect(() => {
     setCurrentPage(1);
-  }, [status, courseFilter, assignedToFilter, sortBy]);
+  }, [status, courseFilter, assignedToFilter, sortBy, fromDate, toDate]);
 
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
         <h1 className="text-2xl font-bold text-navy">Leads Center</h1>
         <div className="flex items-center gap-3">
+          {/* Date Range Filter */}
+          <div className="flex items-center gap-2 border rounded-xl px-3 py-2 bg-white">
+            <label className="text-sm font-medium text-gray-700">From:</label>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={e => setFromDate(e.target.value)}
+              className="border-0 outline-none text-sm"
+            />
+            <span className="text-gray-400">→</span>
+            <label className="text-sm font-medium text-gray-700">To:</label>
+            <input
+              type="date"
+              value={toDate}
+              onChange={e => setToDate(e.target.value)}
+              className="border-0 outline-none text-sm"
+            />
+            {(fromDate || toDate) && (
+              <button
+                onClick={() => { setFromDate(''); setToDate(''); }}
+                className="ml-2 text-red-500 hover:text-red-700 text-sm font-medium"
+                title="Clear date filter"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
           {/* Sort By */}
           <select 
             value={sortBy} 
