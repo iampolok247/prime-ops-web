@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, User as UserIcon, Menu, Bell, Calendar, MessageCircle } from 'lucide-react';
+import { LogOut, User as UserIcon, Menu, Bell, Calendar, MessageCircle, RefreshCw } from 'lucide-react';
 import { api } from '../lib/api.js';
 import LeadHistoryModal from './LeadHistoryModal.jsx';
 
 export default function Topbar({ onMenuClick }) {
-  const { user, logout } = useAuth();
+  const { user, logout, switchRole } = useAuth();
   const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showRoleMenu, setShowRoleMenu] = useState(false);
+  const [switchingRole, setSwitchingRole] = useState(false);
   const [urgentTasks, setUrgentTasks] = useState([]);
   const [paymentNotifications, setPaymentNotifications] = useState([]);
   const [followUpNotifications, setFollowUpNotifications] = useState([]);
@@ -287,6 +289,38 @@ export default function Topbar({ onMenuClick }) {
     } finally {
       setHistoryLoading(false);
     }
+  };
+
+  const handleSwitchRole = async (newRole) => {
+    if (switchingRole) return;
+    setSwitchingRole(true);
+    try {
+      await switchRole(newRole);
+      setShowRoleMenu(false);
+      // Reload the page to update sidebar and permissions
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to switch role:', error);
+      alert('Failed to switch role. Please try again.');
+    } finally {
+      setSwitchingRole(false);
+    }
+  };
+
+  const getRoleDisplayName = (role) => {
+    const roleNames = {
+      SuperAdmin: 'Super Admin',
+      Admin: 'Admin',
+      ITAdmin: 'IT Admin',
+      Accountant: 'Accountant',
+      Admission: 'Admission Team',
+      Recruitment: 'Recruitment Team',
+      DigitalMarketing: 'Digital Marketing',
+      MotionGraphics: 'Motion Graphics',
+      HeadOfCreative: 'Head of Creative',
+      Coordinator: 'Coordinator'
+    };
+    return roleNames[role] || role;
   };
 
   // Count unread urgent tasks
@@ -634,6 +668,64 @@ export default function Topbar({ onMenuClick }) {
           <div className="font-semibold">{user?.name}</div>
           <div className="opacity-80 text-xs">{user?.designation}</div>
         </div>
+        
+        {/* Role Switcher - Only show if user has multiple roles */}
+        {user?.availableRoles && user.availableRoles.length > 1 && (
+          <div className="relative">
+            <button
+              onClick={() => setShowRoleMenu(!showRoleMenu)}
+              className="hidden md:flex items-center gap-1.5 bg-purple-600 text-white px-3 py-2 rounded-2xl hover:bg-purple-700 transition text-sm font-medium"
+              disabled={switchingRole}
+            >
+              <RefreshCw size={14} className={switchingRole ? 'animate-spin' : ''} />
+              <span className="hidden lg:inline">{getRoleDisplayName(user.role)}</span>
+              <span className="text-xs opacity-90">▼</span>
+            </button>
+
+            {/* Mobile role switcher */}
+            <button
+              onClick={() => setShowRoleMenu(!showRoleMenu)}
+              className="md:hidden p-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition relative"
+              disabled={switchingRole}
+            >
+              <RefreshCw size={16} className={switchingRole ? 'animate-spin' : ''} />
+            </button>
+
+            {/* Role Dropdown Menu */}
+            {showRoleMenu && (
+              <>
+                {/* Backdrop */}
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setShowRoleMenu(false)}
+                />
+                
+                {/* Dropdown */}
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border z-50">
+                  <div className="p-3 border-b bg-gray-50">
+                    <h3 className="font-semibold text-navy text-sm">Switch Role</h3>
+                    <p className="text-xs text-gray-600 mt-0.5">Current: {getRoleDisplayName(user.role)}</p>
+                  </div>
+                  <div className="py-2">
+                    {user.availableRoles
+                      .filter(role => role !== user.role)
+                      .map(role => (
+                        <button
+                          key={role}
+                          onClick={() => handleSwitchRole(role)}
+                          disabled={switchingRole}
+                          className="w-full px-4 py-2.5 text-left hover:bg-purple-50 transition flex items-center gap-2 disabled:opacity-50"
+                        >
+                          <RefreshCw size={14} className="text-purple-600" />
+                          <span className="text-sm text-navy font-medium">{getRoleDisplayName(role)}</span>
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
         
         {/* Profile button - responsive */}
         <a href="/profile" className="hidden md:inline-flex items-center gap-1 bg-gold text-navy px-3 py-2 rounded-2xl hover:bg-lightgold transition text-sm">
