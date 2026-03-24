@@ -32,7 +32,7 @@ export default function Login() {
       >
         <div className="flex justify-center mb-4">
           <img
-            src="https://primeacademy.org/logo-full.png"
+            src="https://primeacademy.org/assets/prime-academy-logo-full-dark.png"
             alt="Prime Academy"
             className="w-56 object-contain"
           />
