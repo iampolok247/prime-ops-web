@@ -45,7 +45,7 @@ export default function DMChecklistReports() {
       if (fromDate) params.append('from', fromDate);
       if (toDate) params.append('to', toDate);
       
-      const baseUrl = import.meta.env.PROD ? 'http://31.97.228.226:5000' : 'http://localhost:5001';
+      const baseUrl = import.meta.env.PROD ? 'https://ops-backend.primeacademy.org' : 'http://localhost:5001';
       const res = await api.authFetch(`${baseUrl}/api/dm/daily-checklist/reports?${params.toString()}`);
       const data = await res.json();
       setReports(data.reports || []);

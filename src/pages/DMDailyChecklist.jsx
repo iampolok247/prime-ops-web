@@ -49,7 +49,7 @@ export default function DMDailyChecklist() {
     try {
       setLoading(true);
       setError('');
-      const baseUrl = import.meta.env.PROD ? 'http://31.97.228.226:5000' : 'http://localhost:5001';
+      const baseUrl = import.meta.env.PROD ? 'https://ops-backend.primeacademy.org' : 'http://localhost:5001';
       const resetParam = forceReset ? '?reset=true' : '';
       const res = await api.authFetch(`${baseUrl}/api/dm/daily-checklist${resetParam}`);
       const data = await res.json();
@@ -66,7 +66,7 @@ export default function DMDailyChecklist() {
     e.preventDefault();
     try {
       setUpdating(true);
-      const baseUrl = import.meta.env.PROD ? 'http://31.97.228.226:5000' : 'http://localhost:5001';
+      const baseUrl = import.meta.env.PROD ? 'https://ops-backend.primeacademy.org' : 'http://localhost:5001';
       const res = await api.authFetch(`${baseUrl}/api/dm/daily-checklist/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -88,7 +88,7 @@ export default function DMDailyChecklist() {
     e.preventDefault();
     try {
       setUpdating(true);
-      const baseUrl = import.meta.env.PROD ? 'http://31.97.228.226:5000' : 'http://localhost:5001';
+      const baseUrl = import.meta.env.PROD ? 'https://ops-backend.primeacademy.org' : 'http://localhost:5001';
       const res = await api.authFetch(`${baseUrl}/api/dm/daily-checklist/edit/${currentTaskIndex}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -111,7 +111,7 @@ export default function DMDailyChecklist() {
     e.preventDefault();
     try {
       setUpdating(true);
-      const baseUrl = import.meta.env.PROD ? 'http://31.97.228.226:5000' : 'http://localhost:5001';
+      const baseUrl = import.meta.env.PROD ? 'https://ops-backend.primeacademy.org' : 'http://localhost:5001';
       const res = await api.authFetch(`${baseUrl}/api/dm/daily-checklist/complete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -136,7 +136,7 @@ export default function DMDailyChecklist() {
   const handleDeleteTask = async () => {
     try {
       setUpdating(true);
-      const baseUrl = import.meta.env.PROD ? 'http://31.97.228.226:5000' : 'http://localhost:5001';
+      const baseUrl = import.meta.env.PROD ? 'https://ops-backend.primeacademy.org' : 'http://localhost:5001';
       const res = await api.authFetch(`${baseUrl}/api/dm/daily-checklist/delete/${currentTaskIndex}`, {
         method: 'DELETE'
       });

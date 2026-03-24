@@ -32,7 +32,7 @@ export default function Activity() {
     setLoading(page === 1); // Only show loading on first page
     try {
       const token = localStorage.getItem('auth_token');
-      const apiBase = import.meta.env.PROD ? 'http://31.97.228.226:5000' : 'http://localhost:5001';
+      const apiBase = import.meta.env.PROD ? 'https://ops-backend.primeacademy.org' : 'http://localhost:5001';
       
       // Build query string with filters and pagination
       const params = new URLSearchParams({ 
@@ -83,7 +83,7 @@ export default function Activity() {
   const fetchStats = async () => {
     try {
       const token = localStorage.getItem('auth_token');
-      const apiBase = import.meta.env.PROD ? 'http://31.97.228.226:5000' : 'http://localhost:5001';
+      const apiBase = import.meta.env.PROD ? 'https://ops-backend.primeacademy.org' : 'http://localhost:5001';
       const res = await fetch(`${apiBase}/api/activities/stats`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -102,7 +102,7 @@ export default function Activity() {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('auth_token');
-      const apiBase = import.meta.env.PROD ? 'http://31.97.228.226:5000' : 'http://localhost:5001';
+      const apiBase = import.meta.env.PROD ? 'https://ops-backend.primeacademy.org' : 'http://localhost:5001';
       const res = await fetch(`${apiBase}/api/users`, {
         headers: { Authorization: `Bearer ${token}` }
       });
