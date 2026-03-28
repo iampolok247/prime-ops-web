@@ -132,18 +132,20 @@ export default function RequisitionPage() {
     const styles = {
       Pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
       Verified: 'bg-blue-100 text-blue-800 border-blue-200',
-      Approved: 'bg-green-100 text-green-800 border-green-200',
-      Rejected: 'bg-red-100 text-red-800 border-red-200'
+      Approved: 'bg-amber-100 text-amber-800 border-amber-200',
+      Rejected: 'bg-red-100 text-red-800 border-red-200',
+      Paid: 'bg-green-100 text-green-800 border-green-200'
     };
     const icons = {
       Pending: <Clock className="w-3 h-3" />,
       Verified: <Eye className="w-3 h-3" />,
       Approved: <Check className="w-3 h-3" />,
-      Rejected: <X className="w-3 h-3" />
+      Rejected: <X className="w-3 h-3" />,
+      Paid: <Check className="w-3 h-3" />
     };
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full border ${styles[status]}`}>
-        {icons[status]}
+      <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full border ${styles[status] || styles.Pending}`}>
+        {icons[status] || icons.Pending}
         {status}
       </span>
     );

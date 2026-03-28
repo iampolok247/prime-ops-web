@@ -75,6 +75,7 @@ import NotFound from './pages/NotFound.jsx';
 import Activity from './pages/Activity.jsx';
 import PreviousIncomePage from './pages/PreviousIncomePage.jsx';
 import RequisitionPage from './pages/RequisitionPage.jsx';
+import RequisitionRequestPage from './pages/RequisitionRequestPage.jsx';
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -175,6 +176,7 @@ export default function App() {
             {/* Cash Manage removed per request */}
             <Route path="/accounting/tada-payments" element={<TADAPayments />} />
             <Route path="/previous-income" element={<PreviousIncomePage />} />
+            <Route path="/accounting/requisition-request" element={<RequisitionRequestPage />} />
           </Route>
 
           {/* Employee Accounts - visible to SuperAdmin, Admin and Accountant */}

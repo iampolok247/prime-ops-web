@@ -1861,6 +1861,37 @@ export const api = {
     });
     return handleJson(res, "Load pending count failed");
   },
+  // Accountant: Get approved requisitions pending payment
+  async getApprovedRequisitions() {
+    const res = await authFetch(`${getApiBase()}/api/requisitions/approved`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load approved requisitions failed");
+  },
+  // Accountant: Get paid requisitions history
+  async getPaidRequisitions() {
+    const res = await authFetch(`${getApiBase()}/api/requisitions/paid`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load paid requisitions failed");
+  },
+  // Accountant: Mark requisition as paid
+  async markRequisitionPaid(id, paidAmount, paymentNote = '') {
+    const res = await authFetch(`${getApiBase()}/api/requisitions/${id}/pay`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paidAmount, paymentNote }),
+    });
+    return handleJson(res, "Mark as paid failed");
+  },
+  // Accountant: Get approved count for badge
+  async getRequisitionApprovedCount() {
+    const res = await authFetch(`${getApiBase()}/api/requisitions/stats/approved`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load approved count failed");
+  },
 };
 
 export default api;
