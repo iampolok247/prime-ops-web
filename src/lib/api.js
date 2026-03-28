@@ -1948,6 +1948,82 @@ export const api = {
     });
     return handleJson(res, "Delete recruitment due failed");
   },
+
+  // ---- Manual Dues (Coordinator) ----
+  async getManualDueSummary() {
+    const res = await authFetch(`${getApiBase()}/api/manual-dues/summary`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load manual due summary failed");
+  },
+  async listManualDues(status = 'all') {
+    const res = await authFetch(`${getApiBase()}/api/manual-dues?status=${status}`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load manual dues failed");
+  },
+  async getManualDue(id) {
+    const res = await authFetch(`${getApiBase()}/api/manual-dues/${id}`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load manual due failed");
+  },
+  async createManualDue(payload) {
+    const res = await authFetch(`${getApiBase()}/api/manual-dues`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return handleJson(res, "Create manual due failed");
+  },
+  async collectManualDuePayment(id, amount, method = 'Cash', note = '') {
+    const res = await authFetch(`${getApiBase()}/api/manual-dues/${id}/collect`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount, method, note }),
+    });
+    return handleJson(res, "Collect payment failed");
+  },
+  async getManualDuePendingApprovals() {
+    const res = await authFetch(`${getApiBase()}/api/manual-dues/pending-approvals`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load pending approvals failed");
+  },
+  async approveManualDuePayment(dueId, paymentIndex) {
+    const res = await authFetch(`${getApiBase()}/api/manual-dues/${dueId}/payment/${paymentIndex}/approve`, {
+      method: "PATCH",
+      credentials: "include",
+    });
+    return handleJson(res, "Approve payment failed");
+  },
+  async rejectManualDuePayment(dueId, paymentIndex, rejectionNote = '') {
+    const res = await authFetch(`${getApiBase()}/api/manual-dues/${dueId}/payment/${paymentIndex}/reject`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rejectionNote }),
+    });
+    return handleJson(res, "Reject payment failed");
+  },
+  async updateManualDue(id, payload) {
+    const res = await authFetch(`${getApiBase()}/api/manual-dues/${id}`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return handleJson(res, "Update manual due failed");
+  },
+  async deleteManualDue(id) {
+    const res = await authFetch(`${getApiBase()}/api/manual-dues/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    return handleJson(res, "Delete manual due failed");
+  },
 };
 
 export default api;

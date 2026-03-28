@@ -131,6 +131,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/accounting/requisition-request', label: 'Requisition Request', icon: <FileInput size={18}/> },
       { to: '/accounting/fees', label: 'Admission Fees Approval', icon: <FolderOpen size={18}/> },
       { to: '/accounting/due-collections', label: 'Due Collection Approval', icon: <FolderOpen size={18}/> },
+      { to: '/accounting/manual-due-approval', label: 'Manual Due Approval', icon: <CheckSquare size={18}/> },
       { to: '/recruitment/income', label: 'Recruitment Income Approval', icon: <Wallet size={18}/> },
       { to: '/accounting/tada-payments', label: 'TA/DA Payments', icon: <DollarSign size={18}/> },
       // Section: HR & Admin
@@ -203,6 +204,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/task-report', label: 'Task Report', icon: <FileText size={18}/> },
       { to: '/admission/fees', label: 'Admission Fees Collection', icon: <Wallet size={18}/> },
       { to: '/coordinator/due-fees', label: 'Due Fees Collection', icon: <CreditCard size={18}/> },
+      { to: '/coordinator/manual-dues', label: 'Manual Due Entry', icon: <DollarSign size={18}/> },
       { to: '/coordinator/notifications', label: 'Payment Reminders', icon: <MessageCircle size={18}/> }
     ]
   };

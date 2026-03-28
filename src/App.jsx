@@ -77,6 +77,8 @@ import Activity from './pages/Activity.jsx';
 import PreviousIncomePage from './pages/PreviousIncomePage.jsx';
 import RequisitionPage from './pages/RequisitionPage.jsx';
 import RequisitionRequestPage from './pages/RequisitionRequestPage.jsx';
+import ManualDuePage from './pages/ManualDuePage.jsx';
+import ManualDueApprovalPage from './pages/ManualDueApprovalPage.jsx';
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -178,6 +180,7 @@ export default function App() {
             <Route path="/accounting/tada-payments" element={<TADAPayments />} />
             <Route path="/previous-income" element={<PreviousIncomePage />} />
             <Route path="/accounting/requisition-request" element={<RequisitionRequestPage />} />
+            <Route path="/accounting/manual-due-approval" element={<ManualDueApprovalPage />} />
           </Route>
 
           {/* Employee Accounts - visible to SuperAdmin, Admin and Accountant */}
@@ -216,6 +219,7 @@ export default function App() {
             <Route path="/coordinator/dashboard" element={<CoordinatorDashboard />} />
             <Route path="/coordinator/due-fees" element={<DueFeesCollection />} />
             <Route path="/coordinator/notifications" element={<PaymentNotifications />} />
+            <Route path="/coordinator/manual-dues" element={<ManualDuePage />} />
           </Route>
 
           {/* Requisition - accessible to all logged in users */}
