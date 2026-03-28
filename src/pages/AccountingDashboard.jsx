@@ -25,6 +25,7 @@ export default function AccountingDashboard() {
   const [data, setData] = useState({ totalIncome:0 });
   const [err, setErr] = useState(null);
   const [incomes, setIncomes] = useState([]);
+  const [previousIncomeTotal, setPreviousIncomeTotal] = useState(0);
 
   const load = async () => {
     try {
@@ -66,12 +67,14 @@ export default function AccountingDashboard() {
         qTo = now.toISOString().slice(0,10);
       }
       
-      const [d, incResp] = await Promise.all([
+      const [d, incResp, prevIncResp] = await Promise.all([
         api.accountingSummary(qFrom, qTo),
-        api.listIncome().catch(()=>({ income: [] }))
+        api.listIncome().catch(()=>({ income: [] })),
+        api.getPreviousIncomeSummary().catch(()=>({ total: 0 }))
       ]);
       setData(d || { totalIncome:0 });
       setIncomes(Array.isArray(incResp) ? incResp : (incResp?.income || []));
+      setPreviousIncomeTotal(prevIncResp?.total || 0);
       
       // Debug: Check if recruitment income is included in total
       console.log('[ACCOUNTING DEBUG] Total Income:', d?.totalIncome);
@@ -96,6 +99,100 @@ export default function AccountingDashboard() {
   useEffect(() => {}, [location.search]);
 
   const series = []; // expense/balance charts removed
+
+  // Helpers to compute sums from incomes array
+  const sumIncomes = (items = []) => items.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+
+  const sumInRange = (items = [], from, to) => {
+    if (!from && !to) return sumIncomes(items);
+    const f = from ? new Date(from) : null;
+    const t = to ? new Date(to) : null;
+    return items.reduce((s, x) => {
+      const d = new Date(x.date || x.createdAt || x._id && undefined);
+      if (!d || isNaN(d)) return s;
+      if (f && d < new Date(f.toISOString().slice(0,10))) return s;
+      if (t && d > new Date(t.toISOString().slice(0,10) + 'T23:59:59')) return s;
+      return s + (Number(x.amount) || 0);
+    }, 0);
+  };
+
+  // Compute current and previous ranges for the selected period
+  const computeRangeDates = (period) => {
+    const now = new Date();
+    if (period === 'custom') return { from: range.from, to: range.to };
+    if (period === 'lifetime') return { from: null, to: null };
+    if (period === 'daily') {
+      const d = now.toISOString().slice(0,10);
+      return { from: d, to: d };
+    }
+    if (period === 'weekly') {
+      const dayOfWeek = now.getDay();
+      const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - mondayOffset);
+      return { from: monday.toISOString().slice(0,10), to: now.toISOString().slice(0,10) };
+    }
+    if (period === 'monthly') {
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      return { from: firstDay.toISOString().slice(0,10), to: now.toISOString().slice(0,10) };
+    }
+    if (period === 'yearly') {
+      const firstDay = new Date(now.getFullYear(), 0, 1);
+      return { from: firstDay.toISOString().slice(0,10), to: now.toISOString().slice(0,10) };
+    }
+    return { from: null, to: null };
+  };
+
+  const currentRange = computeRangeDates(range.period);
+
+  // previous range calculation (for compare)
+  const previousRange = (() => {
+    const now = new Date();
+    if (range.period === 'monthly') {
+      const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const last = new Date(now.getFullYear(), now.getMonth(), 0);
+      return { from: first.toISOString().slice(0,10), to: last.toISOString().slice(0,10) };
+    }
+    if (range.period === 'weekly') {
+      const dayOfWeek = now.getDay();
+      const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      const thisMonday = new Date(now);
+      thisMonday.setDate(now.getDate() - mondayOffset);
+      const prevMonday = new Date(thisMonday);
+      prevMonday.setDate(thisMonday.getDate() - 7);
+      const prevSunday = new Date(thisMonday);
+      prevSunday.setDate(thisMonday.getDate() - 1);
+      return { from: prevMonday.toISOString().slice(0,10), to: prevSunday.toISOString().slice(0,10) };
+    }
+    if (range.period === 'daily') {
+      const yesterday = new Date(now);
+      yesterday.setDate(now.getDate() - 1);
+      const d = yesterday.toISOString().slice(0,10);
+      return { from: d, to: d };
+    }
+    if (range.period === 'yearly') {
+      const prevYear = now.getFullYear() - 1;
+      return { from: `${prevYear}-01-01`, to: `${prevYear}-12-31` };
+    }
+    return { from: null, to: null };
+  })();
+
+  // Totals computed from server data (as fallback) or incomes array
+  const totalFromServer = Number(data.totalIncome || 0);
+  const totalFromParts = (Number(data.admissionFeesIncome||0) + Number(data.recruitmentIncome||0) + Number(data.dueCollectionIncome||0) + Number(data.otherIncome||0));
+  // Add previous income (manual entries) to the total
+  const totalComputed = (totalFromParts || totalFromServer || sumInRange(incomes, currentRange.from, currentRange.to)) + previousIncomeTotal;
+
+  const previousTotalComputed = sumInRange(incomes, previousRange.from, previousRange.to);
+
+  // Monthly income: sum for current calendar month
+  const monthlyRange = (() => {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
+    const today = now.toISOString().slice(0,10);
+    return { from: firstDay, to: today };
+  })();
+  const monthlyTotal = sumInRange(incomes, monthlyRange.from, monthlyRange.to);
 
   return (
     <div className="space-y-6 p-6 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 min-h-screen">
@@ -156,7 +253,7 @@ export default function AccountingDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        {/* Total Income */}
+        {/* Total Income (includes Previous Income) */}
         <div className="group relative bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
           <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
           <div className="relative">
@@ -166,7 +263,21 @@ export default function AccountingDashboard() {
               </div>
             </div>
             <p className="text-white/80 text-xs font-medium mb-1">Total Income</p>
-            <h3 className="text-2xl font-bold text-white">{fmtBDTEn(data.totalIncome || 0)}</h3>
+            <h3 className="text-2xl font-bold text-white">{fmtBDTEn((totalComputed || 0) + (previousIncomeTotal || 0))}</h3>
+          </div>
+        </div>
+
+        {/* Monthly Income */}
+        <div className="group relative bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
+          <div className="relative">
+            <div className="flex items-center justify-between mb-2">
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <PieChartIcon className="w-5 h-5 text-white" />
+              </div>
+            </div>
+            <p className="text-white/80 text-xs font-medium mb-1">Monthly Income</p>
+            <h3 className="text-2xl font-bold text-white">{fmtBDTEn(monthlyTotal || 0)}</h3>
           </div>
         </div>
 

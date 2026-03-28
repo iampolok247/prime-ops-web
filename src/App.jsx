@@ -73,6 +73,8 @@ import Batches from './pages/Batches.jsx';
 import Login from './pages/Login.jsx';
 import NotFound from './pages/NotFound.jsx';
 import Activity from './pages/Activity.jsx';
+import PreviousIncomePage from './pages/PreviousIncomePage.jsx';
+import RequisitionPage from './pages/RequisitionPage.jsx';
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -172,6 +174,7 @@ export default function App() {
             <Route path="/accounting/expense" element={<ExpensePage />} />
             {/* Cash Manage removed per request */}
             <Route path="/accounting/tada-payments" element={<TADAPayments />} />
+            <Route path="/previous-income" element={<PreviousIncomePage />} />
           </Route>
 
           {/* Employee Accounts - visible to SuperAdmin, Admin and Accountant */}
@@ -210,6 +213,9 @@ export default function App() {
             <Route path="/coordinator/due-fees" element={<DueFeesCollection />} />
             <Route path="/coordinator/notifications" element={<PaymentNotifications />} />
           </Route>
+
+          {/* Requisition - accessible to all logged in users */}
+          <Route path="/requisition" element={<RequisitionPage />} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

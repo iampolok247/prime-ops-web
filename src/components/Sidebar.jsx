@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { LayoutDashboard, ListChecks, Users, BookOpen, FolderOpen, Wallet, BarChart2, Film, CreditCard, Menu, X, Kanban, DollarSign, Video, Activity, MessageCircle, FileText, Target, Layers, ClipboardList, CheckSquare, ClipboardCheck } from 'lucide-react';
+import { LayoutDashboard, ListChecks, Users, BookOpen, FolderOpen, Wallet, BarChart2, Film, CreditCard, Menu, X, Kanban, DollarSign, Video, Activity, MessageCircle, FileText, Target, Layers, ClipboardList, CheckSquare, ClipboardCheck, FileInput } from 'lucide-react';
 
 const Item = ({ to, icon, label, onClick }) => (
   <NavLink
@@ -16,6 +16,12 @@ const Item = ({ to, icon, label, onClick }) => (
   >
     {icon}<span>{label}</span>
   </NavLink>
+);
+
+const SectionHeading = ({ title }) => (
+  <div className="px-4 pt-4 pb-1">
+    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{title}</span>
+  </div>
 );
 
 export default function Sidebar({ isOpen, setIsOpen }) {
@@ -35,6 +41,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/admission/team-metrics', label: 'Admission Team Metrics', icon: <Activity size={18}/> },
       { to: '/admission/dashboard', label: 'Admission Reports', icon: <FolderOpen size={18}/> },
       { to: '/recruitment', label: 'Recruitment Reports', icon: <LayoutDashboard size={18}/> },
+      { to: '/previous-income', label: 'Previous Income', icon: <DollarSign size={18}/> },
       { to: '/accounting/dashboard', label: 'Accounts Reports', icon: <Wallet size={18}/> },
       { to: '/dm/dashboard', label: 'Digital Marketing Reports', icon: <BarChart2 size={18}/> },
       { to: '/mg/dashboard', label: 'Motion Graphics Report', icon: <Film size={18}/> },
@@ -54,6 +61,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/admission/team-metrics', label: 'Admission Team Metrics', icon: <Activity size={18}/> },
       { to: '/admission/dashboard', label: 'Admission Reports', icon: <FolderOpen size={18}/> },
       { to: '/recruitment', label: 'Recruitment Reports', icon: <LayoutDashboard size={18}/> },
+      { to: '/previous-income', label: 'Previous Income', icon: <DollarSign size={18}/> },
       { to: '/accounting/dashboard', label: 'Accounts Dashboard', icon: <Wallet size={18}/> },
       { to: '/dm/dashboard', label: 'Digital Marketing Reports', icon: <BarChart2 size={18}/> },
       { to: '/mg/dashboard', label: 'Motion Graphics Report', icon: <Film size={18}/> },
@@ -94,20 +102,24 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/my-applications', label: 'My Applications', icon: <ClipboardList size={18}/> },
       { to: '/tasks-board', label: 'Task Board', icon: <Kanban size={18}/> },
       { to: '/task-report', label: 'Task Report', icon: <FileText size={18}/> },
-      { to: '/admission/team-metrics', label: 'Admission Team Metrics', icon: <Activity size={18}/> },
+      // Section: Accounts
+      { type: 'heading', title: 'Accounts' },
+      { to: '/accounting/income', label: 'Income', icon: <DollarSign size={18}/> },
+      { to: '/previous-income', label: 'Previous Income', icon: <DollarSign size={18}/> },
       { to: '/accounting/fees', label: 'Admission Fees Approval', icon: <FolderOpen size={18}/> },
       { to: '/accounting/due-collections', label: 'Due Collection Approval', icon: <FolderOpen size={18}/> },
       { to: '/recruitment/income', label: 'Recruitment Income Approval', icon: <Wallet size={18}/> },
-      { to: '/accounting/income', label: 'Income', icon: <DollarSign size={18}/> },
-  { to: '/accounting/expense', label: 'Expense', icon: <FolderOpen size={18}/> },
       { to: '/accounting/tada-payments', label: 'TA/DA Payments', icon: <DollarSign size={18}/> },
+      // Section: HR & Admin
+      { type: 'heading', title: 'HR & Admin' },
+      { to: '/employee-accounts/bank', label: 'Employee Bank Account', icon: <CreditCard size={18}/> },
+      { to: '/employee-accounts/salary', label: 'Employee Salary', icon: <Wallet size={18}/> },
+      // Section: Metrics & Reports
+      { type: 'heading', title: 'Metrics & Reports' },
+      { to: '/admission/team-metrics', label: 'Admission Team Metrics', icon: <Activity size={18}/> },
       { to: '/activity', label: 'Activity Log', icon: <Activity size={18}/> }
     ],
-    // make employee accounts also easily reachable by accountant
-    AccountantExtra: [
-      { to: '/employee-accounts/bank', label: 'Employee Bank Account', icon: <CreditCard size={18}/> },
-      { to: '/employee-accounts/salary', label: 'Employee Salary', icon: <Wallet size={18}/> }
-    ],
+    // AccountantExtra no longer needed - merged into Accountant
     Recruitment: [
       { to: '/', label: 'Dashboard', icon: <LayoutDashboard size={18}/> },
       { to: '/messages', label: 'Messages', icon: <MessageCircle size={18}/> },
@@ -167,12 +179,16 @@ export default function Sidebar({ isOpen, setIsOpen }) {
   };
 
   let items = MENU_BY_ROLE[user?.role] || [];
-  // merge accountant extra links when role is Accountant
-  if (user?.role === 'Accountant' && Array.isArray(MENU_BY_ROLE.AccountantExtra)) {
-    items = [...items, ...MENU_BY_ROLE.AccountantExtra];
-  }
 
   const closeSidebar = () => setIsOpen && setIsOpen(false);
+
+  // Render menu item or section heading
+  const renderMenuItem = (m, index, onClick) => {
+    if (m.type === 'heading') {
+      return <SectionHeading key={`heading-${index}`} title={m.title} />;
+    }
+    return <Item key={m.to} {...m} onClick={onClick} />;
+  };
 
   return (
     <>
@@ -180,7 +196,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       <aside className="w-72 hidden md:flex bg-white border-r min-h-screen sticky top-0 flex-col">
         <div className="px-4 py-4"><img src="https://primeacademy.org/assets/prime-academy-logo-full-dark.png" alt="Prime Academy" className="w-40 object-contain"/></div>
         <nav className="flex-1">
-          {items.map((m) => <Item key={m.to} {...m} />)}
+          {items.map((m, index) => renderMenuItem(m, index))}
         </nav>
       </aside>
 
@@ -199,7 +215,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
               </button>
             </div>
             <nav className="flex-1 overflow-y-auto">
-              {items.map((m) => <Item key={m.to} {...m} onClick={closeSidebar} />)}
+              {items.map((m, index) => renderMenuItem(m, index, closeSidebar))}
             </nav>
           </aside>
         </div>

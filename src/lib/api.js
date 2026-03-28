@@ -1777,6 +1777,90 @@ export const api = {
     });
     return handleJson(res, "Load admission dashboard failed");
   },
+
+  // ---- Previous Income (manual entries for income before software) ----
+  async listPreviousIncome() {
+    const res = await authFetch(`${getApiBase()}/api/previous-income`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load previous income failed");
+  },
+  async getPreviousIncomeSummary() {
+    const res = await authFetch(`${getApiBase()}/api/previous-income/summary`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load previous income summary failed");
+  },
+  async createPreviousIncome(payload) {
+    const res = await authFetch(`${getApiBase()}/api/previous-income`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return handleJson(res, "Create previous income failed");
+  },
+  async updatePreviousIncome(id, payload) {
+    const res = await authFetch(`${getApiBase()}/api/previous-income/${id}`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return handleJson(res, "Update previous income failed");
+  },
+  async deletePreviousIncome(id) {
+    const res = await authFetch(`${getApiBase()}/api/previous-income/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    return handleJson(res, "Delete previous income failed");
+  },
+
+  // ---- Requisitions ----
+  async listRequisitions() {
+    const res = await authFetch(`${getApiBase()}/api/requisitions`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load requisitions failed");
+  },
+  async getRequisition(id) {
+    const res = await authFetch(`${getApiBase()}/api/requisitions/${id}`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load requisition failed");
+  },
+  async createRequisition(payload) {
+    const res = await authFetch(`${getApiBase()}/api/requisitions`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return handleJson(res, "Create requisition failed");
+  },
+  async updateRequisitionStatus(id, status, rejectionReason = '') {
+    const res = await authFetch(`${getApiBase()}/api/requisitions/${id}/status`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status, rejectionReason }),
+    });
+    return handleJson(res, "Update requisition status failed");
+  },
+  async deleteRequisition(id) {
+    const res = await authFetch(`${getApiBase()}/api/requisitions/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    return handleJson(res, "Delete requisition failed");
+  },
+  async getRequisitionPendingCount() {
+    const res = await authFetch(`${getApiBase()}/api/requisitions/stats/pending`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load pending count failed");
+  },
 };
 
 export default api;
