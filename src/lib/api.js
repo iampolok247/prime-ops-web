@@ -1892,6 +1892,62 @@ export const api = {
     });
     return handleJson(res, "Load approved count failed");
   },
+
+  // ---- Recruitment Dues ----
+  async getRecruitmentDueSummary() {
+    const res = await authFetch(`${getApiBase()}/api/recruitment-dues/summary`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load recruitment due summary failed");
+  },
+  async listRecruitmentDues(status = 'all', candidate = '') {
+    let url = `${getApiBase()}/api/recruitment-dues?status=${status}`;
+    if (candidate) url += `&candidate=${candidate}`;
+    const res = await authFetch(url, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load recruitment dues failed");
+  },
+  async getRecruitmentDue(id) {
+    const res = await authFetch(`${getApiBase()}/api/recruitment-dues/${id}`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load recruitment due failed");
+  },
+  async createRecruitmentDue(payload) {
+    const res = await authFetch(`${getApiBase()}/api/recruitment-dues`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return handleJson(res, "Create recruitment due failed");
+  },
+  async addRecruitmentDuePayment(id, amount, method = 'Cash', note = '') {
+    const res = await authFetch(`${getApiBase()}/api/recruitment-dues/${id}/payment`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount, method, note }),
+    });
+    return handleJson(res, "Add payment failed");
+  },
+  async updateRecruitmentDue(id, payload) {
+    const res = await authFetch(`${getApiBase()}/api/recruitment-dues/${id}`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return handleJson(res, "Update recruitment due failed");
+  },
+  async deleteRecruitmentDue(id) {
+    const res = await authFetch(`${getApiBase()}/api/recruitment-dues/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    return handleJson(res, "Delete recruitment due failed");
+  },
 };
 
 export default api;

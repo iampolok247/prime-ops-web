@@ -156,6 +156,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/recruitment/employers', label: 'Employers', icon: <FolderOpen size={18}/> },
       { to: '/recruitment/income', label: 'Recruitment Income', icon: <Wallet size={18}/> },
       { to: '/recruitment/expenses', label: 'Recruitment Expense', icon: <Wallet size={18}/> },
+      { to: '/recruitment/dues', label: 'Due Collection', icon: <DollarSign size={18}/> },
     ],
     
     MotionGraphics: [

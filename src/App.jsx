@@ -46,6 +46,7 @@ import JobPositions from './pages/JobPositions.jsx';
 import Employers from './pages/Employers.jsx';
 import RecruitIncome from './pages/RecruitIncome.jsx';
 import RecruitExpenses from './pages/RecruitExpenses.jsx';
+import RecruitmentDuePage from './pages/RecruitmentDuePage.jsx';
 
 // === Motion Graphics pages ===
 import MGDashboard from './pages/MGDashboard.jsx';
@@ -198,6 +199,7 @@ export default function App() {
             <Route path="/recruitment/jobs" element={<JobPositions />} />
             <Route path="/recruitment/employers" element={<Employers />} />
             <Route path="/recruitment/expenses" element={<RecruitExpenses />} />
+            <Route path="/recruitment/dues" element={<RecruitmentDuePage />} />
           </Route>
 
           <Route element={<RoleRoute roles={['Recruitment','Accountant']} />}>
