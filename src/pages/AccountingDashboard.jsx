@@ -3,14 +3,11 @@ import { useLocation } from 'react-router-dom';
 import { api, fmtBDTEn } from '../lib/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { 
-  DollarSign, 
-  TrendingDown, 
   TrendingUp, 
   Wallet,
   PieChart as PieChartIcon,
   BarChart2,
-  Settings,
-  Building2
+  DollarSign
 } from 'lucide-react';
 
 export default function AccountingDashboard() {
@@ -25,13 +22,9 @@ export default function AccountingDashboard() {
     from: new Date(new Date().getFullYear(),0,1).toISOString().slice(0,10),
     to: new Date().toISOString().slice(0,10)
   });
-  const [data, setData] = useState({ totalIncome:0, totalExpense:0, profit:0 });
-  const [balances, setBalances] = useState({ bankBalance: 0, pettyCash: 0 });
+  const [data, setData] = useState({ totalIncome:0 });
   const [err, setErr] = useState(null);
   const [incomes, setIncomes] = useState([]);
-  const [expenses, setExpenses] = useState([]);
-  const [showHeadsModal, setShowHeadsModal] = useState(false);
-  const [heads, setHeads] = useState({ incomes: [], expenses: [] });
 
   const load = async () => {
     try {
@@ -73,16 +66,12 @@ export default function AccountingDashboard() {
         qTo = now.toISOString().slice(0,10);
       }
       
-      const [d, incResp, expResp, balResp] = await Promise.all([
+      const [d, incResp] = await Promise.all([
         api.accountingSummary(qFrom, qTo),
-        api.listIncome().catch(()=>({ income: [] })),
-        api.listExpenses().catch(()=>({ expenses: [] })),
-        api.getBankBalances().catch(()=>({ bankBalance: 0, pettyCash: 0 }))
+        api.listIncome().catch(()=>({ income: [] }))
       ]);
-      setData(d || { totalIncome:0, totalExpense:0, profit:0 });
+      setData(d || { totalIncome:0 });
       setIncomes(Array.isArray(incResp) ? incResp : (incResp?.income || []));
-      setExpenses(Array.isArray(expResp) ? expResp : (expResp?.expenses || []));
-      setBalances(balResp || { bankBalance: 0, pettyCash: 0 });
       
       // Debug: Check if recruitment income is included in total
       console.log('[ACCOUNTING DEBUG] Total Income:', d?.totalIncome);
@@ -103,21 +92,10 @@ export default function AccountingDashboard() {
   }, [range.period]); // eslint-disable-line
 
   const location = useLocation();
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('accountHeads');
-      setHeads(raw ? JSON.parse(raw) : { incomes: [], expenses: [] });
-    } catch (e) { setHeads({ incomes: [], expenses: [] }); }
-    try {
-      const qp = new URLSearchParams(location.search || '');
-      const open = qp.get('openHeads') || qp.get('openHeadsModal');
-      if (open) setShowHeadsModal(true);
-    } catch (e) { /* ignore */ }
-  }, [location.search]);
+  // heads & modal removed
+  useEffect(() => {}, [location.search]);
 
-  const netBalance = (data.totalIncome || 0) - (data.totalExpense || 0);
-  const series = makeSeries(incomes, expenses, range);
-  const breakdown = makeBreakdown(expenses);
+  const series = []; // expense/balance charts removed
 
   return (
     <div className="space-y-6 p-6 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 min-h-screen">
@@ -192,33 +170,7 @@ export default function AccountingDashboard() {
           </div>
         </div>
 
-        {/* Total Expense */}
-        <div className="group relative bg-gradient-to-br from-red-500 to-rose-600 rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
-          <div className="relative">
-            <div className="flex items-center justify-between mb-2">
-              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                <TrendingDown className="w-5 h-5 text-white" />
-              </div>
-            </div>
-            <p className="text-white/80 text-xs font-medium mb-1">Total Expense</p>
-            <h3 className="text-2xl font-bold text-white">{fmtBDTEn(data.totalExpense || 0)}</h3>
-          </div>
-        </div>
-
-        {/* Profit/Loss */}
-        <div className={`group relative ${netBalance >= 0 ? 'bg-gradient-to-br from-blue-500 to-indigo-600' : 'bg-gradient-to-br from-red-600 to-rose-700'} rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden`}>
-          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
-          <div className="relative">
-            <div className="flex items-center justify-between mb-2">
-              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                <DollarSign className="w-5 h-5 text-white" />
-              </div>
-            </div>
-            <p className="text-white/80 text-xs font-medium mb-1">{netBalance >= 0 ? 'Profit' : 'Loss'}</p>
-            <h3 className="text-2xl font-bold text-white">{fmtBDTEn(Math.abs(netBalance))}</h3>
-          </div>
-        </div>
+        {/* (Expense & Profit cards removed) */}
 
         {/* New Course Sale */}
         <div className="group relative bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
@@ -276,21 +228,7 @@ export default function AccountingDashboard() {
           </div>
         </div>
 
-        {/* Balances (Income - Expense) */}
-        <div className="group relative bg-gradient-to-br from-indigo-500 to-blue-600 rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
-          <div className="relative">
-            <div className="flex items-center justify-between mb-2">
-              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                <Wallet className="w-5 h-5 text-white" />
-              </div>
-            </div>
-            <p className="text-white/80 text-xs font-medium mb-1">Balances</p>
-            <h3 className={`text-2xl font-bold ${(data.totalIncome - data.totalExpense) < 0 ? 'text-red-200' : 'text-white'}`}>
-              {fmtBDTEn((data.totalIncome || 0) - (data.totalExpense || 0))}
-            </h3>
-          </div>
-        </div>
+        {/* (Balances card removed) */}
       </div>
 
       {/* Charts Grid */}
@@ -312,129 +250,15 @@ export default function AccountingDashboard() {
           ].filter(item => item.value > 0)} />
         </div>
 
-        {/* Expense by Head Chart */}
-        <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-lg font-bold text-gray-800">Expense by Head</h3>
-              <p className="text-sm text-gray-500 mt-1">Distribution breakdown</p>
-            </div>
-            <PieChartIcon className="w-5 h-5 text-gray-400" />
-          </div>
-          <PieChart data={breakdown} />
-        </div>
+        {/* (Expense by Head chart removed) */}
       </div>
 
-      {/* Modal */}
-      {showHeadsModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={()=>setShowHeadsModal(false)}>
-          <div className="bg-white rounded-2xl p-6 max-w-3xl w-full shadow-2xl transform transition-all" onClick={e=>e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Account Heads Management
-              </h2>
-              <button 
-                onClick={()=>setShowHeadsModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <HeadEditor kind="incomes" heads={heads.incomes} onChange={(arr)=>setHeads(h=>({ ...h, incomes: arr }))} />
-              <HeadEditor kind="expenses" heads={heads.expenses} onChange={(arr)=>setHeads(h=>({ ...h, expenses: arr }))} />
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <button 
-                onClick={()=>setShowHeadsModal(false)} 
-                className="px-6 py-2 rounded-xl border-2 border-gray-200 hover:bg-gray-50 transition-colors font-medium text-gray-700"
-              >
-                Close
-              </button>
-              <button 
-                onClick={()=>{ localStorage.setItem('accountHeads', JSON.stringify(heads)); setShowHeadsModal(false); }} 
-                className="px-6 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 transition-all font-medium shadow-lg hover:shadow-xl"
-              >
-                Save Changes
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* (Account heads modal removed) */}
     </div>
   );
 }
 
-function HeadEditor({ kind, heads = [], onChange }){
-  const [list, setList] = useState(heads || []);
-  const [val, setVal] = useState('');
-  
-  useEffect(()=>{ setList(heads || []); }, [heads]);
-  
-  const add = ()=>{ 
-    if (!val.trim()) return; 
-    const next = [val.trim(), ...list]; 
-    setList(next); 
-    setVal(''); 
-    onChange && onChange(next); 
-  };
-  
-  const remove = (i)=>{ 
-    const next = list.filter((_,idx)=>idx!==i); 
-    setList(next); 
-    onChange && onChange(next); 
-  };
-
-  const isIncome = kind === 'incomes';
-  const bgColor = isIncome ? 'from-green-50 to-emerald-50' : 'from-red-50 to-rose-50';
-  const accentColor = isIncome ? 'from-green-600 to-emerald-600' : 'from-red-600 to-rose-600';
-
-  return (
-    <div className="space-y-3">
-      <h4 className={`text-lg font-bold bg-gradient-to-r ${accentColor} bg-clip-text text-transparent`}>
-        {kind === 'incomes' ? 'Income Heads' : 'Expense Heads'}
-      </h4>
-      
-      <div className="flex gap-2">
-        <input 
-          value={val} 
-          onChange={e=>setVal(e.target.value)} 
-          placeholder={isIncome ? 'New income head' : 'New expense head'} 
-          className="border-2 border-gray-200 rounded-xl px-4 py-2 flex-1 focus:border-blue-500 focus:outline-none transition-colors"
-          onKeyPress={(e) => e.key === 'Enter' && add()}
-        />
-        <button 
-          onClick={add} 
-          className={`px-4 py-2 bg-gradient-to-r ${accentColor} text-white rounded-xl hover:opacity-90 transition-opacity font-medium shadow-lg`}
-        >
-          Add
-        </button>
-      </div>
-      
-      <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-        {list.map((h, i)=> (
-          <div key={h + i} className={`flex items-center justify-between bg-gradient-to-r ${bgColor} rounded-xl px-4 py-3 hover:shadow-md transition-all`}>
-            <span className="text-gray-800 font-medium">{h}</span>
-            <button 
-              onClick={()=>remove(i)} 
-              className="px-3 py-1 bg-red-100 text-red-600 text-sm rounded-lg hover:bg-red-200 transition-colors font-medium"
-            >
-              Remove
-            </button>
-          </div>
-        ))}
-        {list.length === 0 && (
-          <div className="text-center py-8 text-gray-400">
-            <Wallet className="w-12 h-12 mx-auto mb-2 opacity-50" />
-            <p>No {kind === 'incomes' ? 'income' : 'expense'} heads defined</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+// HeadEditor removed (expense heads / management UI removed)
 
 function makeSeries(incomes = [], expenses = [], range) {
   let from, to;

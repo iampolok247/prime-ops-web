@@ -35,7 +35,6 @@ import FeesApproval from './pages/FeesApproval.jsx';
 import DueCollectionApproval from './pages/DueCollectionApproval.jsx';
 import IncomePage from './pages/Income.jsx';
 import ExpensePage from './pages/Expense.jsx';
-import BankManage from './pages/BankManage.jsx';
 import AdmissionDashboard from './pages/dash/AdmissionDashboard.jsx';
 import EmployeeBank from './pages/employee/EmployeeBank.jsx';
 import EmployeeSalary from './pages/employee/EmployeeSalary.jsx';
@@ -171,7 +170,7 @@ export default function App() {
             <Route path="/accounting/due-collections" element={<DueCollectionApproval />} />
             <Route path="/accounting/income" element={<IncomePage />} />
             <Route path="/accounting/expense" element={<ExpensePage />} />
-            <Route path="/accounting/bank-manage" element={<BankManage />} />
+            {/* Cash Manage removed per request */}
             <Route path="/accounting/tada-payments" element={<TADAPayments />} />
           </Route>
 
