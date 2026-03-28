@@ -9,6 +9,9 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
+    env:
+      MONGO_URI: ${{ secrets.MONGO_URI }}
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -33,7 +36,10 @@ jobs:
           echo "${{ secrets.VPS_DEPLOY_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
+          # Check port connectivity
           nc -zv ${{ secrets.SERVER_HOST }} ${{ secrets.SSH_PORT }}
+
+          # Add host to known_hosts
           ssh-keyscan -p ${{ secrets.SSH_PORT }} -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy to VPS
@@ -41,22 +47,6 @@ jobs:
           rsync -az --delete \
             -e "ssh -i ~/.ssh/id_rsa -p ${{ secrets.SSH_PORT }} -o StrictHostKeyChecking=yes" \
             dist/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.TARGET_DIR }}/
-
-      - name: Restart Backend (PM2)
-        run: |
-          ssh -i ~/.ssh/id_rsa \
-            -p ${{ secrets.SSH_PORT }} \
-            -o StrictHostKeyChecking=yes \
-            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
-
-            cd /var/www/prime-ops/prime-ops-api/backend-api
-
-            export MONGO_URI="${{ secrets.MONGO_URI }}"
-            export JWT_SECRET="${{ secrets.JWT_SECRET }}"
-
-            pm2 restart prime.server --update-env
-
-            EOF
 
       - name: Reload NGINX
         run: |
