@@ -100,6 +100,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
   // Removed legacy Not Admitted view from sidebar
       { to: '/admission/fees', label: 'Admission Fees', icon: <FolderOpen size={18}/> }
     ],
+    // Accountant role with Requisition support
     Accountant: [
       { to: '/', label: 'Dashboard', icon: <LayoutDashboard size={18}/> },
       { to: '/messages', label: 'Messages', icon: <MessageCircle size={18}/> },
