@@ -179,7 +179,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     <>
       {/* Desktop Sidebar */}
       <aside className="w-72 hidden md:flex bg-white border-r min-h-screen sticky top-0 flex-col">
-        <div className="px-4 py-4"><img src="https://primeacademy.org/logo-full.png" alt="Prime Academy" className="w-40 object-contain"/></div>
+        <div className="px-4 py-4"><img src="https://primeacademy.org/assets/prime-academy-logo-full-dark.png" alt="Prime Academy" className="w-40 object-contain"/></div>
         <nav className="flex-1">
           {items.map((m) => <Item key={m.to} {...m} />)}
         </nav>
@@ -194,7 +194,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           {/* Sidebar */}
           <aside className="fixed left-0 top-0 h-full w-80 bg-white shadow-xl flex flex-col transform transition-transform">
             <div className="flex items-center justify-between p-4 border-b">
-              <img src="https://primeacademy.org/logo-full.png" alt="Prime Academy" className="w-32 object-contain"/>
+              <img src="https://primeacademy.org/assets/prime-academy-logo-full-dark.png" alt="Prime Academy" className="w-32 object-contain"/>
               <button onClick={closeSidebar} className="p-2 hover:bg-gray-100 rounded-lg">
                 <X size={20} className="text-gray-600"/>
               </button>

@@ -354,7 +354,7 @@ export default function Topbar({ onMenuClick }) {
         
         {/* Logo - smaller on mobile */}
         <div className="px-2">
-          <img src="https://primeacademy.org/logo-full.png" alt="Prime Academy" className="h-6 md:h-8 object-contain" />
+          <img src="https://primeacademy.org/assets/prime-academy-logo-full-dark.png" alt="Prime Academy" className="h-6 md:h-8 object-contain" />
         </div>
       </div>
       
