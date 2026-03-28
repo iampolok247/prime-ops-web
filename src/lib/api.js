@@ -1510,12 +1510,40 @@ export const api = {
     });
     return handleJson(res, "Load leave applications failed");
   },
-  async getAllLeaveApplications(status) {
-    const q = status ? `?status=${encodeURIComponent(status)}` : "";
+  async getAllLeaveApplications(status, primaryApproved) {
+    let q = status ? `?status=${encodeURIComponent(status)}` : "";
+    if (primaryApproved) q += `${q ? '&' : '?'}primaryApproved=true`;
     const res = await authFetch(`${getApiBase()}/api/leave${q}`, {
       credentials: "include",
     });
     return handleJson(res, "Load leave applications failed");
+  },
+  // Accountant: Get pending leave applications for primary approval
+  async getPrimaryPendingLeaveApplications() {
+    const res = await authFetch(`${getApiBase()}/api/leave/primary-pending`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load pending leave applications failed");
+  },
+  // Accountant: Primary approve leave application
+  async primaryApproveLeaveApplication(id, primaryReviewNote) {
+    const res = await authFetch(`${getApiBase()}/api/leave/${id}/primary-approve`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ primaryReviewNote }),
+    });
+    return handleJson(res, "Primary approve leave failed");
+  },
+  // Accountant: Primary reject leave application
+  async primaryRejectLeaveApplication(id, primaryReviewNote) {
+    const res = await authFetch(`${getApiBase()}/api/leave/${id}/primary-reject`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ primaryReviewNote }),
+    });
+    return handleJson(res, "Primary reject leave failed");
   },
   async approveLeaveApplication(id, reviewNote) {
     const res = await authFetch(`${getApiBase()}/api/leave/${id}/approve`, {

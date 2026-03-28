@@ -79,6 +79,7 @@ import RequisitionPage from './pages/RequisitionPage.jsx';
 import RequisitionRequestPage from './pages/RequisitionRequestPage.jsx';
 import ManualDuePage from './pages/ManualDuePage.jsx';
 import ManualDueApprovalPage from './pages/ManualDueApprovalPage.jsx';
+import LeaveApprovalPage from './pages/LeaveApprovalPage.jsx';
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -181,6 +182,7 @@ export default function App() {
             <Route path="/previous-income" element={<PreviousIncomePage />} />
             <Route path="/accounting/requisition-request" element={<RequisitionRequestPage />} />
             <Route path="/accounting/manual-due-approval" element={<ManualDueApprovalPage />} />
+            <Route path="/accounting/leave-approval" element={<LeaveApprovalPage />} />
           </Route>
 
           {/* Employee Accounts - visible to SuperAdmin, Admin and Accountant */}

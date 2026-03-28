@@ -488,6 +488,34 @@ export default function MyApplications() {
                         )}
                       </div>
                     )}
+                    {/* Primary Approval Status */}
+                    {app.primaryStatus && (
+                      <div className={`p-3 rounded-lg mb-2 ${
+                        app.primaryStatus === 'Approved' ? 'bg-green-50 border-l-4 border-green-400' : 
+                        app.primaryStatus === 'Rejected' ? 'bg-red-50 border-l-4 border-red-400' : 
+                        'bg-yellow-50 border-l-4 border-yellow-400'
+                      }`}>
+                        <p className="text-xs font-bold uppercase mb-1 flex items-center gap-1">
+                          {app.primaryStatus === 'Approved' && <CheckCircle className="w-3 h-3 text-green-600" />}
+                          {app.primaryStatus === 'Rejected' && <XCircle className="w-3 h-3 text-red-600" />}
+                          {app.primaryStatus === 'Pending' && <Clock className="w-3 h-3 text-yellow-600" />}
+                          Primary Approval (Accountant): {app.primaryStatus}
+                        </p>
+                        {app.primaryReviewNote && (
+                          <p className="text-sm text-gray-700">{app.primaryReviewNote}</p>
+                        )}
+                        {app.primaryReviewedBy && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            by {app.primaryReviewedBy.name} on {new Date(app.primaryReviewedAt).toLocaleDateString()}
+                          </p>
+                        )}
+                        {app.primaryStatus === 'Approved' && app.status === 'Pending' && (
+                          <p className="text-xs text-blue-600 mt-1 font-medium">
+                            ⏳ Waiting for Admin's final approval
+                          </p>
+                        )}
+                      </div>
+                    )}
                     {app.reviewNote && (
                       <div className={`p-3 rounded-lg ${app.status === 'Approved' ? 'bg-green-50' : 'bg-red-50'}`}>
                         <p className="text-xs font-medium text-gray-600 mb-1">Review Note</p>

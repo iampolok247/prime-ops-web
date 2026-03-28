@@ -136,6 +136,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/accounting/tada-payments', label: 'TA/DA Payments', icon: <DollarSign size={18}/> },
       // Section: HR & Admin
       { type: 'heading', title: 'HR & Admin' },
+      { to: '/accounting/leave-approval', label: 'Leave Approval', icon: <ClipboardCheck size={18}/> },
       { to: '/employee-accounts/bank', label: 'Employee Bank Account', icon: <CreditCard size={18}/> },
       { to: '/employee-accounts/salary', label: 'Employee Salary', icon: <Wallet size={18}/> },
       // Section: Metrics & Reports

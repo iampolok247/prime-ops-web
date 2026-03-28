@@ -43,7 +43,9 @@ export default function AdminApprovals() {
 
   const loadLeaveApplications = async () => {
     try {
-      const resp = await api.getAllLeaveApplications(leaveFilter === 'All' ? '' : leaveFilter);
+      // For Pending filter, only show primary-approved applications (ready for final approval)
+      const primaryApproved = leaveFilter === 'Pending' ? true : false;
+      const resp = await api.getAllLeaveApplications(leaveFilter === 'All' ? '' : leaveFilter, primaryApproved);
       setLeaveApplications(resp.applications || []);
     } catch (e) {
       setErr(e.message);
@@ -304,6 +306,25 @@ export default function AdminApprovals() {
                               {app.handoverStatus === 'Denied' && '✗ '}
                               {app.handoverStatus === 'Pending' && '⏳ '}
                               {app.handoverStatus}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Primary Approval Info */}
+                      {app.primaryStatus === 'Approved' && app.primaryReviewedBy && (
+                        <div className="mb-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                          <p className="text-xs font-medium text-green-700 mb-1 flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3" />
+                            Primary Approval (Accountant)
+                          </p>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-gray-700">Approved by <strong>{app.primaryReviewedBy?.name}</strong></p>
+                              {app.primaryReviewNote && <p className="text-xs text-gray-500 mt-1">Note: {app.primaryReviewNote}</p>}
+                            </div>
+                            <span className="text-xs text-gray-500">
+                              {app.primaryReviewedAt && new Date(app.primaryReviewedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                             </span>
                           </div>
                         </div>
