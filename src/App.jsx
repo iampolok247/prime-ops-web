@@ -80,6 +80,7 @@ import RequisitionRequestPage from './pages/RequisitionRequestPage.jsx';
 import ManualDuePage from './pages/ManualDuePage.jsx';
 import ManualDueApprovalPage from './pages/ManualDueApprovalPage.jsx';
 import LeaveApprovalPage from './pages/LeaveApprovalPage.jsx';
+import OpsAttendance from './pages/OpsAttendance.jsx';
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -214,6 +215,11 @@ export default function App() {
           {/* IT Admin - Activity Tracking */}
           <Route element={<RoleRoute roles={['ITAdmin','Admin','SuperAdmin','Accountant']} />}>
             <Route path="/activity" element={<Activity />} />
+          </Route>
+
+          {/* OPS Attendance - Accountant, Admin, SuperAdmin */}
+          <Route element={<RoleRoute roles={['Accountant','Admin','SuperAdmin']} />}>
+            <Route path="/ops-attendance" element={<OpsAttendance />} />
           </Route>
 
           {/* Coordinator */}

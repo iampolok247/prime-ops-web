@@ -2065,6 +2065,50 @@ export const api = {
     });
     return handleJson(res, "Delete manual due failed");
   },
+
+  // ---- Attendance ----
+  async getTodayAttendance() {
+    const res = await authFetch(`${getApiBase()}/api/attendance/today`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load today attendance failed");
+  },
+  async getMyAttendance(from = '', to = '', limit = 30) {
+    let url = `${getApiBase()}/api/attendance/my?limit=${limit}`;
+    if (from) url += `&from=${from}`;
+    if (to) url += `&to=${to}`;
+    const res = await authFetch(url, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load attendance history failed");
+  },
+  async getAllAttendance(params = {}) {
+    const { from, to, date, userId } = params;
+    let url = `${getApiBase()}/api/attendance/all?`;
+    if (date) url += `date=${date}&`;
+    if (from) url += `from=${from}&`;
+    if (to) url += `to=${to}&`;
+    if (userId) url += `userId=${userId}&`;
+    const res = await authFetch(url, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load all attendance failed");
+  },
+  async getAttendanceReport(from, to) {
+    const res = await authFetch(`${getApiBase()}/api/attendance/report?from=${from}&to=${to}`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load attendance report failed");
+  },
+  async createManualAttendance(payload) {
+    const res = await authFetch(`${getApiBase()}/api/attendance/manual`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return handleJson(res, "Create attendance failed");
+  },
 };
 
 export default api;

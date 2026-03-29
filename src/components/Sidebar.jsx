@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { LayoutDashboard, ListChecks, Users, BookOpen, FolderOpen, Wallet, BarChart2, Film, CreditCard, Menu, X, Kanban, DollarSign, Video, Activity, MessageCircle, FileText, Target, Layers, ClipboardList, CheckSquare, ClipboardCheck, FileInput } from 'lucide-react';
+import { LayoutDashboard, ListChecks, Users, BookOpen, FolderOpen, Wallet, BarChart2, Film, CreditCard, Menu, X, Kanban, DollarSign, Video, Activity, MessageCircle, FileText, Target, Layers, ClipboardList, CheckSquare, ClipboardCheck, FileInput, Clock } from 'lucide-react';
 
 const Item = ({ to, icon, label, onClick }) => (
   <NavLink
@@ -141,6 +141,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/employee-accounts/salary', label: 'Employee Salary', icon: <Wallet size={18}/> },
       // Section: Metrics & Reports
       { type: 'heading', title: 'Metrics & Reports' },
+      { to: '/ops-attendance', label: 'OPS Attendance', icon: <Clock size={18}/> },
       { to: '/admission/team-metrics', label: 'Admission Team Metrics', icon: <Activity size={18}/> },
       { to: '/activity', label: 'Activity Log', icon: <Activity size={18}/> }
     ],

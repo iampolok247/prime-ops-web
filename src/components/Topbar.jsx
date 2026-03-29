@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, User as UserIcon, Menu, Bell, Calendar, MessageCircle, RefreshCw } from 'lucide-react';
+import { LogOut, User as UserIcon, Menu, Bell, Calendar, MessageCircle, RefreshCw, Clock } from 'lucide-react';
 import { api } from '../lib/api.js';
 import LeadHistoryModal from './LeadHistoryModal.jsx';
+import { format } from 'date-fns';
 
 export default function Topbar({ onMenuClick }) {
   const { user, logout, switchRole } = useAuth();
@@ -21,6 +22,7 @@ export default function Topbar({ onMenuClick }) {
   const [showLeadHistory, setShowLeadHistory] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [todayLoginTime, setTodayLoginTime] = useState(null);
 
   // Load read notifications from localStorage
   useEffect(() => {
@@ -33,6 +35,24 @@ export default function Topbar({ onMenuClick }) {
       }
     }
   }, []);
+
+  // Fetch today's login time
+  useEffect(() => {
+    const loadTodayAttendance = async () => {
+      try {
+        const data = await api.getTodayAttendance();
+        if (data.attendance?.loginTime) {
+          setTodayLoginTime(new Date(data.attendance.loginTime));
+        }
+      } catch (error) {
+        console.error('Failed to load today attendance:', error);
+      }
+    };
+
+    if (user) {
+      loadTodayAttendance();
+    }
+  }, [user]);
 
   // Fetch unread message count
   useEffect(() => {
@@ -668,6 +688,14 @@ export default function Topbar({ onMenuClick }) {
           <div className="font-semibold">{user?.name}</div>
           <div className="opacity-80 text-xs">{user?.designation}</div>
         </div>
+
+        {/* Today's Login Time */}
+        {todayLoginTime && (
+          <div className="hidden md:flex items-center gap-1.5 bg-green-50 text-green-700 px-3 py-1.5 rounded-lg text-xs font-medium">
+            <Clock size={14} />
+            <span>Login: {format(todayLoginTime, 'hh:mm a')}</span>
+          </div>
+        )}
         
         {/* Role Switcher - Only show if user has multiple roles */}
         {user?.availableRoles && user.availableRoles.length > 1 && (
