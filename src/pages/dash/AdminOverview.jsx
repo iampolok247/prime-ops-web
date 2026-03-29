@@ -26,6 +26,7 @@ export default function AdminOverview() {
   const [from, setFrom] = useState(firstOfMonthISO());
   const [to, setTo] = useState(todayISO());
   const [report, setReport] = useState(null);
+  const [accountingData, setAccountingData] = useState(null);
   const [courses, setCourses] = useState([]);
   const [leads, setLeads] = useState([]);
   const [admissionLeads, setAdmissionLeads] = useState([]);
@@ -50,26 +51,50 @@ export default function AdminOverview() {
 
   const load = async () => {
     try {
-      // compute from/to to send to server for all period types (except lifetime)
+      // Use same date calculation logic as AccountingDashboard
       let qFrom, qTo;
-      if (period === 'custom') { qFrom = from; qTo = to; }
-      else if (period === 'lifetime') { qFrom = undefined; qTo = undefined; }
-      else {
-        // compute server-friendly YYYY-MM-DD
-        const now = new Date();
-        const f = new Date();
-        if (period === 'daily') f.setDate(now.getDate() - 1);
-        else if (period === 'weekly') f.setDate(now.getDate() - 7);
-        else if (period === 'monthly') f.setMonth(now.getMonth() - 1);
-        else if (period === 'yearly') f.setFullYear(now.getFullYear() - 1);
-        qFrom = f.toISOString().slice(0,10);
+      const now = new Date();
+      
+      if (period === 'custom') { 
+        qFrom = from; 
+        qTo = to; 
+      }
+      else if (period === 'lifetime') { 
+        qFrom = undefined; 
+        qTo = undefined; 
+      }
+      else if (period === 'daily') {
+        // Today only
+        qFrom = now.toISOString().slice(0,10);
+        qTo = now.toISOString().slice(0,10);
+      }
+      else if (period === 'weekly') {
+        // This week (Monday to Sunday)
+        const dayOfWeek = now.getDay();
+        const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        const monday = new Date(now);
+        monday.setDate(now.getDate() - mondayOffset);
+        qFrom = monday.toISOString().slice(0,10);
+        qTo = now.toISOString().slice(0,10);
+      }
+      else if (period === 'monthly') {
+        // This month (e.g., January 1 - today)
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        qFrom = firstDay.toISOString().slice(0,10);
+        qTo = now.toISOString().slice(0,10);
+      }
+      else if (period === 'yearly') {
+        // This year (January 1 - today)
+        const firstDay = new Date(now.getFullYear(), 0, 1);
+        qFrom = firstDay.toISOString().slice(0,10);
         qTo = now.toISOString().slice(0,10);
       }
       // Get current month for targets
       const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
       
-      const [r, cs, ls, als, recs, t, inc, exp, tgt] = await Promise.all([
+      const [r, accData, cs, ls, als, recs, t, inc, exp, tgt] = await Promise.all([
         api.reportsOverview(qFrom, qTo),
+        api.accountingSummary(qFrom, qTo).catch(()=>({ totalIncome: 0 })),
         api.listCourses().catch(()=>({ courses: [] })),
         api.listLeads().catch(()=>({ leads: [] })),
         api.listAdmissionLeads().catch(()=>({ leads: [] })),
@@ -80,6 +105,7 @@ export default function AdminOverview() {
         api.getAdmissionTargets(currentMonth).catch(()=>({ targets: [] }))
       ]);
       setReport(r);
+      setAccountingData(accData);
       setCourses(cs?.courses || []);
       setLeads(ls?.leads || []);
       setAdmissionLeads(als?.leads || []);
@@ -111,13 +137,22 @@ export default function AdminOverview() {
     return tasks.filter(t=>{ const d=new Date(t.createdAt||t.deadline||null); return d && (!rangeFrom||d>=rangeFrom) && (!rangeTo||d<=rangeTo); });
   }, [tasks, rangeFrom, rangeTo]);
 
-  const totalIncome = report?.combined?.income ?? 0;
-  const totalExpense = report?.combined?.expense ?? 0;
-  const totalNet = report?.combined?.net ?? (totalIncome - totalExpense);
+  // Filter recruited by recruitedDate field
+  const filteredRecruited = useMemo(()=>{
+    if (!rangeFrom && !rangeTo) return recruited;
+    return recruited.filter(r => {
+      const d = new Date(r.recruitedDate || r.createdAt || null);
+      return d && !isNaN(d) && (!rangeFrom || d >= rangeFrom) && (!rangeTo || d <= rangeTo);
+    });
+  }, [recruited, rangeFrom, rangeTo]);
+
+  // Use accountingData for income (same as AccountingDashboard)
+  const totalIncome = accountingData?.totalIncome ?? report?.combined?.income ?? 0;
+  const totalNet = accountingData?.profit ?? report?.combined?.net ?? 0;
   const totalActiveCourses = (courses || []).filter(c=>c.status==='Active').length;
   const totalLeads = filteredLeads.length;
   const totalAdmitted = filteredAdmission.filter(l=> (l.status||'').toLowerCase() === 'admitted').length;
-  const totalRecruited = (recruited || []).length;
+  const totalRecruited = filteredRecruited.length;
 
   // prepare income/expense timeseries by day
   const series = useMemo(()=>{
