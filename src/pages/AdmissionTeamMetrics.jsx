@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
-import { Download, RefreshCw, TrendingUp, Users, Phone, UserCheck, UserX } from 'lucide-react';
+import { Download, RefreshCw, Users, Phone, PhoneCall, UserCheck, UserX, ClipboardList } from 'lucide-react';
 
 function toISODate(d) {
   if (!d) return '';
@@ -76,39 +76,25 @@ export default function AdmissionTeamMetrics() {
       const range = computeRange();
       const userId = selectedUser === 'all' ? undefined : selectedUser;
 
-      const metricsResp = await api.getAdmissionMetrics(userId, range.from, range.to).catch(err => {
-        console.error('Failed to fetch metrics:', err);
+      const statsResp = await api.getAdmissionTeamStats(userId, range.from, range.to).catch(err => {
+        console.error('Failed to fetch stats:', err);
         return null;
       });
 
-      if (!metricsResp) {
+      if (!statsResp) {
         setMetrics(null);
         return;
       }
 
-      // Handle different response formats
-      if (userId) {
-        // Single user metrics - response has counselingCount, followUpCount, admittedCount, notAdmittedCount
-        setMetrics({
-          newCalls: metricsResp.counselingCount || 0,
-          followUpCalls: metricsResp.followUpCount || 0,
-          admitted: metricsResp.admittedCount || 0,
-          notAdmitted: metricsResp.notAdmittedCount || 0
-        });
-      } else {
-        // All team members - response has array in 'metrics' field
-        const teamMetrics = metricsResp.metrics || [];
-        
-        // Sum up all team members' metrics
-        const combined = teamMetrics.reduce((acc, member) => ({
-          newCalls: acc.newCalls + (member.counselingCount || 0),
-          followUpCalls: acc.followUpCalls + (member.followUpCount || 0),
-          admitted: acc.admitted + (member.admittedCount || 0),
-          notAdmitted: acc.notAdmitted + (member.notAdmittedCount || 0)
-        }), { newCalls: 0, followUpCalls: 0, admitted: 0, notAdmitted: 0 });
-
-        setMetrics(combined);
-      }
+      setMetrics({
+        totalAssignedLeads: statsResp.totalAssignedLeads || 0,
+        remainingNewLeads: statsResp.remainingNewLeads || 0,
+        firstTimeCalls: statsResp.firstTimeCalls || 0,
+        followUpCalls: statsResp.followUpCalls || 0,
+        admitted: statsResp.admitted || 0,
+        notInterested: statsResp.notInterested || 0,
+        perUserStats: statsResp.perUserStats || null
+      });
     } catch (e) {
       console.error('Error fetching metrics:', e);
       setMetrics(null);
@@ -121,14 +107,6 @@ export default function AdmissionTeamMetrics() {
     if (!metrics) return;
     setDownloading(true);
     try {
-      const display = {
-        newCalls: metrics.newCalls || 0,
-        followUpCalls: metrics.followUpCalls || 0,
-        totalCalls: (metrics.newCalls || 0) + (metrics.followUpCalls || 0),
-        admitted: metrics.admitted || 0,
-        notAdmitted: metrics.notAdmitted || 0
-      };
-
       const namePart = selectedUser === 'all' 
         ? 'All-Team-Members'
         : admissionUsers.find((u) => u._id === selectedUser)?.name || 'Team';
@@ -140,17 +118,28 @@ export default function AdmissionTeamMetrics() {
       rows.push(['Generated On', new Date().toLocaleString()]);
       rows.push([]);
       rows.push(['Metric', 'Value']);
-      rows.push(['New Calls (Counseling)', display.newCalls]);
-      rows.push(['Follow-up Calls', display.followUpCalls]);
-      rows.push(['Total Calls', display.totalCalls]);
-      rows.push(['Admitted', display.admitted]);
-      rows.push(['Not Interested', display.notAdmitted]);
+      rows.push(['Total Assign Leads', metrics.totalAssignedLeads]);
+      rows.push(['Remaining New Leads', metrics.remainingNewLeads]);
+      rows.push(['First Time Calls', metrics.firstTimeCalls]);
+      rows.push(['Follow-up Calls', metrics.followUpCalls]);
+      rows.push(['Admitted', metrics.admitted]);
+      rows.push(['Not Interested', metrics.notInterested]);
+
+      // Add per-user breakdown if available
+      if (metrics.perUserStats && metrics.perUserStats.length > 0) {
+        rows.push([]);
+        rows.push(['--- Per Team Member Breakdown ---']);
+        rows.push(['Name', 'Total Assigned', 'Remaining New', 'First Time Calls', 'Follow-up Calls', 'Admitted', 'Not Interested']);
+        metrics.perUserStats.forEach(u => {
+          rows.push([u.userName, u.totalAssignedLeads, u.remainingNewLeads, u.firstTimeCalls, u.followUpCalls, u.admitted, u.notInterested]);
+        });
+      }
 
       const csvContent = rows.map((r) => r.map((c) => `"${String(c ?? '')}"`).join(',')).join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      const fileName = `admission-team-metrics-${namePart.replace(/\s+/g, '-')}-${new Date().toISOString().slice(0, 10)}.csv`;
+      const fileName = `admission-team-stats-${namePart.replace(/\s+/g, '-')}-${new Date().toISOString().slice(0, 10)}.csv`;
       a.href = url;
       a.download = fileName;
       document.body.appendChild(a);
@@ -179,19 +168,20 @@ export default function AdmissionTeamMetrics() {
   );
 
   const display = metrics ? {
-    newCalls: metrics.newCalls || 0,
+    totalAssignedLeads: metrics.totalAssignedLeads || 0,
+    remainingNewLeads: metrics.remainingNewLeads || 0,
+    firstTimeCalls: metrics.firstTimeCalls || 0,
     followUpCalls: metrics.followUpCalls || 0,
-    totalCalls: (metrics.newCalls || 0) + (metrics.followUpCalls || 0) + (metrics.admitted || 0) + (metrics.notAdmitted || 0),
     admitted: metrics.admitted || 0,
-    notAdmitted: metrics.notAdmitted || 0
-  } : { newCalls: 0, followUpCalls: 0, totalCalls: 0, admitted: 0, notAdmitted: 0 };
+    notInterested: metrics.notInterested || 0
+  } : { totalAssignedLeads: 0, remainingNewLeads: 0, firstTimeCalls: 0, followUpCalls: 0, admitted: 0, notInterested: 0 };
 
   return (
     <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Admission Team Metrics</h1>
-        <p className="text-gray-600 mt-1">Track team counseling calls, follow-ups, and admissions</p>
+        <p className="text-gray-600 mt-1">Track team leads, calls, follow-ups, and admissions</p>
       </div>
 
       {/* Controls */}
@@ -276,21 +266,30 @@ export default function AdmissionTeamMetrics() {
         </div>
       </div>
 
-      {/* Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-        {/* Total Calls */}
+      {/* Metrics Grid - 6 Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        {/* Total Assign Leads */}
         <MetricCard
-          label="Total Calls"
-          value={display.totalCalls}
-          icon={Phone}
+          label="Total Assign Leads"
+          value={display.totalAssignedLeads}
+          icon={ClipboardList}
           bgColor="bg-gradient-to-br from-blue-50 to-blue-100"
           textColor="text-blue-600"
         />
 
-        {/* New Calls */}
+        {/* Remaining New Leads */}
         <MetricCard
-          label="New Calls (Counseling)"
-          value={display.newCalls}
+          label="Remaining New Leads"
+          value={display.remainingNewLeads}
+          icon={Users}
+          bgColor="bg-gradient-to-br from-indigo-50 to-indigo-100"
+          textColor="text-indigo-600"
+        />
+
+        {/* First Time Calls */}
+        <MetricCard
+          label="First Time Calls"
+          value={display.firstTimeCalls}
           icon={Phone}
           bgColor="bg-gradient-to-br from-purple-50 to-purple-100"
           textColor="text-purple-600"
@@ -300,7 +299,7 @@ export default function AdmissionTeamMetrics() {
         <MetricCard
           label="Follow-up Calls"
           value={display.followUpCalls}
-          icon={TrendingUp}
+          icon={PhoneCall}
           bgColor="bg-gradient-to-br from-orange-50 to-orange-100"
           textColor="text-orange-600"
         />
@@ -317,7 +316,7 @@ export default function AdmissionTeamMetrics() {
         {/* Not Interested */}
         <MetricCard
           label="Not Interested"
-          value={display.notAdmitted}
+          value={display.notInterested}
           icon={UserX}
           bgColor="bg-gradient-to-br from-red-50 to-red-100"
           textColor="text-red-600"

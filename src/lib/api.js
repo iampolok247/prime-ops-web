@@ -568,6 +568,19 @@ export const api = {
     return handleJson(res, "Load admission metrics failed");
   },
 
+  // Admission Team Stats (lead-based metrics)
+  async getAdmissionTeamStats(userId, from, to) {
+    const params = new URLSearchParams();
+    if (userId) params.append("userId", userId);
+    if (from) params.append("from", from);
+    if (to) params.append("to", to);
+    const q = params.toString() ? `?${params.toString()}` : "";
+    const res = await authFetch(`${getApiBase()}/api/reports/admission-team-stats${q}`, {
+      credentials: "include",
+    });
+    return handleJson(res, "Load admission team stats failed");
+  },
+
   // Download CSV for admission metrics (Admin/SuperAdmin only)
   async downloadAdmissionMetricsCSV(userId, from, to) {
     const params = new URLSearchParams();
