@@ -532,10 +532,68 @@ function PieChart({ data }) {
     { base: "#a855f7", gradient: "url(#gradient7)" },
   ];
 
-  let currentAngle = -90;
   const cx = 120, cy = 120;
   const outerRadius = 90;
   const innerRadius = 60;
+
+  // Special case: if only one data item (100%), draw a full donut ring
+  if (data.length === 1) {
+    const slice = {
+      label: data[0].label,
+      percentage: '100.0',
+      value: data[0].value,
+      color: colors[0]
+    };
+
+    return (
+      <div className="flex flex-col items-center gap-4">
+        <svg width="240" height="240" className="mx-auto">
+          <defs>
+            {colors.map((c, i) => (
+              <linearGradient key={i} id={`gradient${i}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor={c.base} stopOpacity="0.9" />
+                <stop offset="100%" stopColor={c.base} stopOpacity="0.6" />
+              </linearGradient>
+            ))}
+          </defs>
+          {/* Full circle using two arcs for single data item */}
+          <circle
+            cx={cx}
+            cy={cy}
+            r={(outerRadius + innerRadius) / 2}
+            fill="none"
+            stroke={colors[0].base}
+            strokeWidth={outerRadius - innerRadius}
+            strokeOpacity="0.8"
+            className="hover:opacity-80 transition-opacity cursor-pointer"
+          />
+          <text x={cx} y={cy - 5} textAnchor="middle" fontSize="12" fill="#6b7280" fontWeight="500">
+            Total
+          </text>
+          <text x={cx} y={cy + 10} textAnchor="middle" fontSize="18" fill="#1f2937" fontWeight="bold">
+            {fmtBDTEn(total)}
+          </text>
+        </svg>
+        
+        <div className="grid grid-cols-2 gap-2 w-full">
+          <div className="flex items-center gap-2 text-xs">
+            <div 
+              className="w-3 h-3 rounded-full flex-shrink-0"
+              style={{ backgroundColor: colors[0].base }}
+            ></div>
+            <span className="text-gray-700 font-medium truncate">
+              {slice.label}
+            </span>
+            <span className="text-gray-500 ml-auto">
+              {slice.percentage}%
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  let currentAngle = -90;
 
   const slices = data.map((d, i) => {
     const sliceAngle = (d.value / total) * 360;
