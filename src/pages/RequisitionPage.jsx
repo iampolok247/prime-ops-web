@@ -4,16 +4,12 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { Plus, Trash2, FileText, Check, X, Clock, Eye, ChevronDown, ChevronUp } from 'lucide-react';
 
 const DEPARTMENTS = [
-  'IT',
+  'Marketing & Creative',
+  'Admission/Sales',
   'HR & Admin',
-  'Sales',
-  'Digital Marketing',
   'Recruitment',
-  'Media Graphic',
-  'SEO',
-  'Finance',
-  'Management',
-  'Other'
+  'Office Management',
+  'Others'
 ];
 
 export default function RequisitionPage() {
@@ -28,8 +24,8 @@ export default function RequisitionPage() {
   const [rejectModal, setRejectModal] = useState({ open: false, id: null, reason: '' });
   
   const [form, setForm] = useState({
-    subject: '',
-    department: user?.role === 'IT' ? 'IT' : '',
+    department: '',
+    otherDepartment: '',
     items: [{ sl: 1, particulars: '', estimatedCost: '' }],
     amountInWords: ''
   });
@@ -72,10 +68,24 @@ export default function RequisitionPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.department) {
+      alert('Please select a department');
+      return;
+    }
+    if (form.department === 'Others' && !form.otherDepartment.trim()) {
+      alert('Please specify the department');
+      return;
+    }
+    if (form.items.some(item => !item.particulars.trim())) {
+      alert('Please fill in all item descriptions');
+      return;
+    }
     try {
+      const finalDepartment = form.department === 'Others' 
+        ? `Others: ${form.otherDepartment}` 
+        : form.department;
       const payload = {
-        subject: form.subject,
-        department: form.department,
+        department: finalDepartment,
         items: form.items.map(item => ({
           description: item.particulars,
           quantity: 1,
@@ -87,8 +97,8 @@ export default function RequisitionPage() {
       };
       await api.createRequisition(payload);
       setForm({
-        subject: '',
         department: '',
+        otherDepartment: '',
         items: [{ sl: 1, particulars: '', estimatedCost: '' }],
         amountInWords: ''
       });
@@ -185,47 +195,44 @@ export default function RequisitionPage() {
         <div className="bg-white rounded-xl p-6 shadow-lg mb-6 border border-gray-100">
           <div className="mb-4 pb-4 border-b border-gray-200">
             <h3 className="text-xl font-bold text-gray-800">REQUISITION FORM</h3>
-            <p className="text-sm text-gray-500">প্রাইম একাডেমি লিমিটেড</p>
+            <p className="text-sm text-gray-500">Prime Academy Limited</p>
           </div>
           
           <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Subject / বিষয়</label>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+              <select
+                value={form.department}
+                onChange={e => setForm({ ...form, department: e.target.value, otherDepartment: '' })}
+                required
+                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+              >
+                <option value="">Select Department</option>
+                {DEPARTMENTS.map(dept => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))}
+              </select>
+              {form.department === 'Others' && (
                 <input
                   type="text"
-                  value={form.subject}
-                  onChange={e => setForm({ ...form, subject: e.target.value })}
+                  value={form.otherDepartment}
+                  onChange={e => setForm({ ...form, otherDepartment: e.target.value })}
                   required
-                  className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                  placeholder="Enter subject"
+                  className="w-full mt-2 px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                  placeholder="Please specify department"
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Department / বিভাগ</label>
-                <select
-                  value={form.department}
-                  onChange={e => setForm({ ...form, department: e.target.value })}
-                  required
-                  className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                >
-                  <option value="">Select Department</option>
-                  {DEPARTMENTS.map(dept => (
-                    <option key={dept} value={dept}>{dept}</option>
-                  ))}
-                </select>
-              </div>
+              )}
             </div>
 
             {/* Items Table */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Items / আইটেম</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Items</label>
               <div className="overflow-x-auto">
                 <table className="w-full border border-gray-200 rounded-lg">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-600 border-b w-16">SL</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-600 border-b">Particulars / বিবরণ</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-600 border-b">Particulars</th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-600 border-b w-40">Est. Cost (BDT)</th>
                       <th className="px-3 py-2 text-center text-xs font-medium text-gray-600 border-b w-16">Action</th>
                     </tr>
@@ -269,7 +276,7 @@ export default function RequisitionPage() {
                       </tr>
                     ))}
                     <tr className="bg-gray-50">
-                      <td colSpan="2" className="px-3 py-2 text-right font-medium text-gray-700">Total / মোট:</td>
+                      <td colSpan="2" className="px-3 py-2 text-right font-medium text-gray-700">Total:</td>
                       <td className="px-3 py-2 font-bold text-gray-900">{fmtBDTEn(totalAmount)}</td>
                       <td></td>
                     </tr>
@@ -287,7 +294,7 @@ export default function RequisitionPage() {
 
             {/* Amount in Words */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Amount in Words / টাকা কথায়</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Amount in Words</label>
               <input
                 type="text"
                 value={form.amountInWords}
