@@ -471,24 +471,6 @@ export default function AdmissionDashboard() {
         </div>
       )}
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        {STATUSES.map(s=>(
-          <div key={s.key} className={`group relative bg-gradient-to-br ${getStatusColor(s.key)} rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden`}>
-            <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
-            <div className="relative">
-              <div className="flex items-center justify-between mb-2">
-                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                  {getStatusIcon(s.key)}
-                </div>
-              </div>
-              <p className="text-white/80 text-xs font-medium mb-1">{s.label}</p>
-              <h3 className="text-2xl font-bold text-white">{metrics.counts[s.key] ?? 0}</h3>
-            </div>
-          </div>
-        ))}
-      </div>
-
       {/* Batch Overview Section */}
       {batches.length > 0 && (
         <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100">
