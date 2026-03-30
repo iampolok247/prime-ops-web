@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api, fmtBDTEn, fmtDate } from '../lib/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
-import { Plus, Trash2, FileText, Check, X, Clock, Eye, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, FileText, Check, X, Clock, Eye, ChevronDown, ChevronUp, Printer, Download } from 'lucide-react';
 
 const DEPARTMENTS = [
   'Marketing & Creative',
@@ -136,6 +136,111 @@ export default function RequisitionPage() {
     } catch (err) {
       alert('Error: ' + err.message);
     }
+  };
+
+  const escapeHtml = (value = '') => String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+
+  const buildRequisitionHtml = (req) => {
+    const rows = (req.items || []).map((item, idx) => `
+      <tr>
+        <td>${idx + 1}</td>
+        <td>${escapeHtml(item.description || '-')}</td>
+        <td style="text-align:right;">${escapeHtml(fmtBDTEn(item.estimatedCost || 0))}</td>
+      </tr>
+    `).join('');
+
+    return `
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Requisition ${escapeHtml(req.requisitionNo || '')}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 24px; color: #1f2937; }
+            .header { margin-bottom: 18px; }
+            .title { font-size: 24px; font-weight: 700; margin: 0; }
+            .sub { margin: 2px 0; color: #4b5563; }
+            .meta { margin: 14px 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; }
+            .meta div { font-size: 14px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+            th, td { border: 1px solid #d1d5db; padding: 8px; font-size: 14px; }
+            th { background: #f3f4f6; text-align: left; }
+            .total-row td { font-weight: 700; background: #f9fafb; }
+            .footer { margin-top: 16px; font-size: 14px; }
+            .badge { display:inline-block; padding: 4px 10px; border-radius: 999px; background:#eef2ff; color:#3730a3; font-size:12px; font-weight:600; }
+            @media print { body { margin: 10mm; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1 class="title">REQUISITION FORM</h1>
+            <p class="sub">Prime Academy Limited</p>
+            <p class="sub">Requisition No: <strong>${escapeHtml(req.requisitionNo || '-')}</strong></p>
+          </div>
+
+          <div class="meta">
+            <div><strong>Status:</strong> <span class="badge">${escapeHtml(req.status || 'Pending')}</span></div>
+            <div><strong>Date:</strong> ${escapeHtml(fmtDate(req.createdAt))}</div>
+            <div><strong>Department:</strong> ${escapeHtml(req.department || '-')}</div>
+            <div><strong>Requested By:</strong> ${escapeHtml(req.requestedBy?.name || '-')}</div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width:60px;">SL</th>
+                <th>Particulars</th>
+                <th style="width:180px; text-align:right;">Est. Cost (BDT)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+              <tr class="total-row">
+                <td colspan="2" style="text-align:right;">Total</td>
+                <td style="text-align:right;">${escapeHtml(fmtBDTEn(req.totalAmount || 0))}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          ${req.amountInWords ? `<div class="footer"><strong>Amount in Words:</strong> ${escapeHtml(req.amountInWords)}</div>` : ''}
+          ${req.rejectionReason ? `<div class="footer"><strong>Rejection Reason:</strong> ${escapeHtml(req.rejectionReason)}</div>` : ''}
+        </body>
+      </html>
+    `;
+  };
+
+  const handlePrintRequisition = (req) => {
+    const html = buildRequisitionHtml(req);
+    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    if (!printWindow) {
+      alert('Please allow popups to print requisition');
+      return;
+    }
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 200);
+  };
+
+  const handleDownloadRequisition = (req) => {
+    const html = buildRequisitionHtml(req);
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(req.requisitionNo || 'requisition').replace(/\s+/g, '_')}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const getStatusBadge = (status) => {
@@ -414,6 +519,22 @@ export default function RequisitionPage() {
                       <p className="text-sm text-red-700"><strong>Rejection Reason:</strong> {req.rejectionReason}</p>
                     </div>
                   )}
+
+                  {/* Print / Download */}
+                  <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-200">
+                    <button
+                      onClick={() => handlePrintRequisition(req)}
+                      className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 text-sm font-medium flex items-center gap-1"
+                    >
+                      <Printer className="w-4 h-4" /> Print
+                    </button>
+                    <button
+                      onClick={() => handleDownloadRequisition(req)}
+                      className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 text-sm font-medium flex items-center gap-1"
+                    >
+                      <Download className="w-4 h-4" /> Download
+                    </button>
+                  </div>
 
                   {/* Admin Actions */}
                   {isAdmin && req.status === 'Pending' && (
