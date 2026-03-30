@@ -163,6 +163,9 @@ export default function RequisitionPage() {
           <style>
             body { font-family: Arial, sans-serif; margin: 24px; color: #1f2937; }
             .header { margin-bottom: 18px; }
+            .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+            .logo { height: 52px; width: auto; object-fit: contain; }
+            .brand-text { margin: 0; color: #374151; font-size: 14px; }
             .title { font-size: 24px; font-weight: 700; margin: 0; }
             .sub { margin: 2px 0; color: #4b5563; }
             .meta { margin: 14px 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; }
@@ -178,8 +181,12 @@ export default function RequisitionPage() {
         </head>
         <body>
           <div class="header">
+            <div class="brand">
+              <img class="logo" src="https://primeacademy.org/assets/prime-academy-logo-full-dark.png" alt="Prime Academy Logo" />
+              <p class="brand-text"><strong>Prime Academy, Bangladesh</strong></p>
+            </div>
             <h1 class="title">REQUISITION FORM</h1>
-            <p class="sub">Prime Academy Limited</p>
+            <p class="sub">Prime Academy, Bangladesh</p>
             <p class="sub">Requisition No: <strong>${escapeHtml(req.requisitionNo || '-')}</strong></p>
           </div>
 
@@ -300,7 +307,7 @@ export default function RequisitionPage() {
         <div className="bg-white rounded-xl p-6 shadow-lg mb-6 border border-gray-100">
           <div className="mb-4 pb-4 border-b border-gray-200">
             <h3 className="text-xl font-bold text-gray-800">REQUISITION FORM</h3>
-            <p className="text-sm text-gray-500">Prime Academy Limited</p>
+            <p className="text-sm text-gray-500">Prime Academy, Bangladesh</p>
           </div>
           
           <form onSubmit={handleSubmit}>
