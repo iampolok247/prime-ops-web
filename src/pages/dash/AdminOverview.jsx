@@ -15,7 +15,8 @@ import {
   Briefcase,
   ArrowUpRight,
   ArrowDownRight,
-  Target
+  Target,
+  Clock
 } from 'lucide-react';
 
 function todayISO(){ return new Date().toISOString().slice(0,10); }
@@ -36,6 +37,20 @@ export default function AdminOverview() {
   const [expenses, setExpenses] = useState([]);
   const [targets, setTargets] = useState([]);
   const [err, setErr] = useState('');
+  const [todayAttendance, setTodayAttendance] = useState(null);
+
+  // Fetch today's attendance
+  useEffect(() => {
+    const loadTodayAttendance = async () => {
+      try {
+        const data = await api.getTodayAttendance();
+        setTodayAttendance(data.attendance);
+      } catch (error) {
+        console.error('Failed to load today attendance:', error);
+      }
+    };
+    loadTodayAttendance();
+  }, []);
 
   function parseRange() {
     if (period === 'custom' && from && to) return { from: new Date(from), to: new Date(to) };
@@ -188,7 +203,17 @@ export default function AdminOverview() {
           </h1>
           <p className="text-gray-600 mt-1">Welcome back! Here's your business overview</p>
         </div>
-        <form onSubmit={onApply} className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Today's Attendance */}
+          {todayAttendance?.loginTime && (
+            <div className="flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-xl border border-green-200">
+              <Clock className="w-4 h-4" />
+              <span className="text-sm font-medium">
+                Today Login: {new Date(todayAttendance.loginTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+              </span>
+            </div>
+          )}
+          <form onSubmit={onApply} className="flex flex-wrap items-center gap-2">
           <select 
             value={period} 
             onChange={e=>setPeriod(e.target.value)} 
@@ -222,6 +247,7 @@ export default function AdminOverview() {
             Apply
           </button>
         </form>
+        </div>
       </div>
 
       {err && (

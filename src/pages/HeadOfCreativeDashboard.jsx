@@ -10,7 +10,8 @@ import {
   UserCheck,
   Activity,
   Target,
-  Calendar
+  Calendar,
+  Clock
 } from 'lucide-react';
 
 export default function HeadOfCreativeDashboard() {
@@ -21,9 +22,19 @@ export default function HeadOfCreativeDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('monthly');
+  const [todayAttendance, setTodayAttendance] = useState(null);
 
   useEffect(() => {
     loadDashboardData();
+    // Fetch today's attendance
+    (async () => {
+      try {
+        const data = await api.getTodayAttendance();
+        setTodayAttendance(data.attendance);
+      } catch (error) {
+        console.error('Failed to load today attendance:', error);
+      }
+    })();
   }, [period]);
 
   async function loadDashboardData() {
@@ -122,21 +133,32 @@ export default function HeadOfCreativeDashboard() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold text-navy">Creative Department Dashboard</h1>
           <p className="text-royal/70 mt-1">Overview of Digital Marketing, Motion Graphics, and Admission Performance</p>
         </div>
-        <select
-          value={period}
-          onChange={(e) => setPeriod(e.target.value)}
-          className="px-4 py-2 border rounded-xl bg-white text-navy font-medium shadow-sm hover:shadow-md transition-shadow"
-        >
-          <option value="daily">Today</option>
-          <option value="weekly">Last 7 Days</option>
-          <option value="monthly">This Month</option>
-          <option value="yearly">This Year</option>
-        </select>
+        <div className="flex items-center gap-3">
+          {/* Today's Attendance */}
+          {todayAttendance?.loginTime && (
+            <div className="flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-xl border border-green-200">
+              <Clock className="w-4 h-4" />
+              <span className="text-sm font-medium">
+                Today Login: {new Date(todayAttendance.loginTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+              </span>
+            </div>
+          )}
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            className="px-4 py-2 border rounded-xl bg-white text-navy font-medium shadow-sm hover:shadow-md transition-shadow"
+          >
+            <option value="daily">Today</option>
+            <option value="weekly">Last 7 Days</option>
+            <option value="monthly">This Month</option>
+            <option value="yearly">This Year</option>
+          </select>
+        </div>
       </div>
 
       {/* Digital Marketing Section */}

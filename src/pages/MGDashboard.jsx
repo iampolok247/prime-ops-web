@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { api } from '../lib/api.js';
-import { Film, Image, FileImage, Video, TrendingUp, Calendar, Download } from 'lucide-react';
+import { Film, Image, FileImage, Video, TrendingUp, Calendar, Download, Clock } from 'lucide-react';
 
 function todayISO(){ return new Date().toISOString().slice(0,10); }
 function firstOfMonthISO(){ const d=new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0,10); }
@@ -9,6 +9,7 @@ export default function MGDashboard() {
   const [works, setWorks] = useState([]);
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
+  const [todayAttendance, setTodayAttendance] = useState(null);
   
   // filters
   const [period, setPeriod] = useState('monthly');
@@ -17,6 +18,15 @@ export default function MGDashboard() {
 
   useEffect(() => {
     loadAll();
+    // Fetch today's attendance
+    (async () => {
+      try {
+        const data = await api.getTodayAttendance();
+        setTodayAttendance(data.attendance);
+      } catch (error) {
+        console.error('Failed to load today attendance:', error);
+      }
+    })();
     // Real-time polling every 30 seconds
     const interval = setInterval(loadAll, 30000);
     return () => clearInterval(interval);
@@ -146,17 +156,28 @@ export default function MGDashboard() {
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-navy">Motion Graphics Dashboard</h1>
           <p className="text-gray-600 mt-1">Production analytics and performance metrics</p>
         </div>
-        {loading && (
-          <div className="flex items-center gap-2 text-blue-600">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-            <span className="text-sm">Updating...</span>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {/* Today's Attendance */}
+          {todayAttendance?.loginTime && (
+            <div className="flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-xl border border-green-200">
+              <Clock className="w-4 h-4" />
+              <span className="text-sm font-medium">
+                Today Login: {new Date(todayAttendance.loginTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+              </span>
+            </div>
+          )}
+          {loading && (
+            <div className="flex items-center gap-2 text-blue-600">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+              <span className="text-sm">Updating...</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {err && <div className="bg-red-50 text-red-600 p-4 rounded-lg">{err}</div>}

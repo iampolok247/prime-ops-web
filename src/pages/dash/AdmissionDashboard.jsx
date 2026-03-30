@@ -12,7 +12,8 @@ import {
   TrendingUp,
   BarChart2,
   Download,
-  Filter
+  Filter,
+  Clock
 } from 'lucide-react';
 
 function fmtDT(d){ if (!d) return '-'; try { return new Date(d).toLocaleString(); } catch { return d; } }
@@ -112,6 +113,7 @@ export default function AdmissionDashboard() {
   const [batches, setBatches] = useState([]);
   const [batchCategoryFilter, setBatchCategoryFilter] = useState('All');
   const [loading, setLoading] = useState(false);
+  const [todayAttendance, setTodayAttendance] = useState(null);
   
   // Admin/SuperAdmin specific filters
   const [admissionUsers, setAdmissionUsers] = useState([]);
@@ -121,6 +123,19 @@ export default function AdmissionDashboard() {
 
   const isAdminOrSA = user?.role === 'Admin' || user?.role === 'SuperAdmin';
   const isAdmission = user?.role === 'Admission';
+
+  // Fetch today's attendance
+  useEffect(() => {
+    const loadTodayAttendance = async () => {
+      try {
+        const data = await api.getTodayAttendance();
+        setTodayAttendance(data.attendance);
+      } catch (error) {
+        console.error('Failed to load today attendance:', error);
+      }
+    };
+    loadTodayAttendance();
+  }, []);
 
   // Load all leads and batches once
   useEffect(()=> {
@@ -434,7 +449,16 @@ export default function AdmissionDashboard() {
           </h1>
           <p className="text-gray-600 mt-1">Track student admissions and pipeline</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Today's Attendance */}
+          {todayAttendance?.loginTime && (
+            <div className="flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-xl border border-green-200">
+              <Clock className="w-4 h-4" />
+              <span className="text-sm font-medium">
+                Today Login: {new Date(todayAttendance.loginTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+              </span>
+            </div>
+          )}
           <select 
             value={period} 
             onChange={e => setPeriod(e.target.value)} 

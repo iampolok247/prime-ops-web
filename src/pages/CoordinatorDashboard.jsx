@@ -2,10 +2,24 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
-import { DollarSign, AlertCircle, Calendar, TrendingUp, Users } from 'lucide-react';
+import { DollarSign, AlertCircle, Calendar, TrendingUp, Users, Clock } from 'lucide-react';
 
 export default function CoordinatorDashboard() {
   const { user } = useAuth();
+  const [todayAttendance, setTodayAttendance] = useState(null);
+  
+  // Fetch today's attendance
+  useEffect(() => {
+    const loadTodayAttendance = async () => {
+      try {
+        const data = await api.getTodayAttendance();
+        setTodayAttendance(data.attendance);
+      } catch (error) {
+        console.error('Failed to load today attendance:', error);
+      }
+    };
+    loadTodayAttendance();
+  }, []);
   
   if (user?.role !== 'Coordinator' && user?.role !== 'Admin' && user?.role !== 'SuperAdmin') {
     return <div className="text-royal">Access denied</div>;
@@ -53,9 +67,20 @@ export default function CoordinatorDashboard() {
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-navy">Coordinator Dashboard</h1>
-        <p className="text-gray-600 mt-1">Manage due fees and payment collections</p>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold text-navy">Coordinator Dashboard</h1>
+          <p className="text-gray-600 mt-1">Manage due fees and payment collections</p>
+        </div>
+        {/* Today's Attendance */}
+        {todayAttendance?.loginTime && (
+          <div className="flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-xl border border-green-200">
+            <Clock className="w-4 h-4" />
+            <span className="text-sm font-medium">
+              Today Login: {new Date(todayAttendance.loginTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Stats Grid */}

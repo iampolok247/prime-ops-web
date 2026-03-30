@@ -7,11 +7,26 @@ import {
   Wallet,
   PieChart as PieChartIcon,
   BarChart2,
-  DollarSign
+  DollarSign,
+  Clock
 } from 'lucide-react';
 
 export default function AccountingDashboard() {
   const { user } = useAuth();
+  const [todayAttendance, setTodayAttendance] = useState(null);
+  
+  // Fetch today's attendance
+  useEffect(() => {
+    const loadTodayAttendance = async () => {
+      try {
+        const data = await api.getTodayAttendance();
+        setTodayAttendance(data.attendance);
+      } catch (error) {
+        console.error('Failed to load today attendance:', error);
+      }
+    };
+    loadTodayAttendance();
+  }, []);
   
   if (!['Accountant','Admin','SuperAdmin'].includes(user?.role)) {
     return <div className="text-royal">Only Accountant, Admin or SuperAdmin can access this dashboard.</div>;
@@ -204,6 +219,15 @@ export default function AccountingDashboard() {
           </h1>
           <p className="text-gray-600 mt-1">Financial overview and metrics</p>
         </div>
+        {/* Today's Attendance */}
+        {todayAttendance?.loginTime && (
+          <div className="flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-xl border border-green-200">
+            <Clock className="w-4 h-4" />
+            <span className="text-sm font-medium">
+              Today Login: {new Date(todayAttendance.loginTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+            </span>
+          </div>
+        )}
       </div>
 
       {err && (
