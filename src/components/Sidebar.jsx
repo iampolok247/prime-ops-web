@@ -137,11 +137,11 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       // Section: HR & Admin
       { type: 'heading', title: 'HR & Admin' },
       { to: '/accounting/leave-approval', label: 'Leave Approval', icon: <ClipboardCheck size={18}/> },
+      { to: '/ops-attendance', label: 'OPS Attendance', icon: <Clock size={18}/> },
       { to: '/employee-accounts/bank', label: 'Employee Bank Account', icon: <CreditCard size={18}/> },
       { to: '/employee-accounts/salary', label: 'Employee Salary', icon: <Wallet size={18}/> },
       // Section: Metrics & Reports
       { type: 'heading', title: 'Metrics & Reports' },
-      { to: '/ops-attendance', label: 'OPS Attendance', icon: <Clock size={18}/> },
       { to: '/admission/team-metrics', label: 'Admission Team Metrics', icon: <Activity size={18}/> },
       { to: '/activity', label: 'Activity Log', icon: <Activity size={18}/> }
     ],
