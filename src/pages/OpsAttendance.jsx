@@ -10,7 +10,22 @@ export default function OpsAttendance() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [fromDate, setFromDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [toDate, setToDate] = useState(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
+  const [employees, setEmployees] = useState([]);
+  const [selectedUserId, setSelectedUserId] = useState('all');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const loadEmployees = async () => {
+      try {
+        const data = await api.listUsersPublic();
+        setEmployees(data?.users || []);
+      } catch {
+        // Non-blocking: attendance should still work without dropdown data
+      }
+    };
+
+    loadEmployees();
+  }, []);
 
   useEffect(() => {
     if (view === 'today') {
@@ -18,13 +33,16 @@ export default function OpsAttendance() {
     } else {
       loadReport();
     }
-  }, [view, selectedDate]);
+  }, [view, selectedDate, selectedUserId]);
 
   const loadTodayAttendance = async () => {
     try {
       setLoading(true);
       setError('');
-      const data = await api.getAllAttendance({ date: selectedDate });
+      const data = await api.getAllAttendance({
+        date: selectedDate,
+        userId: selectedUserId !== 'all' ? selectedUserId : undefined,
+      });
       setAttendances(data.attendances || []);
     } catch (err) {
       setError(err.message);
@@ -37,7 +55,11 @@ export default function OpsAttendance() {
     try {
       setLoading(true);
       setError('');
-      const data = await api.getAttendanceReport(fromDate, toDate);
+      const data = await api.getAttendanceReport(
+        fromDate,
+        toDate,
+        selectedUserId !== 'all' ? selectedUserId : undefined,
+      );
       setReportData(data);
     } catch (err) {
       setError(err.message);
@@ -94,19 +116,40 @@ export default function OpsAttendance() {
         <>
           {/* Date Picker */}
           <div className="bg-white rounded-xl shadow p-4 mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-            />
-            <button
-              onClick={loadTodayAttendance}
-              className="ml-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-            >
-              Load
-            </button>
+            <div className="flex flex-wrap items-end gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Employee</label>
+                <select
+                  value={selectedUserId}
+                  onChange={(e) => setSelectedUserId(e.target.value)}
+                  className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 min-w-[220px]"
+                >
+                  <option value="all">All Employees</option>
+                  {employees.map((emp) => (
+                    <option key={emp._id} value={emp._id}>
+                      {emp.name} ({emp.role})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                onClick={loadTodayAttendance}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+              >
+                Load
+              </button>
+            </div>
           </div>
 
           {/* Today's Attendance Table */}
@@ -209,6 +252,21 @@ export default function OpsAttendance() {
                   onChange={(e) => setToDate(e.target.value)}
                   className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Employee</label>
+                <select
+                  value={selectedUserId}
+                  onChange={(e) => setSelectedUserId(e.target.value)}
+                  className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 min-w-[220px]"
+                >
+                  <option value="all">All Employees</option>
+                  {employees.map((emp) => (
+                    <option key={emp._id} value={emp._id}>
+                      {emp.name} ({emp.role})
+                    </option>
+                  ))}
+                </select>
               </div>
               <button
                 onClick={loadReport}

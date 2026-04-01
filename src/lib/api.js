@@ -2094,8 +2094,10 @@ export const api = {
     });
     return handleJson(res, "Load all attendance failed");
   },
-  async getAttendanceReport(from, to) {
-    const res = await authFetch(`${getApiBase()}/api/attendance/report?from=${from}&to=${to}`, {
+  async getAttendanceReport(from, to, userId = '') {
+    let url = `${getApiBase()}/api/attendance/report?from=${from}&to=${to}`;
+    if (userId) url += `&userId=${userId}`;
+    const res = await authFetch(url, {
       credentials: "include",
     });
     return handleJson(res, "Load attendance report failed");
