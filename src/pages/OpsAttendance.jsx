@@ -80,6 +80,59 @@ export default function OpsAttendance() {
     return `${hours}h ${mins}m`;
   };
 
+  const toCsvValue = (value) => {
+    const str = String(value ?? '');
+    return `"${str.replace(/"/g, '""')}"`;
+  };
+
+  const handleDownloadReportExcel = () => {
+    if (!reportData?.report?.length) return;
+
+    const headers = [
+      'Employee Name',
+      'Email',
+      'Role',
+      'Present Days',
+      'Total Working Days',
+      'Absent Days',
+      'Attendance %',
+      'Total Minutes',
+      'Total Hours',
+    ];
+
+    const rows = reportData.report.map((r) => {
+      const absentDays = r.totalDays - r.presentDays;
+      const attendancePercent = r.totalDays > 0 ? Math.round((r.presentDays / r.totalDays) * 100) : 0;
+      return [
+        r.user?.name || '-',
+        r.user?.email || '-',
+        r.user?.role || '-',
+        r.presentDays ?? 0,
+        r.totalDays ?? 0,
+        absentDays,
+        `${attendancePercent}%`,
+        r.totalMinutes ?? 0,
+        formatMinutes(r.totalMinutes),
+      ];
+    });
+
+    const selectedEmpName = selectedUserId === 'all'
+      ? 'all-employees'
+      : (employees.find((e) => e._id === selectedUserId)?.name || 'employee').toLowerCase().replace(/\s+/g, '-');
+
+    const fileName = `attendance-report-${selectedEmpName}-${fromDate}-to-${toDate}.csv`;
+    const csv = [headers, ...rows].map((row) => row.map(toCsvValue).join(',')).join('\n');
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">OPS Attendance</h1>
@@ -273,6 +326,13 @@ export default function OpsAttendance() {
                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
               >
                 Generate Report
+              </button>
+              <button
+                onClick={handleDownloadReportExcel}
+                disabled={!reportData?.report?.length}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                Download Excel
               </button>
             </div>
           </div>
