@@ -27,6 +27,8 @@ export default function LeadsCenter() {
   // Date range filter state
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  // Search query for client-side filtering (leadId, name, phone, email)
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Duplicate lead for another course
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
@@ -349,6 +351,17 @@ export default function LeadsCenter() {
       }
     }
     
+    // Apply search filter (tokenized) - only when query >= 3 chars
+    const q = (searchQuery || '').trim();
+    if (q.length >= 3) {
+      const tokens = q.split(/\s+/).map(t => t.toLowerCase());
+      filtered = filtered.filter(l => {
+        const hay = [l.leadId, l.name, l.phone, l.email].filter(Boolean).join(' ').toLowerCase();
+        // every token must be present somewhere (AND behavior)
+        return tokens.every(tok => hay.indexOf(tok) !== -1);
+      });
+    }
+
     // Sort leads
     const sorted = [...filtered].sort((a, b) => {
       if (sortBy === 'date-desc') {
@@ -413,6 +426,20 @@ export default function LeadsCenter() {
               >
                 ✕
               </button>
+            )}
+          </div>
+
+          {/* Search Bar */}
+          <div className="border rounded-xl px-3 py-2 bg-white flex items-center">
+            <input
+              type="search"
+              placeholder="Search by Lead ID, name, phone or email (type 3+ chars)"
+              value={searchQuery}
+              onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              className="border-0 outline-none text-sm w-72"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="text-sm text-gray-500 ml-2">✕</button>
             )}
           </div>
 
