@@ -381,7 +381,7 @@ export default function LeadsCenter() {
     });
     
     return sorted;
-  }, [leads, courseFilter, assignedToFilter, sortBy, fromDate, toDate]);
+  }, [leads, courseFilter, assignedToFilter, sortBy, fromDate, toDate, searchQuery]);
 
   // Pagination logic
   const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
@@ -394,7 +394,7 @@ export default function LeadsCenter() {
   // Reset to page 1 when filters or status change
   useEffect(() => {
     setCurrentPage(1);
-  }, [status, courseFilter, assignedToFilter, sortBy, fromDate, toDate]);
+  }, [status, courseFilter, assignedToFilter, sortBy, fromDate, toDate, searchQuery]);
 
   return (
     <div>
