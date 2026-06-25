@@ -2111,6 +2111,64 @@ export const api = {
     });
     return handleJson(res, "Create attendance failed");
   },
+
+  // ── Meta Lead CRM ──────────────────────────────────────────────────────────
+  async listMetaLeads(params = {}) {
+    const qs = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v != null && v !== '') qs.set(k, v); });
+    const res = await authFetch(`${getApiBase()}/api/meta-leads?${qs}`, { credentials: 'include' });
+    return handleJson(res, 'Load meta leads failed');
+  },
+  async getMetaLeadStats() {
+    const res = await authFetch(`${getApiBase()}/api/meta-leads/stats`, { credentials: 'include' });
+    return handleJson(res, 'Load meta lead stats failed');
+  },
+  async createMetaLead(payload) {
+    const res = await authFetch(`${getApiBase()}/api/meta-leads`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return handleJson(res, 'Create meta lead failed');
+  },
+  async validateMetaLead(id, payload) {
+    const res = await authFetch(`${getApiBase()}/api/meta-leads/${id}/validate`, {
+      method: 'PATCH', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return handleJson(res, 'Validate meta lead failed');
+  },
+  async assignMetaLead(id, assignedTo) {
+    const res = await authFetch(`${getApiBase()}/api/meta-leads/${id}/assign`, {
+      method: 'PATCH', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assignedTo }),
+    });
+    return handleJson(res, 'Assign meta lead failed');
+  },
+  async bulkAssignMetaLeads(leadIds, assignedTo) {
+    const res = await authFetch(`${getApiBase()}/api/meta-leads/bulk-assign`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leadIds, assignedTo }),
+    });
+    return handleJson(res, 'Bulk assign failed');
+  },
+  async updateMetaLeadStatus(id, payload) {
+    const res = await authFetch(`${getApiBase()}/api/meta-leads/${id}/status`, {
+      method: 'PATCH', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return handleJson(res, 'Update meta lead status failed');
+  },
+  async triggerRoundRobin() {
+    const res = await authFetch(`${getApiBase()}/api/meta-leads/round-robin/trigger`, {
+      method: 'POST', credentials: 'include',
+    });
+    return handleJson(res, 'Round-robin trigger failed');
+  },
 };
 
 export default api;

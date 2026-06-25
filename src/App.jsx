@@ -81,6 +81,8 @@ import ManualDuePage from './pages/ManualDuePage.jsx';
 import ManualDueApprovalPage from './pages/ManualDueApprovalPage.jsx';
 import LeaveApprovalPage from './pages/LeaveApprovalPage.jsx';
 import OpsAttendance from './pages/OpsAttendance.jsx';
+import MetaLeadsManager  from './pages/MetaLeads/MetaLeadsManager.jsx';
+import MetaLeadsPipeline from './pages/MetaLeads/MetaLeadsPipeline.jsx';
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -232,6 +234,16 @@ export default function App() {
 
           {/* Requisition - accessible to all logged in users */}
           <Route path="/requisition" element={<RequisitionPage />} />
+
+          {/* Meta Lead CRM — Manager view (DM / Admin / SuperAdmin) */}
+          <Route element={<RoleRoute roles={['DigitalMarketing','Admin','SuperAdmin','ITAdmin']} />}>
+            <Route path="/meta-leads" element={<MetaLeadsManager />} />
+          </Route>
+
+          {/* Meta Lead CRM — Counsellor pipeline (Admission + Admin oversight) */}
+          <Route element={<RoleRoute roles={['Admission','Admin','SuperAdmin','ITAdmin']} />}>
+            <Route path="/meta-leads/pipeline" element={<MetaLeadsPipeline />} />
+          </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

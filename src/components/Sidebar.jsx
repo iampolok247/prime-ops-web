@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { LayoutDashboard, ListChecks, Users, BookOpen, FolderOpen, Wallet, BarChart2, Film, CreditCard, Menu, X, Kanban, DollarSign, Video, Activity, MessageCircle, FileText, Target, Layers, ClipboardList, CheckSquare, ClipboardCheck, FileInput, Clock } from 'lucide-react';
+import { LayoutDashboard, ListChecks, Users, BookOpen, FolderOpen, Wallet, BarChart2, Film, CreditCard, Menu, X, Kanban, DollarSign, Video, Activity, MessageCircle, FileText, Target, Layers, ClipboardList, CheckSquare, ClipboardCheck, FileInput, Clock, Facebook } from 'lucide-react';
 
 const Item = ({ to, icon, label, onClick }) => (
   <NavLink
@@ -43,6 +43,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/courses', label: 'Courses', icon: <BookOpen size={18}/> },
       { to: '/batches', label: 'Batches', icon: <Layers size={18}/> },
       { to: '/leads-center-view', label: 'Leads Center', icon: <FolderOpen size={18}/> },
+      { to: '/meta-leads', label: 'Meta Leads Manager', icon: <Facebook size={18}/> },
       // Section: Reports
       { type: 'heading', title: 'Reports' },
       { to: '/admission/team-metrics', label: 'Admission Team Metrics', icon: <Activity size={18}/> },
@@ -72,6 +73,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/admission-targets', label: 'Targets', icon: <Target size={18}/> },
       { to: '/batches', label: 'Batches', icon: <Layers size={18}/> },
       { to: '/leads-center-view', label: 'Leads Center', icon: <FolderOpen size={18}/> },
+      { to: '/meta-leads', label: 'Meta Leads Manager', icon: <Facebook size={18}/> },
       // Section: Reports
       { type: 'heading', title: 'Reports' },
       { to: '/admission/team-metrics', label: 'Admission Team Metrics', icon: <Activity size={18}/> },
@@ -96,7 +98,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/courses', label: 'Courses', icon: <BookOpen size={18}/> },
       { to: '/lead-entry', label: 'Lead Entry / CSV', icon: <FolderOpen size={18}/> },
       { to: '/leads-center', label: 'Leads Center', icon: <FolderOpen size={18}/> },
-      { to: '/dm-metrics', label: 'Cost / Social / SEO', icon: <BarChart2 size={18}/> }
+      { to: '/dm-metrics', label: 'Cost / Social / SEO', icon: <BarChart2 size={18}/> },
+      { type: 'heading', title: 'Meta Lead CRM' },
+      { to: '/meta-leads', label: 'Meta Leads Manager', icon: <Facebook size={18}/> },
     ],
     Admission: [
       { to: '/', label: 'Dashboard', icon: <LayoutDashboard size={18}/> },
@@ -114,7 +118,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/admission/admitted', label: 'Admitted', icon: <FolderOpen size={18}/> },
     { to: '/admission/not-interested', label: 'Not Interested', icon: <FolderOpen size={18}/> },
   // Removed legacy Not Admitted view from sidebar
-      { to: '/admission/fees', label: 'Admission Fees', icon: <FolderOpen size={18}/> }
+      { to: '/admission/fees', label: 'Admission Fees', icon: <FolderOpen size={18}/> },
+      { type: 'heading', title: 'Meta Lead CRM' },
+      { to: '/meta-leads/pipeline', label: 'My Meta Pipeline', icon: <Facebook size={18}/> },
     ],
     // Accountant role with Requisition support
     Accountant: [
