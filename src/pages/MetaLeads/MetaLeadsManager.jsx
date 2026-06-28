@@ -547,9 +547,19 @@ export default function MetaLeadsManager() {
 
                 {/* Assigned To */}
                 <td className="px-3 py-2.5 text-xs text-gray-600">
-                  {lead.assignedTo
-                    ? <span className="font-medium">{lead.assignedTo.name}</span>
-                    : <span className="text-gray-400 italic">Unassigned</span>}
+                  {lead.assignedTo ? (
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-medium">{lead.assignedTo.name}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full w-fit font-medium
+                        ${lead.autoAssigned
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-gray-100 text-gray-500'}`}>
+                        {lead.autoAssigned ? 'Auto' : 'Manual'}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-400 italic">Unassigned</span>
+                  )}
                 </td>
 
                 {/* Actions */}
