@@ -176,6 +176,12 @@ export const api = {
     });
     return handleJson(res, "Load admission users failed");
   },
+  async toggleInstantLeadAvailability(userId) {
+    const res = await authFetch(`${getApiBase()}/api/users/${userId}/toggle-availability`, {
+      method: 'PATCH', credentials: 'include',
+    });
+    return handleJson(res, 'Toggle availability failed');
+  },
   async createUser(payload) {
     const res = await authFetch(`${getApiBase()}/api/users`, {
       method: "POST",

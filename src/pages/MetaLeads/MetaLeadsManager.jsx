@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { Facebook, Search, RefreshCw, UserCheck, ChevronLeft, ChevronRight, CheckCircle, XCircle, Filter, X, Users, Zap, Eye } from 'lucide-react';
+import { Facebook, Search, RefreshCw, UserCheck, ChevronLeft, ChevronRight, CheckCircle, XCircle, Filter, X, Users, Zap, Eye, Radio } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import api from '../../lib/api.js';
 import ScoreBadge from './components/ScoreBadge.jsx';
@@ -73,6 +73,8 @@ export default function MetaLeadsManager() {
   const [triggeringRR, setTriggeringRR]     = useState(false);
   const [rescoring, setRescoring]           = useState(false);
   const [forceRescoring, setForceRescoring] = useState(false);
+  const [showOnDuty, setShowOnDuty]         = useState(false);
+  const [togglingId, setTogglingId]         = useState(null);
 
   // ── Bulk selection state ─────────────────────────────────────────────────
   const [selectedLeads, setSelectedLeads]   = useState([]);
@@ -186,6 +188,17 @@ export default function MetaLeadsManager() {
     finally { setAssigning(false); setAssignTarget(null); setAssignTo(''); }
   };
 
+  const handleToggleAvailability = async (userId) => {
+    setTogglingId(userId);
+    try {
+      const res = await api.toggleInstantLeadAvailability(userId);
+      setAdmissions(prev => prev.map(u =>
+        u._id === userId ? { ...u, availableForInstantLeads: res.availableForInstantLeads } : u
+      ));
+    } catch { flash('Toggle failed'); }
+    finally { setTogglingId(null); }
+  };
+
   const handleForceRescore = async () => {
     if (!window.confirm('Re-score ALL leads? This will overwrite existing scores.')) return;
     setForceRescoring(true);
@@ -272,6 +285,48 @@ export default function MetaLeadsManager() {
           </div>
         ))}
       </div>
+
+      {/* ── On Duty Panel (Admin/DM only) ── */}
+      {canScore && (
+        <div className="bg-white border border-gray-100 rounded-2xl shadow-sm">
+          <button onClick={() => setShowOnDuty(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-2xl transition">
+            <div className="flex items-center gap-2">
+              <Radio size={15} className="text-green-500" />
+              On Duty Counsellors
+              <span className="text-[11px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">
+                {admissions.filter(u => u.availableForInstantLeads).length} active
+              </span>
+            </div>
+            <span className="text-gray-400 text-xs">{showOnDuty ? '▲ Hide' : '▼ Show'}</span>
+          </button>
+
+          {showOnDuty && (
+            <div className="px-4 pb-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 border-t border-gray-50 pt-3">
+              {admissions.length === 0 && (
+                <p className="text-xs text-gray-400 col-span-4">No admission counsellors found</p>
+              )}
+              {admissions.map(u => (
+                <div key={u._id} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2 gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${u.availableForInstantLeads ? 'bg-green-500' : 'bg-gray-300'}`} />
+                    <span className="text-xs font-medium text-gray-700 truncate">{u.name}</span>
+                  </div>
+                  <button
+                    onClick={() => handleToggleAvailability(u._id)}
+                    disabled={togglingId === u._id}
+                    className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-semibold transition disabled:opacity-50
+                      ${u.availableForInstantLeads
+                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                        : 'bg-gray-200 text-gray-500 hover:bg-gray-300'}`}>
+                    {togglingId === u._id ? '…' : u.availableForInstantLeads ? 'On Duty' : 'Off Duty'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Tabs ── */}
       <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">

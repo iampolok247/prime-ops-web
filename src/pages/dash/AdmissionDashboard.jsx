@@ -124,6 +124,28 @@ export default function AdmissionDashboard() {
   const isAdminOrSA = user?.role === 'Admin' || user?.role === 'SuperAdmin';
   const isAdmission = user?.role === 'Admission';
 
+  // Instant lead availability (counsellors only)
+  const [available, setAvailable]     = useState(false);
+  const [toggling, setToggling]       = useState(false);
+
+  useEffect(() => {
+    if (!isAdmission || !user?.id) return;
+    // Load current availability from the users list
+    api.listAdmissionUsers().then(r => {
+      const me = (r.users || []).find(u => u._id === user.id);
+      if (me) setAvailable(me.availableForInstantLeads || false);
+    }).catch(() => {});
+  }, [isAdmission, user?.id]);
+
+  const toggleAvailability = async () => {
+    setToggling(true);
+    try {
+      const res = await api.toggleInstantLeadAvailability(user.id);
+      setAvailable(res.availableForInstantLeads);
+    } catch {}
+    finally { setToggling(false); }
+  };
+
   // Fetch today's attendance
   useEffect(() => {
     const loadTodayAttendance = async () => {
@@ -450,6 +472,20 @@ export default function AdmissionDashboard() {
           <p className="text-gray-600 mt-1">Track student admissions and pipeline</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          {/* Instant Lead Availability Toggle — counsellors only */}
+          {isAdmission && (
+            <button
+              onClick={toggleAvailability}
+              disabled={toggling}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl border font-medium text-sm transition disabled:opacity-50
+                ${available
+                  ? 'bg-green-100 border-green-300 text-green-800 hover:bg-green-200'
+                  : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200'}`}>
+              <span className={`w-2 h-2 rounded-full ${available ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+              {toggling ? 'Updating…' : available ? 'On Duty — Receiving Leads' : 'Off Duty'}
+            </button>
+          )}
+
           {/* Today's Attendance */}
           {todayAttendance?.loginTime && (
             <div className="flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-xl border border-green-200">
