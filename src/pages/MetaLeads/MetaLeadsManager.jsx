@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { Facebook, Search, RefreshCw, UserCheck, ChevronLeft, ChevronRight, CheckCircle, XCircle, Filter, X } from 'lucide-react';
+import { Facebook, Search, RefreshCw, UserCheck, ChevronLeft, ChevronRight, CheckCircle, XCircle, Filter, X, Users } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import api from '../../lib/api.js';
 import ScoreBadge from './components/ScoreBadge.jsx';
@@ -71,6 +71,11 @@ export default function MetaLeadsManager() {
   const [assigning, setAssigning]           = useState(false);
   const [triggeringRR, setTriggeringRR]     = useState(false);
 
+  // ── Bulk selection state ─────────────────────────────────────────────────
+  const [selectedLeads, setSelectedLeads]   = useState([]);
+  const [bulkAssignTo, setBulkAssignTo]     = useState('');
+  const [bulkAssigning, setBulkAssigning]   = useState(false);
+
   const canScore = ['DigitalMarketing', 'Admin', 'SuperAdmin', 'ITAdmin'].includes(user?.role);
 
   // ── Active filter count badge ────────────────────────────────────────────
@@ -107,7 +112,7 @@ export default function MetaLeadsManager() {
     }
   }, [tab, searchQ, filterTemp, filterMinScore, filterStatus, filterFrom, filterTo, filterPlatform]);
 
-  useEffect(() => { setPage(1); load(1); }, [tab, filterTemp, filterMinScore, filterStatus, filterFrom, filterTo, filterPlatform]);
+  useEffect(() => { setPage(1); load(1); setSelectedLeads([]); }, [tab, filterTemp, filterMinScore, filterStatus, filterFrom, filterTo, filterPlatform]);
   useEffect(() => { load(page); }, [page]);
 
   const flash = (text) => { setMsg(text); setTimeout(() => setMsg(null), 3000); };
@@ -115,6 +120,23 @@ export default function MetaLeadsManager() {
   const clearFilters = () => {
     setFilterTemp(''); setMinScore(''); setFilterStatus('');
     setFilterFrom(''); setFilterTo(''); setFilterPlatform('');
+  };
+
+  // ── Bulk selection helpers ────────────────────────────────────────────────
+  const toggleSelect    = (id) => setSelectedLeads(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const toggleSelectAll = ()   => setSelectedLeads(selectedLeads.length === leads.length ? [] : leads.map(l => l._id));
+
+  const handleBulkAssign = async () => {
+    if (!selectedLeads.length || !bulkAssignTo) return;
+    setBulkAssigning(true);
+    try {
+      const res = await api.bulkAssignMetaLeads(selectedLeads, bulkAssignTo);
+      flash(`${res.assigned} lead(s) assigned`);
+      setSelectedLeads([]);
+      setBulkAssignTo('');
+      load(page);
+    } catch { flash('Bulk assign failed'); }
+    finally { setBulkAssigning(false); }
   };
 
   // ── Actions ──────────────────────────────────────────────────────────────
@@ -311,11 +333,40 @@ export default function MetaLeadsManager() {
         </div>
       )}
 
+      {/* ── Bulk assign bar (visible when leads are selected) ── */}
+      {canScore && selectedLeads.length > 0 && (
+        <div className="flex items-center gap-3 flex-wrap p-3 bg-blue-50 border border-blue-200 rounded-xl">
+          <Users size={15} className="text-blue-600 shrink-0" />
+          <span className="text-sm font-medium text-blue-900">{selectedLeads.length} lead(s) selected</span>
+          <select value={bulkAssignTo} onChange={e => setBulkAssignTo(e.target.value)}
+            className="text-sm border border-gray-200 rounded-xl px-3 py-1.5 focus:outline-none">
+            <option value="">Select counsellor…</option>
+            {admissions.map(u => <option key={u._id} value={u._id}>{u.name}</option>)}
+          </select>
+          <button onClick={handleBulkAssign} disabled={!bulkAssignTo || bulkAssigning}
+            className="text-sm px-4 py-1.5 bg-[#253985] text-white rounded-xl hover:bg-blue-800 disabled:opacity-50">
+            {bulkAssigning ? 'Assigning…' : 'Assign'}
+          </button>
+          <button onClick={() => setSelectedLeads([])}
+            className="text-sm text-gray-500 hover:text-red-600 px-2">
+            Clear
+          </button>
+        </div>
+      )}
+
       {/* ── Table ── */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
         <table className="w-full text-xs whitespace-nowrap">
           <thead className="bg-gray-50 text-[11px] text-gray-500 uppercase tracking-wide">
             <tr>
+              {canScore && (
+                <th className="px-3 py-3">
+                  <input type="checkbox"
+                    checked={leads.length > 0 && selectedLeads.length === leads.length}
+                    onChange={toggleSelectAll}
+                    className="w-3.5 h-3.5 cursor-pointer" />
+                </th>
+              )}
               <th className="px-3 py-3 text-left">Lead ID</th>
               <th className="px-3 py-3 text-left">Created</th>
               <th className="px-3 py-3 text-left">Ad / Campaign</th>
@@ -336,11 +387,21 @@ export default function MetaLeadsManager() {
           </thead>
           <tbody className="divide-y divide-gray-50">
             {loading ? (
-              <tr><td colSpan={canScore ? 16 : 15} className="text-center py-12 text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={canScore ? 17 : 16} className="text-center py-12 text-gray-400">Loading…</td></tr>
             ) : leads.length === 0 ? (
-              <tr><td colSpan={canScore ? 16 : 15} className="text-center py-12 text-gray-400">No leads found</td></tr>
+              <tr><td colSpan={canScore ? 17 : 16} className="text-center py-12 text-gray-400">No leads found</td></tr>
             ) : leads.map(lead => (
-              <tr key={lead._id} className="hover:bg-gray-50/50 transition">
+              <tr key={lead._id} className={`hover:bg-gray-50/50 transition ${selectedLeads.includes(lead._id) ? 'bg-blue-50/40' : ''}`}>
+
+                {/* Checkbox */}
+                {canScore && (
+                  <td className="px-3 py-2.5">
+                    <input type="checkbox"
+                      checked={selectedLeads.includes(lead._id)}
+                      onChange={() => toggleSelect(lead._id)}
+                      className="w-3.5 h-3.5 cursor-pointer" />
+                  </td>
+                )}
 
                 {/* Lead ID */}
                 <td className="px-3 py-2.5">
