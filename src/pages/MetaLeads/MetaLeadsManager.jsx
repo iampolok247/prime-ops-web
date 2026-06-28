@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { Facebook, Search, RefreshCw, UserCheck, ChevronLeft, ChevronRight, CheckCircle, XCircle, Filter, X, Users } from 'lucide-react';
+import { Facebook, Search, RefreshCw, UserCheck, ChevronLeft, ChevronRight, CheckCircle, XCircle, Filter, X, Users, Zap } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import api from '../../lib/api.js';
 import ScoreBadge from './components/ScoreBadge.jsx';
@@ -70,6 +70,7 @@ export default function MetaLeadsManager() {
   const [assignTo, setAssignTo]             = useState('');
   const [assigning, setAssigning]           = useState(false);
   const [triggeringRR, setTriggeringRR]     = useState(false);
+  const [rescoring, setRescoring]           = useState(false);
 
   // ── Bulk selection state ─────────────────────────────────────────────────
   const [selectedLeads, setSelectedLeads]   = useState([]);
@@ -163,6 +164,16 @@ export default function MetaLeadsManager() {
     finally { setAssigning(false); setAssignTarget(null); setAssignTo(''); }
   };
 
+  const handleRescore = async () => {
+    setRescoring(true);
+    try {
+      const res = await api.rescoreMetaLeads();
+      flash(res.message || 'Scoring started');
+      setTimeout(() => load(page), 8000); // reload after ~8s to show updated scores
+    } catch { flash('Re-score failed'); }
+    finally { setRescoring(false); }
+  };
+
   const triggerRoundRobin = async () => {
     if (!window.confirm('Trigger round-robin assignment now?')) return;
     setTriggeringRR(true);
@@ -195,10 +206,16 @@ export default function MetaLeadsManager() {
             <RefreshCw size={14} /> Refresh
           </button>
           {['Admin', 'SuperAdmin', 'DigitalMarketing'].includes(user?.role) && (
-            <button onClick={triggerRoundRobin} disabled={triggeringRR}
-              className="flex items-center gap-1.5 text-sm px-3 py-1.5 bg-[#253985] text-white rounded-xl hover:bg-blue-800 disabled:opacity-50">
-              <UserCheck size={14} /> {triggeringRR ? 'Running…' : 'Trigger Round-Robin'}
-            </button>
+            <>
+              <button onClick={handleRescore} disabled={rescoring}
+                className="flex items-center gap-1.5 text-sm px-3 py-1.5 bg-amber-500 text-white rounded-xl hover:bg-amber-600 disabled:opacity-50">
+                <Zap size={14} /> {rescoring ? 'Scoring…' : 'Re-score Unscored'}
+              </button>
+              <button onClick={triggerRoundRobin} disabled={triggeringRR}
+                className="flex items-center gap-1.5 text-sm px-3 py-1.5 bg-[#253985] text-white rounded-xl hover:bg-blue-800 disabled:opacity-50">
+                <UserCheck size={14} /> {triggeringRR ? 'Running…' : 'Trigger Round-Robin'}
+              </button>
+            </>
           )}
         </div>
       </div>

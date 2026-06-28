@@ -2169,6 +2169,12 @@ export const api = {
     });
     return handleJson(res, 'Round-robin trigger failed');
   },
+  async rescoreMetaLeads() {
+    const res = await authFetch(`${getApiBase()}/api/meta-leads/rescore`, {
+      method: 'POST', credentials: 'include',
+    });
+    return handleJson(res, 'Rescore failed');
+  },
 };
 
 export default api;
