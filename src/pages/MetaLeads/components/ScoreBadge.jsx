@@ -7,7 +7,7 @@ const TEMP_STYLE = {
 };
 
 const SCORE_COLOR = (score) =>
-  score >= 80 ? 'text-red-600 font-bold' :
+  score >= 70 ? 'text-red-600 font-bold' :
   score >= 40 ? 'text-orange-500 font-semibold' :
                 'text-blue-500';
 
