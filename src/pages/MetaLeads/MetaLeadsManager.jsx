@@ -240,8 +240,12 @@ export default function MetaLeadsManager() {
   };
 
   const fmtDate = (d) => d
-    ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Dhaka' })
     : '—';
+
+  const fmtTime = (d) => d
+    ? new Date(d).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true, timeZone: 'Asia/Dhaka' })
+    : '';
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
@@ -550,7 +554,10 @@ export default function MetaLeadsManager() {
                 </td>
 
                 {/* Created */}
-                <td className="px-3 py-2.5 text-gray-500 text-xs">{fmtDate(lead.createdAt)}</td>
+                <td className="px-3 py-2.5">
+                  <p className="text-xs text-gray-600">{fmtDate(lead.createdAt)}</p>
+                  <p className="text-[10px] text-gray-400">{fmtTime(lead.createdAt)}</p>
+                </td>
 
                 {/* Full Name */}
                 <td className="px-3 py-2.5 font-medium text-gray-800">{lead.name}</td>
