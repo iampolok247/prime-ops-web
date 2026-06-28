@@ -7,7 +7,7 @@ import ValidateModal from './components/ValidateModal.jsx';
 import StatusModal from './components/StatusModal.jsx';
 
 // ── Constants ────────────────────────────────────────────────────────────────
-const TABS = ['Pending Review', 'Validated', 'Assigned', 'All'];
+const TABS = ['Validated', 'Assigned', 'All'];
 
 const STATUS_PILL = {
   Pending:          'bg-gray-100 text-gray-600',
@@ -33,10 +33,9 @@ const TEMP_PILL = {
 };
 
 const TAB_QUERY = {
-  'Pending Review': { validationStatus: 'pending' },
-  'Validated':      { validationStatus: 'validated' },
-  'Assigned':       { status: 'Assigned' },
-  'All':            {},
+  'Validated': { validationStatus: 'validated' },
+  'Assigned':  { status: 'Assigned' },
+  'All':       {},
 };
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -44,7 +43,7 @@ export default function MetaLeadsManager() {
   const { user } = useAuth();
 
   // ── Data state ──────────────────────────────────────────────────────────
-  const [tab, setTab]               = useState('Pending Review');
+  const [tab, setTab]               = useState('Validated');
   const [leads, setLeads]           = useState([]);
   const [stats, setStats]           = useState({});
   const [admissions, setAdmissions] = useState([]);
@@ -66,6 +65,7 @@ export default function MetaLeadsManager() {
   // ── Modal state ─────────────────────────────────────────────────────────
   const [validateTarget, setValidateTarget] = useState(null);
   const [statusTarget, setStatusTarget]     = useState(null);
+  const [answersLead, setAnswersLead]       = useState(null);
   const [assignTarget, setAssignTarget]     = useState(null);
   const [assignTo, setAssignTo]             = useState('');
   const [assigning, setAssigning]           = useState(false);
@@ -455,15 +455,13 @@ export default function MetaLeadsManager() {
                 </td>
 
                 {/* Raw Answers */}
-                <td className="px-3 py-2.5 max-w-[130px]">
-                  {lead.rawQuestionData ? (
-                    <details className="cursor-pointer">
-                      <summary className="text-blue-600 underline text-[11px]">View answers</summary>
-                      <pre className="text-[10px] text-gray-600 bg-gray-50 p-1.5 rounded mt-1 max-h-28 overflow-auto whitespace-pre-wrap normal-case">
-                        {JSON.stringify(lead.rawQuestionData, null, 2)}
-                      </pre>
-                    </details>
-                  ) : '—'}
+                <td className="px-3 py-2.5">
+                  {lead.rawQuestionData
+                    ? <button onClick={() => setAnswersLead(lead)}
+                        className="text-[11px] text-blue-600 underline hover:text-blue-800">
+                        View answers
+                      </button>
+                    : '—'}
                 </td>
 
                 {/* Score — DM/Admin only */}
@@ -583,6 +581,38 @@ export default function MetaLeadsManager() {
       {statusTarget && (
         <StatusModal lead={statusTarget}
           onClose={() => setStatusTarget(null)} onSubmit={handleStatus} />
+      )}
+
+      {/* ── Raw Answers Modal ── */}
+      {answersLead && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setAnswersLead(null)} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div>
+                <p className="font-semibold text-[#253985]">{answersLead.name}</p>
+                <p className="text-xs text-gray-400">{answersLead.leadId} · {answersLead.metaAdName || 'No ad name'}</p>
+              </div>
+              <button onClick={() => setAnswersLead(null)}
+                className="p-1.5 rounded-lg hover:bg-gray-100">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="overflow-y-auto px-5 py-4 space-y-3">
+              {Array.isArray(answersLead.rawQuestionData?.field_data)
+                ? answersLead.rawQuestionData.field_data.map((f, i) => (
+                    <div key={i} className="bg-gray-50 rounded-xl px-4 py-3">
+                      <p className="text-[11px] text-gray-400 mb-0.5 uppercase tracking-wide">{f.name}</p>
+                      <p className="text-sm text-gray-800 font-medium">{f.values?.[0] || '—'}</p>
+                    </div>
+                  ))
+                : <pre className="text-xs text-gray-600 bg-gray-50 rounded-xl p-4 whitespace-pre-wrap">
+                    {JSON.stringify(answersLead.rawQuestionData, null, 2)}
+                  </pre>
+              }
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
