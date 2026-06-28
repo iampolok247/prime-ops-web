@@ -130,10 +130,9 @@ export default function AdmissionDashboard() {
 
   useEffect(() => {
     if (!isAdmission || !user?.id) return;
-    // Load current availability from the users list
-    api.listAdmissionUsers().then(r => {
-      const me = (r.users || []).find(u => u._id === user.id);
-      if (me) setAvailable(me.availableForInstantLeads || false);
+    // Use /api/auth/me — works for any role, returns full user including availableForInstantLeads
+    api.me().then(data => {
+      setAvailable(data?.user?.availableForInstantLeads || false);
     }).catch(() => {});
   }, [isAdmission, user?.id]);
 
