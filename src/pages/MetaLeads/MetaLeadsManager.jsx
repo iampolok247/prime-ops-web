@@ -487,7 +487,7 @@ export default function MetaLeadsManager() {
                 {/* Score — DM/Admin only */}
                 {canScore && (
                   <td className="px-3 py-2.5">
-                    <ScoreBadge aiScore={lead.aiScore} leadTemperature={lead.leadTemperature} />
+                    <ScoreBadge aiScore={lead.aiScore} leadTemperature={lead.leadTemperature} aiReasoning={lead.aiReasoning} />
                   </td>
                 )}
 

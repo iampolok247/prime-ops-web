@@ -10,7 +10,7 @@ const SCORE_COLOR = (score) =>
   score >= 50 ? 'text-orange-500 font-semibold' :
                 'text-blue-500';
 
-export default function ScoreBadge({ aiScore, leadTemperature }) {
+export default function ScoreBadge({ aiScore, leadTemperature, aiReasoning }) {
   const style = TEMP_STYLE[leadTemperature];
 
   return (
@@ -32,6 +32,13 @@ export default function ScoreBadge({ aiScore, leadTemperature }) {
         </span>
       ) : (
         <span className="text-[11px] text-gray-400 italic">pending</span>
+      )}
+
+      {/* AI reasoning — short explanation */}
+      {aiReasoning && (
+        <span className="text-[10px] text-gray-400 italic max-w-[120px] leading-tight">
+          {aiReasoning}
+        </span>
       )}
     </div>
   );
