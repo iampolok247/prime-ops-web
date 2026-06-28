@@ -396,11 +396,11 @@ export default function Topbar({ onMenuClick }) {
           </div>
           <button onClick={() => setLeadToast(null)} className="text-gray-300 hover:text-gray-600 text-lg leading-none">×</button>
         </div>
-        <a href={leadToast.link || '/admission-pipeline'}
-          onClick={() => setLeadToast(null)}
-          className="mt-3 block text-center text-xs bg-green-500 hover:bg-green-600 text-white py-1.5 rounded-lg font-medium transition">
+        <button
+          onClick={() => { setLeadToast(null); navigate(leadToast.link || '/meta-leads/queue'); }}
+          className="mt-3 w-full text-center text-xs bg-green-500 hover:bg-green-600 text-white py-1.5 rounded-lg font-medium transition">
           View Lead →
-        </a>
+        </button>
       </div>
     )}
     <header className="h-16 bg-navy text-white flex items-center justify-between px-4 shadow-soft">
