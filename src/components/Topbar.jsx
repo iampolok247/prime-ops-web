@@ -218,6 +218,27 @@ export default function Topbar({ onMenuClick }) {
     cleanup();
   }, [readNotifications]);
 
+  // ── SSE: instant lead notification for Admission counsellors ────────────────
+  const [leadToast, setLeadToast] = useState(null);
+
+  useEffect(() => {
+    if (user?.role !== 'Admission') return;
+    const base = import.meta.env.PROD ? 'https://ops-backend.primeacademy.org' : 'http://localhost:5001';
+    const token = localStorage.getItem('auth_token');
+    const es = new EventSource(`${base}/api/meta-leads/events?token=${token}`);
+    es.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.type === 'LEAD_ASSIGNED') {
+          setLeadToast(data);
+          // Auto-dismiss after 12 seconds
+          setTimeout(() => setLeadToast(null), 12000);
+        }
+      } catch {}
+    };
+    return () => es.close();
+  }, [user?.role]);
+
   // Get deadline color
   const getDeadlineColor = (dueDate, status) => {
     if (!dueDate || status === 'Completed') return null;
@@ -362,6 +383,26 @@ export default function Topbar({ onMenuClick }) {
   const unreadCount = unreadTaskCount + unreadPaymentCount + unreadFollowUpCount + unreadNotifCount;
 
   return (
+    <>
+    {/* ── Instant Lead Toast (Admission only) ── */}
+    {leadToast && (
+      <div className="fixed top-4 right-4 z-[9999] w-80 bg-white border-l-4 border-green-500 rounded-xl shadow-2xl p-4 animate-slide-in">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1">
+            <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-1">New Lead Assigned to You</p>
+            <p className="text-sm font-bold text-gray-800">{leadToast.name}</p>
+            {leadToast.phone && <p className="text-xs text-gray-500 mt-0.5">{leadToast.phone}</p>}
+            {leadToast.course && <p className="text-xs text-gray-400 mt-0.5">{leadToast.course}</p>}
+          </div>
+          <button onClick={() => setLeadToast(null)} className="text-gray-300 hover:text-gray-600 text-lg leading-none">×</button>
+        </div>
+        <a href={leadToast.link || '/admission-pipeline'}
+          onClick={() => setLeadToast(null)}
+          className="mt-3 block text-center text-xs bg-green-500 hover:bg-green-600 text-white py-1.5 rounded-lg font-medium transition">
+          View Lead →
+        </a>
+      </div>
+    )}
     <header className="h-16 bg-navy text-white flex items-center justify-between px-4 shadow-soft">
       <div className="flex items-center gap-3">
         {/* Mobile menu button */}
@@ -796,5 +837,6 @@ export default function Topbar({ onMenuClick }) {
         />
       )}
     </header>
+    </>
   );
 }
