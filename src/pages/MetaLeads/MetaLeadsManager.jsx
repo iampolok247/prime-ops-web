@@ -116,6 +116,12 @@ export default function MetaLeadsManager() {
   useEffect(() => { setPage(1); load(1); setSelectedLeads([]); }, [tab, filterTemp, filterMinScore, filterStatus, filterFrom, filterTo, filterPlatform]);
   useEffect(() => { load(page); }, [page]);
 
+  // Auto-poll every 60s so new leads appear without manual refresh
+  useEffect(() => {
+    const interval = setInterval(() => load(page), 60 * 1000);
+    return () => clearInterval(interval);
+  }, [load, page]);
+
   const flash = (text) => { setMsg(text); setTimeout(() => setMsg(null), 3000); };
 
   const clearFilters = () => {
