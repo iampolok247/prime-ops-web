@@ -117,10 +117,16 @@ export default function MetaLeadsManager() {
   useEffect(() => { load(page); }, [page]);
 
   // SSE — instant reload when webhook delivers a new lead
+  // EventSource auto-reconnects on server restart; onopen reloads stale data after reconnect
   useEffect(() => {
     const base = import.meta.env.PROD ? 'https://ops-backend.primeacademy.org' : 'http://localhost:5001';
     const token = localStorage.getItem('auth_token');
     const es = new EventSource(`${base}/api/meta-leads/events?token=${token}`);
+    let connected = false;
+    es.onopen = () => {
+      if (connected) load(1); // reconnected after drop (e.g. deploy) — refresh data
+      connected = true;
+    };
     es.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data);
