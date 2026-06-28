@@ -116,11 +116,19 @@ export default function MetaLeadsManager() {
   useEffect(() => { setPage(1); load(1); setSelectedLeads([]); }, [tab, filterTemp, filterMinScore, filterStatus, filterFrom, filterTo, filterPlatform]);
   useEffect(() => { load(page); }, [page]);
 
-  // Auto-poll every 60s so new leads appear without manual refresh
+  // SSE — instant reload when webhook delivers a new lead
   useEffect(() => {
-    const interval = setInterval(() => load(page), 60 * 1000);
-    return () => clearInterval(interval);
-  }, [load, page]);
+    const base = import.meta.env.PROD ? 'https://ops-backend.primeacademy.org' : 'http://localhost:5001';
+    const token = localStorage.getItem('auth_token');
+    const es = new EventSource(`${base}/api/meta-leads/events?token=${token}`);
+    es.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.type === 'NEW_LEAD') { setPage(1); load(1); }
+      } catch {}
+    };
+    return () => es.close();
+  }, [load]);
 
   const flash = (text) => { setMsg(text); setTimeout(() => setMsg(null), 3000); };
 
