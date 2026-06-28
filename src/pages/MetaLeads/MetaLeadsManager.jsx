@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { Facebook, Search, RefreshCw, UserCheck, ChevronLeft, ChevronRight, CheckCircle, XCircle, Filter, X, Users, Zap } from 'lucide-react';
+import { Facebook, Search, RefreshCw, UserCheck, ChevronLeft, ChevronRight, CheckCircle, XCircle, Filter, X, Users, Zap, Eye } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import api from '../../lib/api.js';
 import ScoreBadge from './components/ScoreBadge.jsx';
@@ -66,6 +66,7 @@ export default function MetaLeadsManager() {
   const [validateTarget, setValidateTarget] = useState(null);
   const [statusTarget, setStatusTarget]     = useState(null);
   const [answersLead, setAnswersLead]       = useState(null);
+  const [detailLead, setDetailLead]         = useState(null);
   const [assignTarget, setAssignTarget]     = useState(null);
   const [assignTo, setAssignTo]             = useState('');
   const [assigning, setAssigning]           = useState(false);
@@ -243,11 +244,11 @@ export default function MetaLeadsManager() {
       {/* ── Stats bar ── */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {[
-          { label: 'Pending Review',  value: stats.pending ?? '—',             color: 'bg-orange-50 border-orange-200 text-orange-700' },
-          { label: 'Unassigned',      value: stats.validatedUnassigned ?? '—', color: 'bg-blue-50 border-blue-200 text-blue-700' },
-          { label: 'Hot Leads',       value: stats.byTemperature?.Hot ?? '—',  color: 'bg-red-50 border-red-200 text-red-700' },
-          { label: 'Warm Leads',      value: stats.byTemperature?.Warm ?? '—', color: 'bg-orange-50 border-orange-200 text-orange-600' },
-          { label: 'Admitted',        value: stats.byStatus?.Admitted ?? '—',  color: 'bg-green-50 border-green-200 text-green-700' },
+          { label: 'Unassigned',  value: stats.validatedUnassigned ?? '—', color: 'bg-blue-50 border-blue-200 text-blue-700' },
+          { label: 'Hot Leads',   value: stats.byTemperature?.Hot ?? '—',  color: 'bg-red-50 border-red-200 text-red-700' },
+          { label: 'Warm Leads',  value: stats.byTemperature?.Warm ?? '—', color: 'bg-orange-50 border-orange-200 text-orange-600' },
+          { label: 'Cold Leads',  value: stats.byTemperature?.Cold ?? '—', color: 'bg-sky-50 border-sky-200 text-sky-700' },
+          { label: 'Admitted',    value: stats.byStatus?.Admitted ?? '—',  color: 'bg-green-50 border-green-200 text-green-700' },
         ].map(s => (
           <div key={s.label} className={`rounded-xl border p-3 ${s.color}`}>
             <p className="text-2xl font-bold">{s.value}</p>
@@ -406,27 +407,21 @@ export default function MetaLeadsManager() {
               )}
               <th className="px-3 py-3 text-left">Lead ID</th>
               <th className="px-3 py-3 text-left">Created</th>
-              <th className="px-3 py-3 text-left">Ad / Campaign</th>
               <th className="px-3 py-3 text-left">Full Name</th>
               <th className="px-3 py-3 text-left">Contact</th>
               <th className="px-3 py-3 text-left">Course</th>
-              <th className="px-3 py-3 text-left">Raw Answers</th>
               {canScore && <th className="px-3 py-3 text-left">Score</th>}
               <th className="px-3 py-3 text-left">Status</th>
-              <th className="px-3 py-3 text-left">Reason</th>
-              <th className="px-3 py-3 text-left">Counsellor Feedback</th>
-              <th className="px-3 py-3 text-center">CAPI</th>
-              <th className="px-3 py-3 text-left">Platform</th>
-              <th className="px-3 py-3 text-left">Type</th>
               <th className="px-3 py-3 text-left">Assigned To</th>
               <th className="px-3 py-3 text-left">Actions</th>
+              <th className="px-3 py-3"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
             {loading ? (
-              <tr><td colSpan={canScore ? 17 : 16} className="text-center py-12 text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={canScore ? 11 : 10} className="text-center py-12 text-gray-400">Loading…</td></tr>
             ) : leads.length === 0 ? (
-              <tr><td colSpan={canScore ? 17 : 16} className="text-center py-12 text-gray-400">No leads found</td></tr>
+              <tr><td colSpan={canScore ? 11 : 10} className="text-center py-12 text-gray-400">No leads found</td></tr>
             ) : leads.map(lead => (
               <tr key={lead._id} className={`hover:bg-gray-50/50 transition ${selectedLeads.includes(lead._id) ? 'bg-blue-50/40' : ''}`}>
 
@@ -446,42 +441,23 @@ export default function MetaLeadsManager() {
                     {lead.source === 'Meta Lead' && <Facebook size={11} className="text-blue-500 shrink-0" />}
                     <span className="font-mono text-[#253985] font-medium text-[11px]">{lead.leadId}</span>
                   </div>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${VAL_PILL[lead.validationStatus] || ''}`}>
-                    {lead.validationStatus}
-                  </span>
                 </td>
 
                 {/* Created */}
-                <td className="px-3 py-2.5 text-gray-500">{fmtDate(lead.createdAt)}</td>
-
-                {/* Ad / Campaign */}
-                <td className="px-3 py-2.5 max-w-[130px]">
-                  <p className="truncate text-gray-700">{lead.metaAdName || '—'}</p>
-                  <p className="truncate text-gray-400 text-[10px]">{lead.metaCampaignName || ''}</p>
-                </td>
+                <td className="px-3 py-2.5 text-gray-500 text-xs">{fmtDate(lead.createdAt)}</td>
 
                 {/* Full Name */}
                 <td className="px-3 py-2.5 font-medium text-gray-800">{lead.name}</td>
 
                 {/* Contact */}
                 <td className="px-3 py-2.5">
-                  <p className="text-gray-700">{lead.phone || '—'}</p>
+                  <p className="text-xs text-gray-700">{lead.phone || '—'}</p>
                   <p className="text-[10px] text-gray-400">{lead.email || ''}</p>
                 </td>
 
                 {/* Course */}
-                <td className="px-3 py-2.5 text-gray-600 max-w-[100px] truncate">
+                <td className="px-3 py-2.5 text-xs text-gray-600 max-w-[110px] truncate">
                   {lead.interestedCourse || '—'}
-                </td>
-
-                {/* Raw Answers */}
-                <td className="px-3 py-2.5">
-                  {lead.rawQuestionData
-                    ? <button onClick={() => setAnswersLead(lead)}
-                        className="text-[11px] text-blue-600 underline hover:text-blue-800">
-                        View answers
-                      </button>
-                    : '—'}
                 </td>
 
                 {/* Score — DM/Admin only */}
@@ -498,36 +474,8 @@ export default function MetaLeadsManager() {
                   </span>
                 </td>
 
-                {/* Reason */}
-                <td className="px-3 py-2.5 max-w-[90px]">
-                  <span className="truncate block text-gray-500">{lead.reason || '—'}</span>
-                </td>
-
-                {/* Counsellor Feedback */}
-                <td className="px-3 py-2.5 max-w-[110px]">
-                  <span className="truncate block text-gray-500">{lead.counsellorFeedback || '—'}</span>
-                </td>
-
-                {/* Sent to CAPI */}
-                <td className="px-3 py-2.5 text-center">
-                  {lead.sentToCapi
-                    ? <CheckCircle size={14} className="text-green-500 mx-auto" />
-                    : <XCircle    size={14} className="text-gray-300 mx-auto" />}
-                </td>
-
-                {/* Platform */}
-                <td className="px-3 py-2.5 text-gray-600">{lead.platform || '—'}</td>
-
-                {/* Organic / Paid */}
-                <td className="px-3 py-2.5">
-                  <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium
-                    ${lead.isOrganic ? 'bg-teal-100 text-teal-700' : 'bg-purple-100 text-purple-700'}`}>
-                    {lead.isOrganic ? 'Organic' : 'Paid'}
-                  </span>
-                </td>
-
                 {/* Assigned To */}
-                <td className="px-3 py-2.5 text-gray-600">
+                <td className="px-3 py-2.5 text-xs text-gray-600">
                   {lead.assignedTo
                     ? <span className="font-medium">{lead.assignedTo.name}</span>
                     : <span className="text-gray-400 italic">Unassigned</span>}
@@ -535,13 +483,7 @@ export default function MetaLeadsManager() {
 
                 {/* Actions */}
                 <td className="px-3 py-2.5">
-                  <div className="flex gap-1 flex-wrap">
-                    {lead.validationStatus === 'pending' && canScore && (
-                      <button onClick={() => setValidateTarget(lead)}
-                        className="text-[11px] px-2.5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                        Review
-                      </button>
-                    )}
+                  <div className="flex gap-1">
                     {lead.validationStatus === 'validated' && !lead.assignedTo && (
                       assignTarget?._id === lead._id ? (
                         <div className="flex gap-1">
@@ -572,6 +514,14 @@ export default function MetaLeadsManager() {
                     )}
                   </div>
                 </td>
+
+                {/* Eye icon — detail modal */}
+                <td className="px-3 py-2.5">
+                  <button onClick={() => setDetailLead(lead)}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-[#253985] hover:bg-gray-100 transition">
+                    <Eye size={14} />
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -601,6 +551,46 @@ export default function MetaLeadsManager() {
       {statusTarget && (
         <StatusModal lead={statusTarget}
           onClose={() => setStatusTarget(null)} onSubmit={handleStatus} />
+      )}
+
+      {/* ── Detail Modal (eye icon) ── */}
+      {detailLead && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setDetailLead(null)} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div>
+                <p className="font-semibold text-[#253985]">{detailLead.name}</p>
+                <p className="text-xs text-gray-400">{detailLead.leadId}</p>
+              </div>
+              <button onClick={() => setDetailLead(null)} className="p-1.5 rounded-lg hover:bg-gray-100"><X size={16} /></button>
+            </div>
+            <div className="px-5 py-4 space-y-3 text-sm">
+              {[
+                { label: 'Ad Name',            value: detailLead.metaAdName },
+                { label: 'Campaign',           value: detailLead.metaCampaignName },
+                { label: 'Platform',           value: detailLead.platform },
+                { label: 'Type',               value: detailLead.isOrganic ? 'Organic' : 'Paid' },
+                { label: 'Reason',             value: detailLead.reason },
+                { label: 'Counsellor Feedback',value: detailLead.counsellorFeedback },
+                { label: 'Sent to CAPI',       value: detailLead.sentToCapi ? 'Yes' : 'No' },
+                { label: 'Assigned By',        value: detailLead.assignedBy?.name },
+                { label: 'Assigned At',        value: detailLead.assignedAt ? fmtDate(detailLead.assignedAt) : null },
+              ].map(({ label, value }) => value ? (
+                <div key={label} className="flex gap-2">
+                  <span className="text-gray-400 w-40 shrink-0 text-xs">{label}</span>
+                  <span className="text-gray-800 text-xs font-medium">{value}</span>
+                </div>
+              ) : null)}
+              {detailLead.rawQuestionData && (
+                <button onClick={() => { setDetailLead(null); setAnswersLead(detailLead); }}
+                  className="text-[11px] text-blue-600 underline hover:text-blue-800 pt-1">
+                  View raw form answers →
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Raw Answers Modal ── */}
