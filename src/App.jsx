@@ -83,6 +83,7 @@ import LeaveApprovalPage from './pages/LeaveApprovalPage.jsx';
 import OpsAttendance from './pages/OpsAttendance.jsx';
 import MetaLeadsManager  from './pages/MetaLeads/MetaLeadsManager.jsx';
 import MetaLeadsPipeline from './pages/MetaLeads/MetaLeadsPipeline.jsx';
+import MetaLeadsQueue    from './pages/MetaLeads/MetaLeadsQueue.jsx';
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -243,6 +244,7 @@ export default function App() {
           {/* Meta Lead CRM — Counsellor pipeline (Admission + Admin oversight) */}
           <Route element={<RoleRoute roles={['Admission','Admin','SuperAdmin','ITAdmin']} />}>
             <Route path="/meta-leads/pipeline" element={<MetaLeadsPipeline />} />
+            <Route path="/meta-leads/queue"    element={<MetaLeadsQueue />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

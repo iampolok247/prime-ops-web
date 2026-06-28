@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { LayoutDashboard, ListChecks, Users, BookOpen, FolderOpen, Wallet, BarChart2, Film, CreditCard, Menu, X, Kanban, DollarSign, Video, Activity, MessageCircle, FileText, Target, Layers, ClipboardList, CheckSquare, ClipboardCheck, FileInput, Clock, Facebook } from 'lucide-react';
+import { LayoutDashboard, ListChecks, Users, BookOpen, FolderOpen, Wallet, BarChart2, Film, CreditCard, Menu, X, Kanban, DollarSign, Video, Activity, MessageCircle, FileText, Target, Layers, ClipboardList, CheckSquare, ClipboardCheck, FileInput, Clock, Facebook, Inbox } from 'lucide-react';
 
 const Item = ({ to, icon, label, onClick }) => (
   <NavLink
@@ -120,6 +120,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
   // Removed legacy Not Admitted view from sidebar
       { to: '/admission/fees', label: 'Admission Fees', icon: <FolderOpen size={18}/> },
       { type: 'heading', title: 'Meta Lead CRM' },
+      { to: '/meta-leads/queue',    label: 'My Queue',         icon: <Inbox size={18}/> },
       { to: '/meta-leads/pipeline', label: 'My Meta Pipeline', icon: <Facebook size={18}/> },
     ],
     // Accountant role with Requisition support
