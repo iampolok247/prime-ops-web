@@ -7,8 +7,8 @@ const TEMP_STYLE = {
 };
 
 const SCORE_COLOR = (score) =>
-  score >= 70 ? 'text-red-600 font-bold' :
-  score >= 50 ? 'text-orange-500 font-semibold' :
+  score >= 80 ? 'text-red-600 font-bold' :
+  score >= 40 ? 'text-orange-500 font-semibold' :
                 'text-blue-500';
 
 export default function ScoreBadge({ aiScore, leadTemperature, aiReasoning }) {
@@ -50,8 +50,8 @@ export default function ScoreBadge({ aiScore, leadTemperature, aiReasoning }) {
             {open && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-                <div className="absolute left-5 top-0 z-20 w-52 bg-white border border-gray-200 rounded-xl shadow-lg px-3 py-2.5">
-                  <p className="text-[11px] text-gray-600 leading-snug">{aiReasoning}</p>
+                <div className="absolute left-5 top-0 z-20 w-48 bg-white border border-gray-200 rounded-xl shadow-lg px-3 py-2.5">
+                  <p className="text-[11px] text-gray-600 leading-snug break-words whitespace-normal">{aiReasoning}</p>
                 </div>
               </>
             )}
