@@ -2175,6 +2175,12 @@ export const api = {
     });
     return handleJson(res, 'Rescore failed');
   },
+  async forceRescoreAllMetaLeads() {
+    const res = await authFetch(`${getApiBase()}/api/meta-leads/rescore-all`, {
+      method: 'POST', credentials: 'include',
+    });
+    return handleJson(res, 'Force rescore failed');
+  },
 };
 
 export default api;

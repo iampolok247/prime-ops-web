@@ -72,6 +72,7 @@ export default function MetaLeadsManager() {
   const [assigning, setAssigning]           = useState(false);
   const [triggeringRR, setTriggeringRR]     = useState(false);
   const [rescoring, setRescoring]           = useState(false);
+  const [forceRescoring, setForceRescoring] = useState(false);
 
   // ── Bulk selection state ─────────────────────────────────────────────────
   const [selectedLeads, setSelectedLeads]   = useState([]);
@@ -185,6 +186,17 @@ export default function MetaLeadsManager() {
     finally { setAssigning(false); setAssignTarget(null); setAssignTo(''); }
   };
 
+  const handleForceRescore = async () => {
+    if (!window.confirm('Re-score ALL leads? This will overwrite existing scores.')) return;
+    setForceRescoring(true);
+    try {
+      const res = await api.forceRescoreAllMetaLeads();
+      flash(res.message || 'Force scoring started');
+      setTimeout(() => load(page), 10000);
+    } catch { flash('Force re-score failed'); }
+    finally { setForceRescoring(false); }
+  };
+
   const handleRescore = async () => {
     setRescoring(true);
     try {
@@ -228,6 +240,10 @@ export default function MetaLeadsManager() {
           </button>
           {['Admin', 'SuperAdmin', 'DigitalMarketing'].includes(user?.role) && (
             <>
+              <button onClick={handleForceRescore} disabled={forceRescoring}
+                className="flex items-center gap-1.5 text-sm px-3 py-1.5 bg-red-500 text-white rounded-xl hover:bg-red-600 disabled:opacity-50">
+                <Zap size={14} /> {forceRescoring ? 'Scoring…' : 'Force Re-score All'}
+              </button>
               <button onClick={handleRescore} disabled={rescoring}
                 className="flex items-center gap-1.5 text-sm px-3 py-1.5 bg-amber-500 text-white rounded-xl hover:bg-amber-600 disabled:opacity-50">
                 <Zap size={14} /> {rescoring ? 'Scoring…' : 'Re-score Unscored'}
