@@ -103,6 +103,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/meta-leads', label: 'Meta Leads Manager', icon: <Facebook size={18}/> },
       { to: '/meta-leads/follow-up', label: 'Follow-Up Leads', icon: <Clock size={18}/> },
       { to: '/meta-leads/analytics', label: 'Lead Analytics', icon: <BarChart2 size={18}/> },
+      { to: '/meta-leads/capi-log', label: 'Meta CAPI Tracking', icon: <Activity size={18}/> },
     ],
     Admission: [
       { to: '/', label: 'Dashboard', icon: <LayoutDashboard size={18}/> },

@@ -816,7 +816,6 @@ export default function MetaLeadsManager() {
                 { label: 'Type',               value: detailLead.isOrganic ? 'Organic' : 'Paid' },
                 { label: 'Reason',             value: detailLead.reason },
                 { label: 'Counsellor Feedback',value: detailLead.counsellorFeedback },
-                { label: 'Sent to CAPI',       value: detailLead.sentToCapi ? 'Yes' : 'No' },
                 { label: 'Assigned By',        value: detailLead.assignedBy?.name },
                 { label: 'Assigned At',        value: detailLead.assignedAt ? fmtDate(detailLead.assignedAt) : null },
               ].map(({ label, value }) => value ? (
@@ -825,6 +824,26 @@ export default function MetaLeadsManager() {
                   <span className="text-gray-800 text-xs font-medium">{value}</span>
                 </div>
               ) : null)}
+
+              {/* CAPI event history — real success/failure, not a misleading Yes/No */}
+              <div>
+                <p className="text-gray-400 text-xs mb-1.5">Meta CAPI Events</p>
+                {(detailLead.capiEvents || []).length === 0 ? (
+                  <p className="text-xs text-gray-400 italic">No CAPI events sent yet</p>
+                ) : (
+                  <div className="space-y-1">
+                    {[...detailLead.capiEvents].reverse().map((ev, i) => (
+                      <div key={i} className="flex items-center justify-between text-[11px] bg-gray-50 rounded-lg px-2.5 py-1.5">
+                        <span className={`font-medium ${ev.success ? 'text-green-700' : 'text-red-600'}`}>
+                          {ev.success ? '✅' : '❌'} {ev.event}
+                        </span>
+                        <span className="text-gray-400">{ev.at ? fmtDate(ev.at) : ''}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {detailLead.rawQuestionData && (
                 <button onClick={() => { setDetailLead(null); setAnswersLead(detailLead); }}
                   className="text-[11px] text-blue-600 underline hover:text-blue-800 pt-1">

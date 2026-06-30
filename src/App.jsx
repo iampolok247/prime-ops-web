@@ -86,6 +86,7 @@ import MetaLeadsPipeline from './pages/MetaLeads/MetaLeadsPipeline.jsx';
 import MetaLeadsQueue    from './pages/MetaLeads/MetaLeadsQueue.jsx';
 import MetaLeadsFollowUp from './pages/MetaLeads/MetaLeadsFollowUp.jsx';
 import MetaLeadsAnalytics from './pages/MetaLeads/MetaLeadsAnalytics.jsx';
+import MetaLeadsCapiLog  from './pages/MetaLeads/MetaLeadsCapiLog.jsx';
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -241,6 +242,7 @@ export default function App() {
           {/* Meta Lead CRM — Manager view (DM / Admin / SuperAdmin) */}
           <Route element={<RoleRoute roles={['DigitalMarketing','Admin','SuperAdmin','ITAdmin']} />}>
             <Route path="/meta-leads" element={<MetaLeadsManager />} />
+            <Route path="/meta-leads/capi-log" element={<MetaLeadsCapiLog />} />
           </Route>
 
           {/* Meta Lead CRM — Counsellor pipeline (Admission + Admin oversight) */}

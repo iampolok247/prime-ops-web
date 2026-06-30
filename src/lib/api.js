@@ -2223,6 +2223,12 @@ export const api = {
     const res = await authFetch(`${getApiBase()}/api/meta-leads/routing-log`, { credentials: 'include' });
     return handleJson(res, 'Load routing log failed');
   },
+  async getMetaLeadCapiLog(params = {}) {
+    const qs = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v != null && v !== '') qs.set(k, v); });
+    const res = await authFetch(`${getApiBase()}/api/meta-leads/capi-log?${qs}`, { credentials: 'include' });
+    return handleJson(res, 'Load CAPI log failed');
+  },
   async forceRescoreAllMetaLeads() {
     const res = await authFetch(`${getApiBase()}/api/meta-leads/rescore-all`, {
       method: 'POST', credentials: 'include',
