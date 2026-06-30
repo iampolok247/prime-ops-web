@@ -1,10 +1,11 @@
 // Counsellor (Admission) view — score fields are NEVER rendered here.
 // The API also strips them server-side as a second line of defence.
 import { useEffect, useState } from 'react';
-import { Phone, Mail, Calendar, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Phone, Mail, Calendar, RefreshCw, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import api from '../../lib/api.js';
 import StatusModal from './components/StatusModal.jsx';
+import LeadInfoModal from './components/LeadInfoModal.jsx';
 
 const TABS = ['Assigned', 'Counseling', 'In Follow Up', 'Admitted', 'Not Interested', 'All'];
 
@@ -27,6 +28,7 @@ export default function MetaLeadsPipeline() {
   const [page, setPage]       = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [statusTarget, setStatusTarget] = useState(null);
+  const [infoLead, setInfoLead] = useState(null);
   const [msg, setMsg]         = useState(null);
 
   const load = async (currentPage = 1) => {
@@ -119,14 +121,15 @@ export default function MetaLeadsPipeline() {
               <th className="px-4 py-3 text-left">Course</th>
               <th className="px-4 py-3 text-left">Next Follow-Up</th>
               <th className="px-4 py-3 text-left">Status</th>
+              <th className="px-4 py-3 text-center">Info</th>
               <th className="px-4 py-3 text-left">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
             {loading ? (
-              <tr><td colSpan={6} className="text-center py-12 text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={7} className="text-center py-12 text-gray-400">Loading…</td></tr>
             ) : leads.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-12 text-gray-400">No leads in this stage</td></tr>
+              <tr><td colSpan={7} className="text-center py-12 text-gray-400">No leads in this stage</td></tr>
             ) : leads.map(lead => (
               <tr key={lead._id} className="hover:bg-gray-50/50 transition">
                 <td className="px-4 py-3">
@@ -160,6 +163,12 @@ export default function MetaLeadsPipeline() {
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_PILL[lead.status] || 'bg-gray-100 text-gray-500'}`}>
                     {lead.status}
                   </span>
+                </td>
+                <td className="px-4 py-3 text-center">
+                  <button onClick={() => setInfoLead(lead)}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-[#253985] hover:bg-gray-100 transition">
+                    <Info size={14} />
+                  </button>
                 </td>
                 <td className="px-4 py-3">
                   {['Assigned', 'Counseling', 'In Follow Up'].includes(lead.status) && (
@@ -198,6 +207,10 @@ export default function MetaLeadsPipeline() {
           onClose={() => setStatusTarget(null)}
           onSubmit={handleStatus}
         />
+      )}
+
+      {infoLead && (
+        <LeadInfoModal lead={infoLead} onClose={() => setInfoLead(null)} />
       )}
     </div>
   );

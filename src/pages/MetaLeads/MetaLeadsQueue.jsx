@@ -2,10 +2,11 @@
 // Two sections: New Leads (Assigned, not yet contacted) + Today's Follow-ups
 // SSE auto-refreshes when a new lead is pushed to this counsellor.
 import { useEffect, useState, useCallback } from 'react';
-import { Inbox, Clock, Phone, Mail, RefreshCw, ChevronRight } from 'lucide-react';
+import { Inbox, Clock, Phone, Mail, RefreshCw, ChevronRight, Info } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import api from '../../lib/api.js';
 import StatusModal from './components/StatusModal.jsx';
+import LeadInfoModal from './components/LeadInfoModal.jsx';
 
 const fmtDate = (d) => d
   ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -23,6 +24,7 @@ export default function MetaLeadsQueue() {
   const [loading,      setLoading]      = useState(false);
   const [msg,          setMsg]          = useState(null);
   const [statusTarget, setStatusTarget] = useState(null);
+  const [infoLead,     setInfoLead]     = useState(null);
   const [startingId,   setStartingId]   = useState(null); // which lead is being moved to Counseling
 
   const flash = (text) => { setMsg(text); setTimeout(() => setMsg(null), 3000); };
@@ -142,6 +144,10 @@ export default function MetaLeadsQueue() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="text-[10px] text-gray-400">{fmtDate(lead.assignedAt)}</span>
+                  <button onClick={() => setInfoLead(lead)}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-[#253985] hover:bg-gray-100 transition">
+                    <Info size={14} />
+                  </button>
                   <button
                     onClick={() => startCounseling(lead)}
                     disabled={startingId === lead._id}
@@ -199,10 +205,16 @@ export default function MetaLeadsQueue() {
                       <p className="text-[10px] text-gray-400 mt-0.5 truncate max-w-xs">{lead.notes}</p>
                     )}
                   </div>
-                  <button onClick={() => setStatusTarget(lead)}
-                    className="shrink-0 text-[11px] px-3 py-1.5 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">
-                    Update
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => setInfoLead(lead)}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-[#253985] hover:bg-gray-100 transition">
+                      <Info size={14} />
+                    </button>
+                    <button onClick={() => setStatusTarget(lead)}
+                      className="text-[11px] px-3 py-1.5 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">
+                      Update
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -213,6 +225,10 @@ export default function MetaLeadsQueue() {
       {statusTarget && (
         <StatusModal lead={statusTarget}
           onClose={() => setStatusTarget(null)} onSubmit={handleStatus} />
+      )}
+
+      {infoLead && (
+        <LeadInfoModal lead={infoLead} onClose={() => setInfoLead(null)} />
       )}
     </div>
   );
