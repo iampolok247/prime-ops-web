@@ -2229,6 +2229,14 @@ export const api = {
     const res = await authFetch(`${getApiBase()}/api/meta-leads/capi-log?${qs}`, { credentials: 'include' });
     return handleJson(res, 'Load CAPI log failed');
   },
+  async sendMetaLeadCapiEvents({ logIds, sendAll } = {}) {
+    const res = await authFetch(`${getApiBase()}/api/meta-leads/capi-log/send`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(sendAll ? { sendAll: true } : { logIds }),
+    });
+    return handleJson(res, 'Send CAPI events failed');
+  },
   async forceRescoreAllMetaLeads() {
     const res = await authFetch(`${getApiBase()}/api/meta-leads/rescore-all`, {
       method: 'POST', credentials: 'include',
