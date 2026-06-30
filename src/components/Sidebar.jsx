@@ -101,6 +101,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/dm-metrics', label: 'Cost / Social / SEO', icon: <BarChart2 size={18}/> },
       { type: 'heading', title: 'Meta Lead CRM' },
       { to: '/meta-leads', label: 'Meta Leads Manager', icon: <Facebook size={18}/> },
+      { to: '/meta-leads/follow-up', label: 'Follow-Up Leads', icon: <Clock size={18}/> },
+      { to: '/meta-leads/analytics', label: 'Lead Analytics', icon: <BarChart2 size={18}/> },
     ],
     Admission: [
       { to: '/', label: 'Dashboard', icon: <LayoutDashboard size={18}/> },
@@ -120,8 +122,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
   // Removed legacy Not Admitted view from sidebar
       { to: '/admission/fees', label: 'Admission Fees', icon: <FolderOpen size={18}/> },
       { type: 'heading', title: 'Meta Lead CRM' },
-      { to: '/meta-leads/queue',    label: 'My Queue',         icon: <Inbox size={18}/> },
-      { to: '/meta-leads/pipeline', label: 'My Meta Pipeline', icon: <Facebook size={18}/> },
+      { to: '/meta-leads/queue',     label: 'My Queue',         icon: <Inbox size={18}/> },
+      { to: '/meta-leads/pipeline',  label: 'My Meta Pipeline', icon: <Facebook size={18}/> },
+      { to: '/meta-leads/follow-up', label: 'My Follow-Ups',    icon: <Clock size={18}/> },
+      { to: '/meta-leads/analytics', label: 'My Performance',   icon: <BarChart2 size={18}/> },
     ],
     // Accountant role with Requisition support
     Accountant: [

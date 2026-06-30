@@ -84,6 +84,8 @@ import OpsAttendance from './pages/OpsAttendance.jsx';
 import MetaLeadsManager  from './pages/MetaLeads/MetaLeadsManager.jsx';
 import MetaLeadsPipeline from './pages/MetaLeads/MetaLeadsPipeline.jsx';
 import MetaLeadsQueue    from './pages/MetaLeads/MetaLeadsQueue.jsx';
+import MetaLeadsFollowUp from './pages/MetaLeads/MetaLeadsFollowUp.jsx';
+import MetaLeadsAnalytics from './pages/MetaLeads/MetaLeadsAnalytics.jsx';
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -242,9 +244,11 @@ export default function App() {
           </Route>
 
           {/* Meta Lead CRM — Counsellor pipeline (Admission + Admin oversight) */}
-          <Route element={<RoleRoute roles={['Admission','Admin','SuperAdmin','ITAdmin']} />}>
-            <Route path="/meta-leads/pipeline" element={<MetaLeadsPipeline />} />
-            <Route path="/meta-leads/queue"    element={<MetaLeadsQueue />} />
+          <Route element={<RoleRoute roles={['Admission','Admin','SuperAdmin','ITAdmin','DigitalMarketing']} />}>
+            <Route path="/meta-leads/pipeline"  element={<MetaLeadsPipeline />} />
+            <Route path="/meta-leads/queue"     element={<MetaLeadsQueue />} />
+            <Route path="/meta-leads/follow-up" element={<MetaLeadsFollowUp />} />
+            <Route path="/meta-leads/analytics" element={<MetaLeadsAnalytics />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

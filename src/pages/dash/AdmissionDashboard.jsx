@@ -124,25 +124,39 @@ export default function AdmissionDashboard() {
   const isAdminOrSA = user?.role === 'Admin' || user?.role === 'SuperAdmin';
   const isAdmission = user?.role === 'Admission';
 
-  // Instant lead availability (counsellors only)
+  // Instant lead availability + leave status (counsellors only)
   const [available, setAvailable]     = useState(false);
+  const [onLeave, setOnLeave]         = useState(false);
   const [toggling, setToggling]       = useState(false);
+  const [togglingLeave, setTogglingLeave] = useState(false);
 
   useEffect(() => {
     if (!isAdmission || !user?.id) return;
     // Use /api/auth/me — works for any role, returns full user including availableForInstantLeads
     api.me().then(data => {
       setAvailable(data?.user?.availableForInstantLeads || false);
+      setOnLeave(data?.user?.onLeave || false);
     }).catch(() => {});
   }, [isAdmission, user?.id]);
 
   const toggleAvailability = async () => {
+    if (onLeave) return; // locked while on leave
     setToggling(true);
     try {
       const res = await api.toggleInstantLeadAvailability(user.id);
       setAvailable(res.availableForInstantLeads);
     } catch {}
     finally { setToggling(false); }
+  };
+
+  const toggleLeave = async () => {
+    setTogglingLeave(true);
+    try {
+      const res = await api.toggleLeave(user.id);
+      setOnLeave(res.onLeave);
+      setAvailable(res.availableForInstantLeads);
+    } catch {}
+    finally { setTogglingLeave(false); }
   };
 
   // Fetch today's attendance
@@ -471,18 +485,32 @@ export default function AdmissionDashboard() {
           <p className="text-gray-600 mt-1">Track student admissions and pipeline</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          {/* Instant Lead Availability Toggle — counsellors only */}
+          {/* Instant Lead Availability + Leave Toggle — counsellors only */}
           {isAdmission && (
-            <button
-              onClick={toggleAvailability}
-              disabled={toggling}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl border font-medium text-sm transition disabled:opacity-50
-                ${available
-                  ? 'bg-green-100 border-green-300 text-green-800 hover:bg-green-200'
-                  : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200'}`}>
-              <span className={`w-2 h-2 rounded-full ${available ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
-              {toggling ? 'Updating…' : available ? 'On Duty — Receiving Leads' : 'Off Duty'}
-            </button>
+            <>
+              <button
+                onClick={toggleAvailability}
+                disabled={toggling || onLeave}
+                title={onLeave ? 'Turn off leave first' : ''}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl border font-medium text-sm transition disabled:opacity-50 disabled:cursor-not-allowed
+                  ${available
+                    ? 'bg-green-100 border-green-300 text-green-800 hover:bg-green-200'
+                    : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200'}`}>
+                <span className={`w-2 h-2 rounded-full ${available ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+                {toggling ? 'Updating…' : available ? 'On Duty — Receiving Leads' : 'Off Duty'}
+              </button>
+
+              <button
+                onClick={toggleLeave}
+                disabled={togglingLeave}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl border font-medium text-sm transition disabled:opacity-50
+                  ${onLeave
+                    ? 'bg-red-100 border-red-300 text-red-700 hover:bg-red-200'
+                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'}`}>
+                <span className={`w-2 h-2 rounded-full ${onLeave ? 'bg-red-500' : 'bg-gray-300'}`} />
+                {togglingLeave ? 'Updating…' : onLeave ? '🔴 On Leave' : 'Mark as On Leave'}
+              </button>
+            </>
           )}
 
           {/* Today's Attendance */}

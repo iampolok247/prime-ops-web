@@ -33,7 +33,7 @@ const TEMP_PILL = {
 };
 
 const TAB_QUERY = {
-  'Validated': { validationStatus: 'validated' },
+  'Validated': { validationStatus: 'validated', unassignedOnly: 'true' },
   'Assigned':  { status: 'Assigned' },
   'All':       {},
 };
@@ -67,9 +67,6 @@ export default function MetaLeadsManager() {
   const [statusTarget, setStatusTarget]     = useState(null);
   const [answersLead, setAnswersLead]       = useState(null);
   const [detailLead, setDetailLead]         = useState(null);
-  const [assignTarget, setAssignTarget]     = useState(null);
-  const [assignTo, setAssignTo]             = useState('');
-  const [assigning, setAssigning]           = useState(false);
   const [triggeringRR, setTriggeringRR]     = useState(false);
   const [rescoring, setRescoring]           = useState(false);
   const [forceRescoring, setForceRescoring] = useState(false);
@@ -81,6 +78,11 @@ export default function MetaLeadsManager() {
   const [selectedLeads, setSelectedLeads]   = useState([]);
   const [bulkAssignTo, setBulkAssignTo]     = useState('');
   const [bulkAssigning, setBulkAssigning]   = useState(false);
+  const [showDistributeModal, setShowDistributeModal]       = useState(false);
+  const [distributeSelectedMembers, setDistributeMembers]   = useState([]);
+  const [reassignTarget, setReassignTarget] = useState(null); // single-lead reassign dropdown
+  const [reassignTo, setReassignTo]         = useState('');
+  const [reassigning, setReassigning]       = useState(false);
 
   const canScore = ['DigitalMarketing', 'Admin', 'SuperAdmin', 'ITAdmin'].includes(user?.role);
 
@@ -165,6 +167,46 @@ export default function MetaLeadsManager() {
     finally { setBulkAssigning(false); }
   };
 
+  // Distribute selected leads equally across multiple chosen counsellors
+  const handleDistributeEqually = async () => {
+    if (!selectedLeads.length || !distributeSelectedMembers.length) return;
+    setBulkAssigning(true);
+    try {
+      const leadsPerMember = Math.floor(selectedLeads.length / distributeSelectedMembers.length);
+      const remainder = selectedLeads.length % distributeSelectedMembers.length;
+
+      let leadIndex = 0;
+      const assignmentPromises = [];
+      for (let i = 0; i < distributeSelectedMembers.length; i++) {
+        const memberId = distributeSelectedMembers[i];
+        const count = leadsPerMember + (i < remainder ? 1 : 0);
+        const slice = selectedLeads.slice(leadIndex, leadIndex + count);
+        if (slice.length > 0) assignmentPromises.push(api.bulkAssignMetaLeads(slice, memberId));
+        leadIndex += count;
+      }
+
+      await Promise.all(assignmentPromises);
+      flash(`Distributed ${selectedLeads.length} lead(s) across ${distributeSelectedMembers.length} counsellor(s)`);
+      setDistributeMembers([]);
+      setSelectedLeads([]);
+      setShowDistributeModal(false);
+      load(page);
+    } catch { flash('Distribution failed'); }
+    finally { setBulkAssigning(false); }
+  };
+
+  // Single-lead reassign (works for both unassigned and already-assigned leads)
+  const handleReassign = async (lead) => {
+    if (!reassignTo) return;
+    setReassigning(true);
+    try {
+      await api.assignMetaLead(lead._id, reassignTo);
+      flash(`${lead.assignedTo ? 'Reassigned' : 'Assigned'} to ${admissions.find(u => u._id === reassignTo)?.name}`);
+      load(page);
+    } catch { flash('Reassign failed'); }
+    finally { setReassigning(false); setReassignTarget(null); setReassignTo(''); }
+  };
+
   // ── Actions ──────────────────────────────────────────────────────────────
   const handleValidate = async (payload) => {
     await api.validateMetaLead(validateTarget._id, payload);
@@ -176,17 +218,6 @@ export default function MetaLeadsManager() {
     await api.updateMetaLeadStatus(statusTarget._id, payload);
     flash('Status updated');
     load(page);
-  };
-
-  const handleQuickAssign = async (lead) => {
-    if (!assignTo) return;
-    setAssigning(true);
-    try {
-      await api.assignMetaLead(lead._id, assignTo);
-      flash(`Assigned to ${admissions.find(u => u._id === assignTo)?.name}`);
-      load(page);
-    } catch { flash('Assignment failed'); }
-    finally { setAssigning(false); setAssignTarget(null); setAssignTo(''); }
   };
 
   const loadRoutingLog = async () => {
@@ -203,7 +234,18 @@ export default function MetaLeadsManager() {
       setAdmissions(prev => prev.map(u =>
         u._id === userId ? { ...u, availableForInstantLeads: res.availableForInstantLeads } : u
       ));
-    } catch { flash('Toggle failed'); }
+    } catch (e) { flash(e.message || 'Toggle failed'); }
+    finally { setTogglingId(null); }
+  };
+
+  const handleToggleLeave = async (userId) => {
+    setTogglingId(userId);
+    try {
+      const res = await api.toggleLeave(userId);
+      setAdmissions(prev => prev.map(u =>
+        u._id === userId ? { ...u, onLeave: res.onLeave, availableForInstantLeads: res.availableForInstantLeads } : u
+      ));
+    } catch { flash('Toggle leave failed'); }
     finally { setTogglingId(null); }
   };
 
@@ -321,19 +363,31 @@ export default function MetaLeadsManager() {
                   <p className="text-xs text-gray-400 col-span-4">No admission counsellors found</p>
                 )}
                 {admissions.map(u => (
-                  <div key={u._id} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2 gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${u.availableForInstantLeads ? 'bg-green-500' : 'bg-gray-300'}`} />
-                      <span className="text-xs font-medium text-gray-700 truncate">{u.name}</span>
+                  <div key={u._id} className="flex flex-col gap-1.5 bg-gray-50 rounded-xl px-3 py-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${u.onLeave ? 'bg-red-400' : u.availableForInstantLeads ? 'bg-green-500' : 'bg-gray-300'}`} />
+                        <span className="text-xs font-medium text-gray-700 truncate">{u.name}</span>
+                      </div>
+                      <button
+                        onClick={() => handleToggleAvailability(u._id)}
+                        disabled={togglingId === u._id || u.onLeave}
+                        title={u.onLeave ? 'Turn off leave first' : ''}
+                        className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed
+                          ${u.availableForInstantLeads
+                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                            : 'bg-gray-200 text-gray-500 hover:bg-gray-300'}`}>
+                        {togglingId === u._id ? '…' : u.availableForInstantLeads ? 'On Duty' : 'Off Duty'}
+                      </button>
                     </div>
                     <button
-                      onClick={() => handleToggleAvailability(u._id)}
+                      onClick={() => handleToggleLeave(u._id)}
                       disabled={togglingId === u._id}
-                      className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-semibold transition disabled:opacity-50
-                        ${u.availableForInstantLeads
-                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                          : 'bg-gray-200 text-gray-500 hover:bg-gray-300'}`}>
-                      {togglingId === u._id ? '…' : u.availableForInstantLeads ? 'On Duty' : 'Off Duty'}
+                      className={`text-[10px] px-2 py-0.5 rounded-full font-semibold transition disabled:opacity-50 w-fit
+                        ${u.onLeave
+                          ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                          : 'bg-white border border-gray-200 text-gray-400 hover:bg-gray-100'}`}>
+                      {u.onLeave ? '🔴 On Leave' : 'Mark Leave'}
                     </button>
                   </div>
                 ))}
@@ -493,12 +547,64 @@ export default function MetaLeadsManager() {
           </select>
           <button onClick={handleBulkAssign} disabled={!bulkAssignTo || bulkAssigning}
             className="text-sm px-4 py-1.5 bg-[#253985] text-white rounded-xl hover:bg-blue-800 disabled:opacity-50">
-            {bulkAssigning ? 'Assigning…' : 'Assign'}
+            {bulkAssigning ? 'Assigning…' : 'Assign to One'}
+          </button>
+          <button onClick={() => setShowDistributeModal(true)}
+            className="text-sm px-4 py-1.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700"
+            title="Distribute leads equally among selected counsellors">
+            📊 Distribute Equally
           </button>
           <button onClick={() => setSelectedLeads([])}
             className="text-sm text-gray-500 hover:text-red-600 px-2">
             Clear
           </button>
+        </div>
+      )}
+
+      {/* ── Distribute Equally Modal ── */}
+      {showDistributeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowDistributeModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
+            <h3 className="text-lg font-bold text-[#253985] mb-1">Distribute {selectedLeads.length} Leads Equally</h3>
+            <p className="text-xs text-gray-500 mb-4">Select counsellors to split these leads among</p>
+
+            <div className="space-y-1.5 max-h-64 overflow-y-auto mb-4">
+              {admissions.map(member => (
+                <label key={member._id} className="flex items-center gap-3 p-2.5 hover:bg-gray-50 rounded-lg cursor-pointer">
+                  <input type="checkbox"
+                    checked={distributeSelectedMembers.includes(member._id)}
+                    onChange={(e) => {
+                      setDistributeMembers(prev => e.target.checked
+                        ? [...prev, member._id]
+                        : prev.filter(id => id !== member._id));
+                    }}
+                    className="w-4 h-4 cursor-pointer" />
+                  <span className="text-sm font-medium text-gray-700">{member.name}</span>
+                </label>
+              ))}
+            </div>
+
+            {distributeSelectedMembers.length > 0 && (
+              <div className="bg-purple-50 rounded-xl p-3 mb-4 text-xs text-purple-800">
+                {Math.floor(selectedLeads.length / distributeSelectedMembers.length)} leads per counsellor
+                {selectedLeads.length % distributeSelectedMembers.length > 0 &&
+                  ` (+${selectedLeads.length % distributeSelectedMembers.length} remainder)`}
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <button onClick={() => { setShowDistributeModal(false); setDistributeMembers([]); }}
+                className="flex-1 px-4 py-2 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50">
+                Cancel
+              </button>
+              <button onClick={handleDistributeEqually}
+                disabled={!distributeSelectedMembers.length || bulkAssigning}
+                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-50">
+                {bulkAssigning ? 'Distributing…' : 'Confirm'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -607,25 +713,27 @@ export default function MetaLeadsManager() {
                 {/* Actions */}
                 <td className="px-3 py-2.5">
                   <div className="flex gap-1">
-                    {lead.validationStatus === 'validated' && !lead.assignedTo && (
-                      assignTarget?._id === lead._id ? (
+                    {lead.validationStatus === 'validated' && (
+                      reassignTarget?._id === lead._id ? (
                         <div className="flex gap-1">
-                          <select value={assignTo} onChange={e => setAssignTo(e.target.value)}
+                          <select value={reassignTo} onChange={e => setReassignTo(e.target.value)}
                             className="text-[11px] border border-gray-200 rounded-lg px-1.5 py-0.5">
                             <option value="">Select…</option>
                             {admissions.map(u => <option key={u._id} value={u._id}>{u.name}</option>)}
                           </select>
-                          <button onClick={() => handleQuickAssign(lead)} disabled={!assignTo || assigning}
+                          <button onClick={() => handleReassign(lead)} disabled={!reassignTo || reassigning}
                             className="text-[11px] px-2 py-0.5 bg-green-600 text-white rounded-lg disabled:opacity-50">
-                            {assigning ? '…' : 'Go'}
+                            {reassigning ? '…' : 'Go'}
                           </button>
-                          <button onClick={() => setAssignTarget(null)}
+                          <button onClick={() => { setReassignTarget(null); setReassignTo(''); }}
                             className="text-[11px] px-1.5 border border-gray-200 rounded-lg">×</button>
                         </div>
                       ) : (
-                        <button onClick={() => setAssignTarget(lead)}
-                          className="text-[11px] px-2.5 py-1 bg-green-100 text-green-700 rounded-lg hover:bg-green-200">
-                          Assign
+                        <button onClick={() => setReassignTarget(lead)}
+                          className={`text-[11px] px-2.5 py-1 rounded-lg ${lead.assignedTo
+                            ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                            : 'bg-green-100 text-green-700 hover:bg-green-200'}`}>
+                          {lead.assignedTo ? 'Reassign' : 'Assign'}
                         </button>
                       )
                     )}

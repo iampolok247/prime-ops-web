@@ -182,6 +182,12 @@ export const api = {
     });
     return handleJson(res, 'Toggle availability failed');
   },
+  async toggleLeave(userId) {
+    const res = await authFetch(`${getApiBase()}/api/users/${userId}/toggle-leave`, {
+      method: 'PATCH', credentials: 'include',
+    });
+    return handleJson(res, 'Toggle leave failed');
+  },
   async createUser(payload) {
     const res = await authFetch(`${getApiBase()}/api/users`, {
       method: "POST",
@@ -2168,6 +2174,15 @@ export const api = {
       body: JSON.stringify(payload),
     });
     return handleJson(res, 'Update meta lead status failed');
+  },
+  async getMetaLeadTeamStats(from, to, userId) {
+    const params = new URLSearchParams();
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    if (userId) params.set('userId', userId);
+    const q = params.toString() ? `?${params.toString()}` : '';
+    const res = await authFetch(`${getApiBase()}/api/reports/meta-lead-team-stats${q}`, { credentials: 'include' });
+    return handleJson(res, 'Load Meta Lead team stats failed');
   },
   async triggerRoundRobin() {
     const res = await authFetch(`${getApiBase()}/api/meta-leads/round-robin/trigger`, {
