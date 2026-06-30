@@ -34,6 +34,7 @@ export default function MetaLeadsCapiLog() {
   const [eventFilter, setEventFilter]   = useState('');
   const [selected, setSelected]   = useState([]);
   const [sending, setSending]     = useState(false);
+  const [sendingId, setSendingId] = useState(null); // single-row send loading state
   const [msg, setMsg]             = useState(null);
 
   const flash = (text) => { setMsg(text); setTimeout(() => setMsg(null), 4000); };
@@ -86,6 +87,16 @@ export default function MetaLeadsCapiLog() {
       load(page);
     } catch { flash('Send failed'); }
     finally { setSending(false); }
+  };
+
+  const sendOne = async (log) => {
+    setSendingId(log._id);
+    try {
+      const res = await api.sendMetaLeadCapiEvents({ logIds: [log._id] });
+      flash(res.sent ? `✅ Sent — ${log.leadName}` : `❌ Failed — ${log.leadName}`);
+      load(page);
+    } catch { flash('Send failed'); }
+    finally { setSendingId(null); }
   };
 
   return (
@@ -178,13 +189,14 @@ export default function MetaLeadsCapiLog() {
               <th className="px-4 py-3 text-center">Send Status</th>
               <th className="px-4 py-3 text-left">Sent At</th>
               <th className="px-4 py-3 text-left">Error</th>
+              {statusFilter === 'pending' && <th className="px-4 py-3 text-left">Action</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
             {loading ? (
-              <tr><td colSpan={8} className="text-center py-12 text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={9} className="text-center py-12 text-gray-400">Loading…</td></tr>
             ) : logs.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-12 text-gray-400">No events found</td></tr>
+              <tr><td colSpan={9} className="text-center py-12 text-gray-400">No events found</td></tr>
             ) : logs.map(log => (
               <tr key={log._id} className={`hover:bg-gray-50/50 transition ${selected.includes(log._id) ? 'bg-blue-50/40' : ''}`}>
                 {statusFilter === 'pending' && (
@@ -216,6 +228,14 @@ export default function MetaLeadsCapiLog() {
                 <td className="px-4 py-2.5 text-red-500 max-w-[180px] truncate" title={log.errorMessage}>
                   {log.errorMessage || '—'}
                 </td>
+                {statusFilter === 'pending' && (
+                  <td className="px-4 py-2.5">
+                    <button onClick={() => sendOne(log)} disabled={sendingId === log._id || sending}
+                      className="text-[11px] px-3 py-1 bg-[#253985] text-white rounded-lg hover:bg-blue-800 disabled:opacity-50">
+                      {sendingId === log._id ? 'Sending…' : 'Send'}
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
