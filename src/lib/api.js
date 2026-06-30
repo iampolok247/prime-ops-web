@@ -2175,6 +2175,29 @@ export const api = {
     });
     return handleJson(res, 'Update meta lead status failed');
   },
+  async bulkRescheduleMetaLeads(leadIds, { nextFollowUpDate, pushDays } = {}) {
+    const body = { leadIds };
+    if (nextFollowUpDate) body.nextFollowUpDate = nextFollowUpDate;
+    if (pushDays) body.pushDays = pushDays;
+    const res = await authFetch(`${getApiBase()}/api/meta-leads/bulk-reschedule`, {
+      method: 'PATCH', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return handleJson(res, 'Bulk reschedule failed');
+  },
+  async logMetaLeadTouch(id, { note, outcome } = {}) {
+    const res = await authFetch(`${getApiBase()}/api/meta-leads/${id}/log-touch`, {
+      method: 'PATCH', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note, outcome }),
+    });
+    return handleJson(res, 'Log touch failed');
+  },
+  async getMetaLead(id) {
+    const res = await authFetch(`${getApiBase()}/api/meta-leads/${id}`, { credentials: 'include' });
+    return handleJson(res, 'Load lead failed');
+  },
   async getMetaLeadTeamStats(from, to, userId) {
     const params = new URLSearchParams();
     if (from) params.set('from', from);
