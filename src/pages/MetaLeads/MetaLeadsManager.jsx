@@ -60,6 +60,7 @@ export default function MetaLeadsManager() {
   const [filterFrom, setFilterFrom]     = useState('');        // date from
   const [filterTo, setFilterTo]         = useState('');        // date to
   const [filterPlatform, setFilterPlatform] = useState('');   // Facebook / Instagram
+  const [filterAssignedTo, setFilterAssignedTo] = useState(''); // counsellor userId
   const [showFilters, setShowFilters]   = useState(false);
 
   // ── Modal state ─────────────────────────────────────────────────────────
@@ -87,7 +88,7 @@ export default function MetaLeadsManager() {
   const canScore = ['DigitalMarketing', 'Admin', 'SuperAdmin', 'ITAdmin'].includes(user?.role);
 
   // ── Active filter count badge ────────────────────────────────────────────
-  const activeFilterCount = [filterTemp, filterMinScore, filterStatus, filterFrom, filterTo, filterPlatform]
+  const activeFilterCount = [filterTemp, filterMinScore, filterStatus, filterFrom, filterTo, filterPlatform, filterAssignedTo]
     .filter(Boolean).length;
 
   // ── Load data ────────────────────────────────────────────────────────────
@@ -102,6 +103,7 @@ export default function MetaLeadsManager() {
       if (filterFrom)    params.from         = filterFrom;
       if (filterTo)      params.to           = filterTo;
       if (filterPlatform) params.platform    = filterPlatform;
+      if (filterAssignedTo) params.assignedTo = filterAssignedTo;
 
       const [leadsRes, statsRes, usersRes] = await Promise.all([
         api.listMetaLeads(params),
@@ -118,9 +120,9 @@ export default function MetaLeadsManager() {
     } finally {
       setLoading(false);
     }
-  }, [tab, searchQ, filterTemp, filterMinScore, filterStatus, filterFrom, filterTo, filterPlatform]);
+  }, [tab, searchQ, filterTemp, filterMinScore, filterStatus, filterFrom, filterTo, filterPlatform, filterAssignedTo]);
 
-  useEffect(() => { setPage(1); load(1); setSelectedLeads([]); }, [tab, filterTemp, filterMinScore, filterStatus, filterFrom, filterTo, filterPlatform]);
+  useEffect(() => { setPage(1); load(1); setSelectedLeads([]); }, [tab, filterTemp, filterMinScore, filterStatus, filterFrom, filterTo, filterPlatform, filterAssignedTo]);
   useEffect(() => { load(page); }, [page]);
 
   // SSE — instant reload when webhook delivers a new lead
@@ -147,7 +149,7 @@ export default function MetaLeadsManager() {
 
   const clearFilters = () => {
     setFilterTemp(''); setMinScore(''); setFilterStatus('');
-    setFilterFrom(''); setFilterTo(''); setFilterPlatform('');
+    setFilterFrom(''); setFilterTo(''); setFilterPlatform(''); setFilterAssignedTo('');
   };
 
   // ── Bulk selection helpers ────────────────────────────────────────────────
@@ -516,6 +518,16 @@ export default function MetaLeadsManager() {
               <option value="">All</option>
               <option value="Facebook">Facebook</option>
               <option value="Instagram">Instagram</option>
+            </select>
+          </div>
+
+          {/* Assigned To filter */}
+          <div>
+            <label className="block text-[11px] text-gray-500 mb-1 font-medium uppercase tracking-wide">Assigned To</label>
+            <select value={filterAssignedTo} onChange={e => setFilterAssignedTo(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
+              <option value="">All</option>
+              {admissions.map(u => <option key={u._id} value={u._id}>{u.name}</option>)}
             </select>
           </div>
 
