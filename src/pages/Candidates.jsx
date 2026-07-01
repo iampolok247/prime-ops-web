@@ -11,12 +11,73 @@ const STATUS_TABS = [
 export default function Candidates() {
   const [tab, setTab] = useState("");
   const [items, setItems] = useState([]);
+  const [monthFilter, setMonthFilter] = useState("");
   const [employers, setEmployers] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
   const [showRecruit, setShowRecruit] = useState(null);
   const [showEdit, setShowEdit] = useState(null);
   const [showDetails, setShowDetails] = useState(null);
+
+  const filteredItems = useMemo(() => {
+    if (!monthFilter) return items;
+
+    return items.filter((c) => {
+      const baseDate = tab === "recruited" ? (c.recruitedMeta?.date || c.date) : c.date;
+      if (!baseDate) return false;
+      const dt = new Date(baseDate);
+      if (Number.isNaN(dt.getTime())) return false;
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth() + 1).padStart(2, "0");
+      return `${y}-${m}` === monthFilter;
+    });
+  }, [items, monthFilter, tab]);
+
+  const downloadReport = () => {
+    const headers = [
+      "CanID",
+      "Name",
+      "Interest",
+      "Source",
+      "Trained",
+      ...(tab === "recruited" ? ["Salary"] : []),
+      "Date",
+      "CV",
+    ];
+
+    const rows = filteredItems.map((c) => {
+      const reportDate = tab === "recruited" ? (c.recruitedMeta?.date || c.date) : c.date;
+      return [
+        c.canId || "",
+        c.name || "",
+        c.jobInterest || "",
+        c.source || "",
+        c.trained ? "Yes" : "No",
+        ...(tab === "recruited" ? [c.recruitedMeta?.salary ?? ""] : []),
+        reportDate ? new Date(reportDate).toLocaleDateString("en-GB") : "",
+        c.cvLink || "",
+      ];
+    });
+
+    const csvEscape = (v) => `"${String(v).replace(/"/g, '""')}"`;
+    const summaryRows = [
+      [],
+      ["Total Candidates", String(filteredItems.length)]
+    ];
+
+    const csv = [headers, ...rows, ...summaryRows].map((r) => r.map(csvEscape).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const status = tab || "all";
+    const monthPart = monthFilter || "all-months";
+    a.href = url;
+    a.download = `candidates-${status}-${monthPart}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   const load = async (status = tab) => {
     const data = await api.listCandidates(status);
@@ -57,6 +118,32 @@ export default function Candidates() {
         ))}
       </div>
 
+      <div className="flex flex-wrap items-end justify-between gap-3 bg-white shadow rounded-2xl p-4">
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-[#053867]">Monthly Filter</label>
+          <input
+            type="month"
+            value={monthFilter}
+            onChange={(e) => setMonthFilter(e.target.value)}
+            className="border-2 border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#253985]"
+          />
+          {monthFilter && (
+            <button
+              onClick={() => setMonthFilter("")}
+              className="px-3 py-2 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        <button
+          onClick={downloadReport}
+          className="px-4 py-2 rounded-xl bg-[#253985] text-white hover:bg-[#053867]"
+        >
+          Download Report
+        </button>
+      </div>
+
       <div className="bg-white shadow rounded-2xl p-4 overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead>
@@ -66,20 +153,22 @@ export default function Candidates() {
               <th className="py-2">Interest</th>
               <th className="py-2">Source</th>
               <th className="py-2">Trained</th>
+              {tab === 'recruited' && <th className="py-2">Salary</th>}
               <th className="py-2">Date</th>
               <th className="py-2">CV</th>
               <th className="py-2">Action</th>
             </tr>
           </thead>
           <tbody>
-            {items.map(c => (
+            {filteredItems.map(c => (
               <tr key={c._id} className="border-t">
                 <td className="py-2">{c.canId}</td>
                 <td className="py-2">{c.name}</td>
                 <td className="py-2">{c.jobInterest}</td>
                 <td className="py-2">{c.source}</td>
                 <td className="py-2">{c.trained ? 'Yes' : 'No'}</td>
-                <td className="py-2">{new Date(c.date).toLocaleDateString('en-GB')}</td>
+                {tab === 'recruited' && <td className="py-2">{c.recruitedMeta?.salary ?? '-'}</td>}
+                <td className="py-2">{new Date(tab === 'recruited' ? (c.recruitedMeta?.date || c.date) : c.date).toLocaleDateString('en-GB')}</td>
                 <td className="py-2">{c.cvLink ? <a className="text-[#253985] underline" href={c.cvLink} target="_blank">View</a> : '-'}</td>
                 <td className="py-2">
                   <div className="flex items-center gap-2">
@@ -123,9 +212,15 @@ export default function Candidates() {
                 </td>
               </tr>
             ))}
-            {items.length === 0 && <tr><td className="py-2 text-gray-500" colSpan={8}>No candidates</td></tr>}
+            {filteredItems.length === 0 && <tr><td className="py-2 text-gray-500" colSpan={tab === 'recruited' ? 9 : 8}>No candidates</td></tr>}
           </tbody>
         </table>
+      </div>
+
+      <div className="bg-white shadow rounded-2xl px-4 py-3">
+        <p className="text-sm font-semibold text-[#053867]">
+          Total Candidates: {filteredItems.length}
+        </p>
       </div>
 
       {showAdd && <AddModal onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); load(); }} />}
@@ -584,7 +679,7 @@ function EditModal({ candidate, onClose, onSaved }) {
 }
 
 function RecruitModal({ candidate, employers, jobs, onClose, onSaved }) {
-  const [form, setForm] = useState({ employerId: '', jobId: '', date: new Date().toISOString().slice(0,10) });
+  const [form, setForm] = useState({ employerId: '', jobId: '', date: new Date().toISOString().slice(0,10), salary: '' });
   const [submitting, setSubmitting] = useState(false);
 
   const submit = async () => {
@@ -658,6 +753,19 @@ function RecruitModal({ candidate, employers, jobs, onClose, onSaved }) {
                 value={form.date} 
                 onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
                 className="w-full border-2 border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#253985] focus:border-transparent transition-all"
+              />
+            </label>
+          </div>
+
+          <div>
+            <label className="block">
+              <span className="text-sm font-semibold text-[#053867] mb-2 block">Salary</span>
+              <input 
+                type="number"
+                value={form.salary} 
+                onChange={e => setForm(f => ({ ...f, salary: e.target.value }))}
+                className="w-full border-2 border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#253985] focus:border-transparent transition-all"
+                placeholder="Enter salary amount"
               />
             </label>
           </div>
