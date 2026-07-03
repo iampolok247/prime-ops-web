@@ -5,6 +5,7 @@ import { api } from "../lib/api";
 export default function Employers() {
   const [items, setItems] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
+  const [showEdit, setShowEdit] = useState(null);
 
   const load = async () => setItems(await api.listEmployers());
   useEffect(() => { load(); }, []);
@@ -20,7 +21,7 @@ export default function Employers() {
         <table className="min-w-full text-sm">
           <thead>
             <tr className="text-left text-[#053867]">
-              <th className="py-2">EmpID</th><th className="py-2">Name</th><th className="py-2">Address</th><th className="py-2">Job Location</th><th className="py-2">MoU Date</th>
+              <th className="py-2">EmpID</th><th className="py-2">Name</th><th className="py-2">Address</th><th className="py-2">Job Location</th><th className="py-2">MoU Date</th><th className="py-2">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -31,14 +32,74 @@ export default function Employers() {
                 <td className="py-2">{e.address || '-'}</td>
                 <td className="py-2">{e.jobLocation || '-'}</td>
                 <td className="py-2">{e.mouDate ? new Date(e.mouDate).toLocaleDateString('en-GB') : '-'}</td>
+                <td className="py-2">
+                  <button
+                    onClick={() => setShowEdit(e)}
+                    className="px-3 py-1 rounded-xl bg-blue-100 text-blue-700 hover:bg-blue-200"
+                  >
+                    Edit
+                  </button>
+                </td>
               </tr>
             ))}
-            {items.length === 0 && <tr><td className="py-2 text-gray-500" colSpan={5}>No employers</td></tr>}
+            {items.length === 0 && <tr><td className="py-2 text-gray-500" colSpan={6}>No employers</td></tr>}
           </tbody>
         </table>
       </div>
 
       {showAdd && <AddModal onClose={()=>setShowAdd(false)} onSaved={()=>{setShowAdd(false); load();}} />}
+      {showEdit && <EditModal employer={showEdit} onClose={()=>setShowEdit(null)} onSaved={()=>{setShowEdit(null); load();}} />}
+    </div>
+  );
+}
+
+function EditModal({ employer, onClose, onSaved }) {
+  const [form, setForm] = useState({
+    name: employer.name || '',
+    address: employer.address || '',
+    jobLocation: employer.jobLocation || '',
+    mouDate: employer.mouDate ? new Date(employer.mouDate).toISOString().slice(0, 10) : ''
+  });
+
+  const submit = async () => {
+    if (!form.name) return alert('Name is required');
+    await api.updateEmployer(employer._id, form);
+    onSaved();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-xl space-y-4">
+        <div className="flex items-center justify-between border-b border-gray-200 pb-3">
+          <h3 className="text-xl font-bold text-[#253985]">Edit Employer</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-3">
+          <label className="block">
+            <span className="text-sm font-semibold text-[#053867]">Employer ID</span>
+            <input
+              type="text"
+              value={employer.empId || ''}
+              disabled
+              className="w-full mt-2 border-2 border-blue-200 rounded-xl px-4 py-2.5 bg-gray-100 text-gray-600"
+            />
+          </label>
+        </div>
+
+        <Field label="Name *" value={form.name} onChange={v=>setForm(f=>({...f,name:v}))}/>
+        <Field label="Address" value={form.address} onChange={v=>setForm(f=>({...f,address:v}))}/>
+        <Field label="Job Location" value={form.jobLocation} onChange={v=>setForm(f=>({...f,jobLocation:v}))}/>
+        <Field label="MoU Date" type="date" value={form.mouDate} onChange={v=>setForm(f=>({...f,mouDate:v}))}/>
+        <div className="flex justify-end gap-2 pt-2">
+          <button onClick={onClose} className="px-4 py-2 rounded-2xl bg-gray-100 hover:bg-gray-200">Cancel</button>
+          <button onClick={submit} className="px-4 py-2 rounded-2xl bg-[#F7BA23] text-[#053867] hover:bg-[#F3CE49]">Update</button>
+        </div>
+      </div>
     </div>
   );
 }

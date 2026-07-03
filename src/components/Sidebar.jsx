@@ -165,7 +165,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/requisition', label: 'Requisition', icon: <FileInput size={18}/> },
       { to: '/tasks-board', label: 'Task Board', icon: <Kanban size={18}/> },
       { to: '/task-report', label: 'Task Report', icon: <FileText size={18}/> },
-      { to: '/recruitment', label: 'Recruitment', icon: <Users size={18}/> },
+      { to: '/recruitment', label: 'Farhan Sadik', icon: <Users size={18}/> },
       { to: '/recruitment/candidates', label: 'Candidates', icon: <Users size={18}/> },
       { to: '/recruitment/jobs', label: 'Job Positions', icon: <FolderOpen size={18}/> },
       { to: '/recruitment/employers', label: 'Employers', icon: <FolderOpen size={18}/> },

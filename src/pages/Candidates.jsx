@@ -808,6 +808,10 @@ function RecruitModal({ candidate, employers, jobs, onClose, onSaved }) {
 }
 
 function DetailsModal({ candidate, onClose }) {
+  const hiredEmployerName = candidate.recruitedMeta?.employer?.name || candidate.employer?.name || 'N/A';
+  const hiredJobPosition = candidate.recruitedMeta?.job?.position || candidate.job?.position || 'N/A';
+  const recruitedDate = candidate.recruitedMeta?.date || candidate.recruitedDate;
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-3xl space-y-6 animate-fadeIn max-h-[90vh] overflow-y-auto">
@@ -888,16 +892,16 @@ function DetailsModal({ candidate, onClose }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <DetailRow 
                 label="Employer" 
-                value={candidate.employer?.name || 'N/A'} 
+                value={hiredEmployerName} 
               />
               <DetailRow 
                 label="Job Position" 
-                value={candidate.job?.position || 'N/A'} 
+                value={hiredJobPosition} 
               />
-              {candidate.recruitedDate && (
+              {recruitedDate && (
                 <DetailRow 
                   label="Recruitment Date" 
-                  value={new Date(candidate.recruitedDate).toLocaleDateString('en-GB', { 
+                  value={new Date(recruitedDate).toLocaleDateString('en-GB', { 
                     day: '2-digit', 
                     month: 'short', 
                     year: 'numeric' 

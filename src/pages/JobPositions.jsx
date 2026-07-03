@@ -6,6 +6,7 @@ export default function JobPositions() {
   const [jobs, setJobs] = useState([]);
   const [employers, setEmployers] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
+  const [showEdit, setShowEdit] = useState(null);
 
   const load = async () => setJobs(await api.listJobs());
   useEffect(() => { load(); (async()=>setEmployers(await api.listEmployers()))(); }, []);
@@ -21,7 +22,7 @@ export default function JobPositions() {
         <table className="min-w-full text-sm">
           <thead>
             <tr className="text-left text-[#053867]">
-              <th className="py-2">JobID</th><th className="py-2">Position</th><th className="py-2">Employer</th><th className="py-2">Salary</th><th className="py-2">Deadline</th><th className="py-2">Status</th>
+              <th className="py-2">JobID</th><th className="py-2">Position</th><th className="py-2">Employer</th><th className="py-2">Salary</th><th className="py-2">Deadline</th><th className="py-2">Status</th><th className="py-2">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -33,14 +34,77 @@ export default function JobPositions() {
                 <td className="py-2">{j.salaryRange || '-'}</td>
                 <td className="py-2">{j.deadline ? new Date(j.deadline).toLocaleDateString('en-GB') : '-'}</td>
                 <td className="py-2">{j.status}</td>
+                <td className="py-2">
+                  <button
+                    onClick={() => setShowEdit(j)}
+                    className="px-3 py-1 rounded-xl bg-blue-100 text-blue-700 hover:bg-blue-200"
+                  >
+                    Edit
+                  </button>
+                </td>
               </tr>
             ))}
-            {jobs.length === 0 && <tr><td className="py-2 text-gray-500" colSpan={6}>No jobs</td></tr>}
+            {jobs.length === 0 && <tr><td className="py-2 text-gray-500" colSpan={7}>No jobs</td></tr>}
           </tbody>
         </table>
       </div>
 
       {showAdd && <AddModal employers={employers} onClose={()=>setShowAdd(false)} onSaved={()=>{setShowAdd(false); load();}} />}
+      {showEdit && <EditModal job={showEdit} employers={employers} onClose={()=>setShowEdit(null)} onSaved={()=>{setShowEdit(null); load();}} />}
+    </div>
+  );
+}
+
+function EditModal({ job, employers, onClose, onSaved }) {
+  const [form, setForm] = useState({
+    position: job.position || '',
+    employerId: job.employer?._id || '',
+    salaryRange: job.salaryRange || '',
+    deadline: job.deadline ? new Date(job.deadline).toISOString().slice(0, 10) : '',
+    status: job.status || 'Active'
+  });
+
+  const submit = async () => {
+    if (!form.position || !form.employerId) return alert('Position & Employer required');
+    await api.updateJob(job._id, form);
+    onSaved();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-xl space-y-4">
+        <div className="flex items-center justify-between border-b border-gray-200 pb-3">
+          <h3 className="text-xl font-bold text-[#253985]">Edit Job Position</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-3">
+          <label className="block">
+            <span className="text-sm font-semibold text-[#053867]">Job ID</span>
+            <input
+              type="text"
+              value={job.jobId || ''}
+              disabled
+              className="w-full mt-2 border-2 border-blue-200 rounded-xl px-4 py-2.5 bg-gray-100 text-gray-600"
+            />
+          </label>
+        </div>
+
+        <Field label="Position *" value={form.position} onChange={v=>setForm(f=>({...f,position:v}))}/>
+        <Select label="Employer *" value={form.employerId} onChange={v=>setForm(f=>({...f,employerId:v}))}
+                options={employers.map(e=>({label:`${e.name} (${e.empId})`, value:e._id}))}/>
+        <Field label="Salary Range" value={form.salaryRange} onChange={v=>setForm(f=>({...f,salaryRange:v}))}/>
+        <Field label="Deadline" type="date" value={form.deadline} onChange={v=>setForm(f=>({...f,deadline:v}))}/>
+        <Select label="Status" value={form.status} onChange={v=>setForm(f=>({...f,status:v}))} options={['Active','Inactive'].map(x=>({label:x,value:x}))}/>
+        <div className="flex justify-end gap-2 pt-2">
+          <button onClick={onClose} className="px-4 py-2 rounded-2xl bg-gray-100 hover:bg-gray-200">Cancel</button>
+          <button onClick={submit} className="px-4 py-2 rounded-2xl bg-[#F7BA23] text-[#053867] hover:bg-[#F3CE49]">Update</button>
+        </div>
+      </div>
     </div>
   );
 }

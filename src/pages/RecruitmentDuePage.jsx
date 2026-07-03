@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api, fmtBDTEn, fmtDate } from '../lib/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
-import { Plus, DollarSign, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronUp, CreditCard, Trash2 } from 'lucide-react';
+import { Plus, DollarSign, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronUp, CreditCard, Trash2, Edit2 } from 'lucide-react';
 
 const PAYMENT_METHODS = ['Cash', 'Bank Transfer', 'bKash', 'Nagad', 'Rocket', 'Card', 'Other'];
 
@@ -15,6 +15,7 @@ export default function RecruitmentDuePage() {
   const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [expandedId, setExpandedId] = useState(null);
+  const [showEditDue, setShowEditDue] = useState(null);
   
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
@@ -111,6 +112,17 @@ export default function RecruitmentDuePage() {
     if (!confirm('Are you sure you want to delete this due?')) return;
     try {
       await api.deleteRecruitmentDue(id);
+      loadDues();
+      loadSummary();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  };
+
+  const handleEditSubmit = async (payload) => {
+    try {
+      await api.updateRecruitmentDue(showEditDue._id, payload);
+      setShowEditDue(null);
       loadDues();
       loadSummary();
     } catch (err) {
@@ -371,6 +383,12 @@ export default function RecruitmentDuePage() {
 
                   {/* Actions */}
                   <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowEditDue(due)}
+                      className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 text-sm font-medium flex items-center gap-1"
+                    >
+                      <Edit2 className="w-4 h-4" /> Edit
+                    </button>
                     {due.status !== 'Paid' && (
                       <button
                         onClick={() => setPayModal({ 
@@ -463,6 +481,102 @@ export default function RecruitmentDuePage() {
           </div>
         </div>
       )}
+
+      {showEditDue && (
+        <EditDueModal
+          due={showEditDue}
+          candidates={candidates}
+          onClose={() => setShowEditDue(null)}
+          onSubmit={handleEditSubmit}
+        />
+      )}
+    </div>
+  );
+}
+
+function EditDueModal({ due, candidates, onClose, onSubmit }) {
+  const [form, setForm] = useState({
+    candidate: due.candidate?._id || '',
+    totalAmount: String(due.totalAmount || ''),
+    description: due.description || '',
+    dueDate: due.dueDate ? new Date(due.dueDate).toISOString().slice(0, 10) : ''
+  });
+
+  const submit = (e) => {
+    e.preventDefault();
+    onSubmit({
+      candidate: form.candidate,
+      totalAmount: Number(form.totalAmount),
+      description: form.description,
+      dueDate: form.dueDate || null
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl p-6 max-w-2xl w-full shadow-2xl">
+        <h3 className="text-lg font-bold text-gray-800 mb-4">Edit Due Entry</h3>
+        <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Candidate</label>
+            <select
+              value={form.candidate}
+              onChange={e => setForm({ ...form, candidate: e.target.value })}
+              required
+              className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+            >
+              <option value="">Select Candidate</option>
+              {candidates.map(c => (
+                <option key={c._id} value={c._id}>{c.name} - {c.phone}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Total Amount (BDT)</label>
+            <input
+              type="number"
+              value={form.totalAmount}
+              onChange={e => setForm({ ...form, totalAmount: e.target.value })}
+              required
+              min="0"
+              className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Due Date (Optional)</label>
+            <input
+              type="date"
+              value={form.dueDate}
+              onChange={e => setForm({ ...form, dueDate: e.target.value })}
+              className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <input
+              type="text"
+              value={form.description}
+              onChange={e => setForm({ ...form, description: e.target.value })}
+              className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+            />
+          </div>
+          <div className="md:col-span-2 flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+            >
+              Update Due
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
