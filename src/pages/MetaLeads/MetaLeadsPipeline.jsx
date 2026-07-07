@@ -1,6 +1,6 @@
 // Counsellor (Admission) view — score fields are NEVER rendered here.
 // The API also strips them server-side as a second line of defence.
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Phone, Mail, Calendar, RefreshCw, ChevronLeft, ChevronRight, Info, Search, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import api from '../../lib/api.js';
@@ -33,6 +33,8 @@ export default function MetaLeadsPipeline() {
   const [searchQ, setSearchQ] = useState('');
   const [filterCourse, setFilterCourse] = useState('');
   const [courseOptions, setCourseOptions] = useState([]);
+  const [nextFollowUpFilter, setNextFollowUpFilter] = useState('all'); // all | today | yesterday | tomorrow | custom
+  const [customFollowUpDate, setCustomFollowUpDate] = useState('');
 
   const loadCourseOptions = async () => {
     try {
@@ -76,6 +78,37 @@ export default function MetaLeadsPipeline() {
     await api.updateMetaLeadStatus(statusTarget._id, payload);
     flash('Status updated');
     load(page);
+  };
+
+  const toDateKey = (d) => {
+    if (!d) return '';
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka' }).format(new Date(d));
+  };
+
+  const getRelativeDateKey = (offsetDays = 0) => {
+    const d = new Date();
+    d.setDate(d.getDate() + offsetDays);
+    return toDateKey(d);
+  };
+
+  const selectedDateKey = useMemo(() => {
+    if (nextFollowUpFilter === 'today') return getRelativeDateKey(0);
+    if (nextFollowUpFilter === 'yesterday') return getRelativeDateKey(-1);
+    if (nextFollowUpFilter === 'tomorrow') return getRelativeDateKey(1);
+    if (nextFollowUpFilter === 'custom') return customFollowUpDate;
+    return '';
+  }, [nextFollowUpFilter, customFollowUpDate]);
+
+  const visibleLeads = useMemo(() => {
+    if (nextFollowUpFilter === 'all') return leads;
+    return leads.filter(l => l.nextFollowUpDate && toDateKey(l.nextFollowUpDate) === selectedDateKey);
+  }, [leads, nextFollowUpFilter, selectedDateKey]);
+
+  const getLatestFollowUpNote = (lead) => {
+    const latestFollowUp = (lead.followUps && lead.followUps.length > 0)
+      ? lead.followUps[lead.followUps.length - 1]
+      : null;
+    return (latestFollowUp?.note || lead.notes || '').trim();
   };
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-GB') : null;
@@ -151,6 +184,26 @@ export default function MetaLeadsPipeline() {
           <option value="">All Courses</option>
           {courseOptions.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
+
+        <div className="flex gap-1 bg-blue-50 p-1 rounded-xl border border-blue-100">
+          {[['all', 'All Dates'], ['today', 'Today'], ['yesterday', 'Yesterday'], ['tomorrow', 'Tomorrow']].map(([value, label]) => (
+            <button key={value} onClick={() => setNextFollowUpFilter(value)}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition
+                ${nextFollowUpFilter === value ? 'bg-blue-600 text-white' : 'text-blue-700 hover:bg-blue-100'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <input
+          type="date"
+          value={customFollowUpDate}
+          onChange={e => {
+            setCustomFollowUpDate(e.target.value);
+            setNextFollowUpFilter(e.target.value ? 'custom' : 'all');
+          }}
+          className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white min-w-[180px] focus:outline-none focus:ring-2 focus:ring-blue-200"
+        />
       </div>
 
       {/* Table */}
@@ -170,9 +223,9 @@ export default function MetaLeadsPipeline() {
           <tbody className="divide-y divide-gray-50">
             {loading ? (
               <tr><td colSpan={7} className="text-center py-12 text-gray-400">Loading…</td></tr>
-            ) : leads.length === 0 ? (
+            ) : visibleLeads.length === 0 ? (
               <tr><td colSpan={7} className="text-center py-12 text-gray-400">No leads in this stage</td></tr>
-            ) : leads.map(lead => (
+            ) : visibleLeads.map(lead => (
               <tr key={lead._id} className="hover:bg-gray-50/50 transition">
                 <td className="px-4 py-3">
                   <p className="font-medium text-gray-800">{lead.name}</p>
@@ -202,9 +255,16 @@ export default function MetaLeadsPipeline() {
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_PILL[lead.status] || 'bg-gray-100 text-gray-500'}`}>
-                    {lead.status}
-                  </span>
+                  <div className="max-w-[180px]">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_PILL[lead.status] || 'bg-gray-100 text-gray-500'}`}>
+                      {lead.status}
+                    </span>
+                    {lead.status === 'In Follow Up' && getLatestFollowUpNote(lead) && (
+                      <p className="mt-1 text-[10px] text-gray-500 truncate" title={getLatestFollowUpNote(lead)}>
+                        {getLatestFollowUpNote(lead)}
+                      </p>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-center">
                   <button onClick={() => setInfoLead(lead)}
