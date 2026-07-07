@@ -1,7 +1,7 @@
 // Phase 5 — Admin/DM + Counsellor view of follow-up leads
 // Features: overdue/stuck banners, bulk reschedule, quick reschedule popover,
 // stuck/stale badges, follow-up history, mark-as-called, calendar view
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Clock, RefreshCw, ChevronLeft, ChevronRight, Calendar, AlertTriangle, History, PhoneCall, List, CalendarDays, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import api from '../../lib/api.js';
@@ -30,6 +30,8 @@ export default function MetaLeadsFollowUp() {
   const [statusTarget, setStatusTarget] = useState(null);
   const [msg, setMsg]                   = useState(null);
   const [viewMode, setViewMode]         = useState('list'); // 'list' | 'calendar'
+  const [todayOnly, setTodayOnly]       = useState(false);
+  const [sortMode, setSortMode]         = useState('dateAsc'); // dateAsc | dateDesc | overdueFirst
 
   // Reschedule popover
   const [rescheduleId, setRescheduleId]     = useState(null);
@@ -86,6 +88,38 @@ export default function MetaLeadsFollowUp() {
   const isStuck = (lead) => (lead.followUps?.length || 0) >= 5;
   const isOverdue = (lead) => lead.nextFollowUpDate && new Date(lead.nextFollowUpDate) < new Date();
 
+  const toDateKey = (d) => {
+    if (!d) return '';
+    const dt = new Date(d);
+    return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+  };
+
+  const visibleLeads = useMemo(() => {
+    const todayKey = toDateKey(new Date());
+    const filtered = todayOnly
+      ? leads.filter(l => l.nextFollowUpDate && toDateKey(l.nextFollowUpDate) === todayKey)
+      : leads;
+
+    return [...filtered].sort((a, b) => {
+      const ad = a.nextFollowUpDate ? new Date(a.nextFollowUpDate).getTime() : Number.POSITIVE_INFINITY;
+      const bd = b.nextFollowUpDate ? new Date(b.nextFollowUpDate).getTime() : Number.POSITIVE_INFINITY;
+
+      if (sortMode === 'dateDesc') {
+        const av = a.nextFollowUpDate ? ad : Number.NEGATIVE_INFINITY;
+        const bv = b.nextFollowUpDate ? bd : Number.NEGATIVE_INFINITY;
+        return bv - av;
+      }
+
+      if (sortMode === 'overdueFirst') {
+        const ao = isOverdue(a) ? 1 : 0;
+        const bo = isOverdue(b) ? 1 : 0;
+        if (ao !== bo) return bo - ao;
+      }
+
+      return ad - bd;
+    });
+  }, [leads, todayOnly, sortMode]);
+
   // Quick reschedule (single)
   const handleReschedule = async (lead) => {
     if (!rescheduleDate) return;
@@ -123,7 +157,15 @@ export default function MetaLeadsFollowUp() {
 
   // #3 — Bulk select + reschedule
   const toggleSelect = (id) => setSelectedLeads(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  const toggleSelectAll = () => setSelectedLeads(selectedLeads.length === leads.length ? [] : leads.map(l => l._id));
+  const toggleSelectAll = () => {
+    const visibleIds = visibleLeads.map(l => l._id);
+    const allSelected = visibleIds.length > 0 && visibleIds.every(id => selectedLeads.includes(id));
+    if (allSelected) {
+      setSelectedLeads(prev => prev.filter(id => !visibleIds.includes(id)));
+      return;
+    }
+    setSelectedLeads(prev => Array.from(new Set([...prev, ...visibleIds])));
+  };
 
   const handleBulkReschedule = async () => {
     if (!selectedLeads.length || (!bulkDate && !bulkPushDays)) return;
@@ -149,7 +191,7 @@ export default function MetaLeadsFollowUp() {
   };
 
   // #8 — Calendar view grouping (by nextFollowUpDate, leads without a date go to "Unscheduled")
-  const calendarGroups = leads.reduce((acc, lead) => {
+  const calendarGroups = visibleLeads.reduce((acc, lead) => {
     const key = lead.nextFollowUpDate ? new Date(lead.nextFollowUpDate).toISOString().slice(0, 10) : 'unscheduled';
     if (!acc[key]) acc[key] = [];
     acc[key].push(lead);
@@ -213,6 +255,17 @@ export default function MetaLeadsFollowUp() {
             Clear filter
           </button>
         )}
+        <button onClick={() => setTodayOnly(v => !v)}
+          className={`px-4 py-2 rounded-xl border text-sm font-medium transition
+            ${todayOnly ? 'bg-blue-600 text-white border-blue-600' : 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'}`}>
+          Today Only
+        </button>
+        <select value={sortMode} onChange={e => setSortMode(e.target.value)}
+          className="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:outline-none">
+          <option value="dateAsc">Date: Earliest First</option>
+          <option value="dateDesc">Date: Latest First</option>
+          <option value="overdueFirst">Date: Overdue First</option>
+        </select>
       </div>
 
       {/* #3 — Bulk reschedule bar */}
@@ -234,7 +287,7 @@ export default function MetaLeadsFollowUp() {
             <thead className="bg-gray-50 text-[11px] text-gray-500 uppercase tracking-wide">
               <tr>
                 <th className="px-3 py-3">
-                  <input type="checkbox" checked={leads.length > 0 && selectedLeads.length === leads.length}
+                  <input type="checkbox" checked={visibleLeads.length > 0 && visibleLeads.every(l => selectedLeads.includes(l._id))}
                     onChange={toggleSelectAll} className="w-3.5 h-3.5 cursor-pointer" />
                 </th>
                 <th className="px-3 py-3 text-left">Lead ID</th>
@@ -243,18 +296,21 @@ export default function MetaLeadsFollowUp() {
                 <th className="px-3 py-3 text-left">Course</th>
                 {isAdmin && <th className="px-3 py-3 text-left">Counsellor</th>}
                 <th className="px-3 py-3 text-left">Next Follow-up</th>
+                <th className="px-3 py-3 text-left">Follow-up Details</th>
                 <th className="px-3 py-3 text-left">Flags</th>
                 <th className="px-3 py-3 text-left">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {loading ? (
-                <tr><td colSpan={isAdmin ? 9 : 8} className="text-center py-12 text-gray-400">Loading…</td></tr>
-              ) : leads.length === 0 ? (
-                <tr><td colSpan={isAdmin ? 9 : 8} className="text-center py-12 text-gray-400">No follow-up leads</td></tr>
-              ) : leads.map(lead => {
+                <tr><td colSpan={isAdmin ? 10 : 9} className="text-center py-12 text-gray-400">Loading…</td></tr>
+              ) : visibleLeads.length === 0 ? (
+                <tr><td colSpan={isAdmin ? 10 : 9} className="text-center py-12 text-gray-400">No follow-up leads</td></tr>
+              ) : visibleLeads.map(lead => {
                 const overdue = isOverdue(lead);
                 const stuck   = isStuck(lead);
+                const touchCount = lead.followUps?.length || 0;
+                const lastTouch = touchCount ? lead.followUps[touchCount - 1] : null;
                 return (
                   <tr key={lead._id} className={`hover:bg-gray-50/50 transition ${selectedLeads.includes(lead._id) ? 'bg-blue-50/40' : ''}`}>
                     <td className="px-3 py-2.5">
@@ -308,6 +364,14 @@ export default function MetaLeadsFollowUp() {
                           </div>
                         </>
                       )}
+                    </td>
+
+                    <td className="px-3 py-2.5">
+                      <div className="text-[11px] text-gray-600 space-y-0.5">
+                        <p className="font-medium text-gray-700">Touches: {touchCount}</p>
+                        <p className="text-gray-400">Last: {lastTouch?.at ? fmtDateTime(lastTouch.at) : '—'}</p>
+                        {lastTouch?.note && <p className="text-gray-500 truncate max-w-[180px]">{lastTouch.note}</p>}
+                      </div>
                     </td>
 
                     {/* #1/#7 Flags */}

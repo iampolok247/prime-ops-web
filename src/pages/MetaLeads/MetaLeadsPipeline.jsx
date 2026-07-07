@@ -1,7 +1,7 @@
 // Counsellor (Admission) view — score fields are NEVER rendered here.
 // The API also strips them server-side as a second line of defence.
 import { useEffect, useState } from 'react';
-import { Phone, Mail, Calendar, RefreshCw, ChevronLeft, ChevronRight, Info } from 'lucide-react';
+import { Phone, Mail, Calendar, RefreshCw, ChevronLeft, ChevronRight, Info, Search, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import api from '../../lib/api.js';
 import StatusModal from './components/StatusModal.jsx';
@@ -30,12 +30,26 @@ export default function MetaLeadsPipeline() {
   const [statusTarget, setStatusTarget] = useState(null);
   const [infoLead, setInfoLead] = useState(null);
   const [msg, setMsg]         = useState(null);
+  const [searchQ, setSearchQ] = useState('');
+  const [filterCourse, setFilterCourse] = useState('');
+  const [courseOptions, setCourseOptions] = useState([]);
+
+  const loadCourseOptions = async () => {
+    try {
+      const res = await api.getMetaLeadCourses();
+      setCourseOptions(res.courses || []);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const load = async (currentPage = 1) => {
     setLoading(true);
     try {
       const params = { page: currentPage, limit: 50 };
       if (tab !== 'All') params.status = tab;
+      if (searchQ) params.q = searchQ;
+      if (filterCourse) params.course = filterCourse;
 
       const [leadsRes, statsRes] = await Promise.all([
         api.listMetaLeads(params),
@@ -52,8 +66,9 @@ export default function MetaLeadsPipeline() {
     }
   };
 
-  useEffect(() => { setPage(1); load(1); }, [tab]);
+  useEffect(() => { setPage(1); load(1); }, [tab, searchQ, filterCourse]);
   useEffect(() => { load(page); }, [page]);
+  useEffect(() => { loadCourseOptions(); }, []);
 
   const flash = (text) => { setMsg(text); setTimeout(() => setMsg(null), 3000); };
 
@@ -72,7 +87,7 @@ export default function MetaLeadsPipeline() {
         <h1 className="text-xl font-bold text-[#253985]">My Lead Pipeline</h1>
         <div className="flex items-center gap-2">
           {msg && <span className="text-xs bg-green-100 text-green-700 px-3 py-1.5 rounded-full">{msg}</span>}
-          <button onClick={() => load(page)}
+          <button onClick={() => { load(page); loadCourseOptions(); }}
             className="flex items-center gap-1.5 text-sm px-3 py-1.5 border border-gray-200 rounded-xl hover:bg-gray-50">
             <RefreshCw size={14} /> Refresh
           </button>
@@ -109,6 +124,33 @@ export default function MetaLeadsPipeline() {
             )}
           </button>
         ))}
+      </div>
+
+      {/* Search + Course filter */}
+      <div className="flex flex-wrap gap-2">
+        <div className="flex items-center gap-2 border border-gray-200 rounded-xl px-3 py-2 bg-white flex-1 min-w-[240px]">
+          <Search size={14} className="text-gray-400 shrink-0" />
+          <input
+            value={searchQ}
+            onChange={e => setSearchQ(e.target.value)}
+            className="text-sm w-full outline-none"
+            placeholder="Search by number, name, email, lead ID..."
+          />
+          {searchQ && (
+            <button onClick={() => setSearchQ('')} className="text-gray-300 hover:text-gray-500" aria-label="Clear search">
+              <X size={13} />
+            </button>
+          )}
+        </div>
+
+        <select
+          value={filterCourse}
+          onChange={e => setFilterCourse(e.target.value)}
+          className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white min-w-[220px] focus:outline-none focus:ring-2 focus:ring-blue-200"
+        >
+          <option value="">All Courses</option>
+          {courseOptions.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
       </div>
 
       {/* Table */}
