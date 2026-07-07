@@ -305,6 +305,13 @@ export default function MetaLeadsManager() {
     ? new Date(d).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true, timeZone: 'Asia/Dhaka' })
     : '';
 
+  const getLatestFollowUpNote = (lead) => {
+    const latestFollowUp = (lead.followUps && lead.followUps.length > 0)
+      ? lead.followUps[lead.followUps.length - 1]
+      : null;
+    return (latestFollowUp?.note || lead.notes || '').trim();
+  };
+
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="space-y-4">
@@ -724,9 +731,16 @@ export default function MetaLeadsManager() {
 
                 {/* Status */}
                 <td className="px-3 py-2.5">
-                  <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${STATUS_PILL[lead.status] || ''}`}>
-                    {lead.status}
-                  </span>
+                  <div className="max-w-[170px]">
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${STATUS_PILL[lead.status] || ''}`}>
+                      {lead.status}
+                    </span>
+                    {lead.status === 'In Follow Up' && getLatestFollowUpNote(lead) && (
+                      <p className="mt-1 text-[10px] text-gray-500 truncate" title={getLatestFollowUpNote(lead)}>
+                        {getLatestFollowUpNote(lead)}
+                      </p>
+                    )}
+                  </div>
                 </td>
 
                 {/* Assigned To */}

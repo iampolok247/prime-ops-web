@@ -30,7 +30,8 @@ export default function MetaLeadsFollowUp() {
   const [statusTarget, setStatusTarget] = useState(null);
   const [msg, setMsg]                   = useState(null);
   const [viewMode, setViewMode]         = useState('list'); // 'list' | 'calendar'
-  const [todayOnly, setTodayOnly]       = useState(false);
+  const [nextFollowUpFilter, setNextFollowUpFilter] = useState('all'); // all | today | yesterday | tomorrow | custom
+  const [customFollowUpDate, setCustomFollowUpDate] = useState('');
   const [sortMode, setSortMode]         = useState('dateAsc'); // dateAsc | dateDesc | overdueFirst
 
   // Reschedule popover
@@ -90,15 +91,27 @@ export default function MetaLeadsFollowUp() {
 
   const toDateKey = (d) => {
     if (!d) return '';
-    const dt = new Date(d);
-    return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka' }).format(new Date(d));
   };
 
+  const getRelativeDateKey = (offsetDays = 0) => {
+    const d = new Date();
+    d.setDate(d.getDate() + offsetDays);
+    return toDateKey(d);
+  };
+
+  const selectedDateKey = useMemo(() => {
+    if (nextFollowUpFilter === 'today') return getRelativeDateKey(0);
+    if (nextFollowUpFilter === 'yesterday') return getRelativeDateKey(-1);
+    if (nextFollowUpFilter === 'tomorrow') return getRelativeDateKey(1);
+    if (nextFollowUpFilter === 'custom') return customFollowUpDate;
+    return '';
+  }, [nextFollowUpFilter, customFollowUpDate]);
+
   const visibleLeads = useMemo(() => {
-    const todayKey = toDateKey(new Date());
-    const filtered = todayOnly
-      ? leads.filter(l => l.nextFollowUpDate && toDateKey(l.nextFollowUpDate) === todayKey)
-      : leads;
+    const filtered = nextFollowUpFilter === 'all'
+      ? leads
+      : leads.filter(l => l.nextFollowUpDate && toDateKey(l.nextFollowUpDate) === selectedDateKey);
 
     return [...filtered].sort((a, b) => {
       const ad = a.nextFollowUpDate ? new Date(a.nextFollowUpDate).getTime() : Number.POSITIVE_INFINITY;
@@ -118,7 +131,7 @@ export default function MetaLeadsFollowUp() {
 
       return ad - bd;
     });
-  }, [leads, todayOnly, sortMode]);
+  }, [leads, nextFollowUpFilter, selectedDateKey, sortMode]);
 
   // Quick reschedule (single)
   const handleReschedule = async (lead) => {
@@ -255,11 +268,22 @@ export default function MetaLeadsFollowUp() {
             Clear filter
           </button>
         )}
-        <button onClick={() => setTodayOnly(v => !v)}
-          className={`px-4 py-2 rounded-xl border text-sm font-medium transition
-            ${todayOnly ? 'bg-blue-600 text-white border-blue-600' : 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'}`}>
-          Today Only
-        </button>
+        <div className="flex gap-1 bg-blue-50 p-1 rounded-xl border border-blue-100">
+          {[['all', 'All'], ['today', 'Today'], ['yesterday', 'Yesterday'], ['tomorrow', 'Tomorrow']].map(([value, label]) => (
+            <button key={value} onClick={() => setNextFollowUpFilter(value)}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition
+                ${nextFollowUpFilter === value ? 'bg-blue-600 text-white' : 'text-blue-700 hover:bg-blue-100'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <input type="date" value={customFollowUpDate}
+          onChange={e => {
+            setCustomFollowUpDate(e.target.value);
+            setNextFollowUpFilter(e.target.value ? 'custom' : 'all');
+          }}
+          className="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:outline-none" />
         <select value={sortMode} onChange={e => setSortMode(e.target.value)}
           className="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:outline-none">
           <option value="dateAsc">Date: Earliest First</option>
