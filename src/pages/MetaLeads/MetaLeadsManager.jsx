@@ -47,6 +47,7 @@ export default function MetaLeadsManager() {
   const [leads, setLeads]           = useState([]);
   const [stats, setStats]           = useState({});
   const [admissions, setAdmissions] = useState([]);
+  const [courseOptions, setCourseOptions] = useState([]);
   const [loading, setLoading]       = useState(false);
   const [page, setPage]             = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -57,6 +58,7 @@ export default function MetaLeadsManager() {
   const [filterTemp, setFilterTemp]     = useState('');        // Hot / Warm / Cold
   const [filterMinScore, setMinScore]   = useState('');        // numeric min
   const [filterStatus, setFilterStatus] = useState('');        // pipeline status
+  const [filterCourse, setFilterCourse] = useState('');        // interested course
   const [filterFrom, setFilterFrom]     = useState('');        // date from
   const [filterTo, setFilterTo]         = useState('');        // date to
   const [filterPlatform, setFilterPlatform] = useState('');   // Facebook / Instagram
@@ -88,7 +90,7 @@ export default function MetaLeadsManager() {
   const canScore = ['DigitalMarketing', 'Admin', 'SuperAdmin', 'ITAdmin'].includes(user?.role);
 
   // ── Active filter count badge ────────────────────────────────────────────
-  const activeFilterCount = [filterTemp, filterMinScore, filterStatus, filterFrom, filterTo, filterPlatform, filterAssignedTo]
+  const activeFilterCount = [filterTemp, filterMinScore, filterStatus, filterCourse, filterFrom, filterTo, filterPlatform, filterAssignedTo]
     .filter(Boolean).length;
 
   // ── Load data ────────────────────────────────────────────────────────────
@@ -100,6 +102,7 @@ export default function MetaLeadsManager() {
       if (filterTemp)    params.temperature  = filterTemp;
       if (filterMinScore) params.minScore    = filterMinScore;
       if (filterStatus)  params.status       = filterStatus;
+      if (filterCourse)  params.course       = filterCourse;
       if (filterFrom)    params.from         = filterFrom;
       if (filterTo)      params.to           = filterTo;
       if (filterPlatform) params.platform    = filterPlatform;
@@ -120,10 +123,20 @@ export default function MetaLeadsManager() {
     } finally {
       setLoading(false);
     }
-  }, [tab, searchQ, filterTemp, filterMinScore, filterStatus, filterFrom, filterTo, filterPlatform, filterAssignedTo]);
+  }, [tab, searchQ, filterTemp, filterMinScore, filterStatus, filterCourse, filterFrom, filterTo, filterPlatform, filterAssignedTo]);
 
-  useEffect(() => { setPage(1); load(1); setSelectedLeads([]); }, [tab, filterTemp, filterMinScore, filterStatus, filterFrom, filterTo, filterPlatform, filterAssignedTo]);
+  const loadCourseOptions = useCallback(async () => {
+    try {
+      const res = await api.getMetaLeadCourses();
+      setCourseOptions(res.courses || []);
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  useEffect(() => { setPage(1); load(1); setSelectedLeads([]); }, [tab, filterTemp, filterMinScore, filterStatus, filterCourse, filterFrom, filterTo, filterPlatform, filterAssignedTo]);
   useEffect(() => { load(page); }, [page]);
+  useEffect(() => { loadCourseOptions(); }, [loadCourseOptions]);
 
   // SSE — instant reload when webhook delivers a new lead
   // EventSource auto-reconnects on server restart; onopen reloads stale data after reconnect
@@ -149,6 +162,7 @@ export default function MetaLeadsManager() {
 
   const clearFilters = () => {
     setFilterTemp(''); setMinScore(''); setFilterStatus('');
+    setFilterCourse('');
     setFilterFrom(''); setFilterTo(''); setFilterPlatform(''); setFilterAssignedTo('');
   };
 
@@ -303,7 +317,7 @@ export default function MetaLeadsManager() {
         </div>
         <div className="flex gap-2 flex-wrap items-center">
           {msg && <span className="text-xs bg-green-100 text-green-700 px-3 py-1.5 rounded-full">{msg}</span>}
-          <button onClick={() => load(page)}
+          <button onClick={() => { load(page); loadCourseOptions(); }}
             className="flex items-center gap-1.5 text-sm px-3 py-1.5 border border-gray-200 rounded-xl hover:bg-gray-50">
             <RefreshCw size={14} /> Refresh
           </button>
@@ -507,6 +521,16 @@ export default function MetaLeadsManager() {
               {['Pending','Assigned','Counseling','In Follow Up','Admitted','Not Interested','Archived'].map(s => (
                 <option key={s} value={s}>{s}</option>
               ))}
+            </select>
+          </div>
+
+          {/* Course filter */}
+          <div>
+            <label className="block text-[11px] text-gray-500 mb-1 font-medium uppercase tracking-wide">Course</label>
+            <select value={filterCourse} onChange={e => setFilterCourse(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
+              <option value="">All</option>
+              {courseOptions.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
 

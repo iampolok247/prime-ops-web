@@ -2135,6 +2135,10 @@ export const api = {
     const res = await authFetch(`${getApiBase()}/api/meta-leads/stats`, { credentials: 'include' });
     return handleJson(res, 'Load meta lead stats failed');
   },
+  async getMetaLeadCourses() {
+    const res = await authFetch(`${getApiBase()}/api/meta-leads/courses`, { credentials: 'include' });
+    return handleJson(res, 'Load meta lead courses failed');
+  },
   async createMetaLead(payload) {
     const res = await authFetch(`${getApiBase()}/api/meta-leads`, {
       method: 'POST', credentials: 'include',
