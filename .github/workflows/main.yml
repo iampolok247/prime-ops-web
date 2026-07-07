@@ -37,10 +37,22 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
 
           # Check port connectivity
-          nc -zv ${{ secrets.SERVER_HOST }} ${{ secrets.SSH_PORT }}
+          connected=false
+          for attempt in 1 2 3; do
+            if nc -zvw5 ${{ secrets.SERVER_HOST }} ${{ secrets.SSH_PORT }}; then
+              connected=true
+              break
+            fi
+            echo "SSH connectivity attempt $attempt failed"
+          done
+
+          if [ "$connected" != "true" ]; then
+            echo "Unable to connect to ${{ secrets.SERVER_HOST }}:${{ secrets.SSH_PORT }} after 3 attempts"
+            exit 1
+          fi
 
           # Add host to known_hosts
-          ssh-keyscan -p ${{ secrets.SSH_PORT }} -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -T 10 -p ${{ secrets.SSH_PORT }} -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy to VPS
         run: |
