@@ -54,6 +54,9 @@ export default function RecruitmentDashboard() {
         console.error('Failed to load today attendance:', error);
       }
     })();
+    // Real-time polling every 30 seconds
+    const interval = setInterval(loadAll, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   async function loadAll() {

@@ -7,11 +7,13 @@ export default function MyLite() {
   const [openTasks, setOpenTasks] = useState(0);
   const [todayAttendance, setTodayAttendance] = useState(null);
 
+  async function loadTasks() {
+    const tasks = await api.listMyTasks().catch(()=>[]);
+    setOpenTasks((tasks || []).filter(t => (t.status || '').toLowerCase() !== 'done').length);
+  }
+
   useEffect(()=> {
-    (async ()=>{
-      const tasks = await api.listMyTasks().catch(()=>[]);
-      setOpenTasks((tasks || []).filter(t => (t.status || '').toLowerCase() !== 'done').length);
-    })();
+    loadTasks();
     // Fetch today's attendance
     (async () => {
       try {
@@ -21,6 +23,9 @@ export default function MyLite() {
         console.error('Failed to load today attendance:', error);
       }
     })();
+    // Real-time polling every 30 seconds
+    const interval = setInterval(loadTasks, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   return (

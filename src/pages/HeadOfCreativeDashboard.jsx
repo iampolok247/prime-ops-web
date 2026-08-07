@@ -35,6 +35,9 @@ export default function HeadOfCreativeDashboard() {
         console.error('Failed to load today attendance:', error);
       }
     })();
+    // Real-time polling every 30 seconds (re-created on period change so it uses current filters)
+    const interval = setInterval(loadDashboardData, 30000);
+    return () => clearInterval(interval);
   }, [period]);
 
   async function loadDashboardData() {

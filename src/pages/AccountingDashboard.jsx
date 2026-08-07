@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { api, fmtBDTEn } from '../lib/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -100,7 +100,15 @@ export default function AccountingDashboard() {
     } catch (e) { setErr(e.message); }
   };
 
-  useEffect(() => { load(); }, []); // eslint-disable-line
+  const loadRef = useRef(load);
+  loadRef.current = load;
+
+  useEffect(() => {
+    load();
+    // Real-time polling every 30 seconds (always uses latest filters via loadRef)
+    const interval = setInterval(() => loadRef.current(), 30000);
+    return () => clearInterval(interval);
+  }, []); // eslint-disable-line
   
   // Reload when period or custom dates change
   useEffect(() => { 

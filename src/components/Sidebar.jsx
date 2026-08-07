@@ -81,6 +81,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/recruitment', label: 'Recruitment Reports', icon: <LayoutDashboard size={18}/> },
       { to: '/dm/dashboard', label: 'Digital Marketing Reports', icon: <BarChart2 size={18}/> },
       { to: '/mg/dashboard', label: 'Motion Graphics Report', icon: <Film size={18}/> },
+      { to: '/activity', label: 'Activity Log', icon: <Activity size={18}/> },
       // Section: Finance
       { type: 'heading', title: 'Finance' },
       { to: '/previous-income', label: 'Previous Income', icon: <DollarSign size={18}/> },

@@ -43,6 +43,9 @@ export default function DMDashboard() {
 
   useEffect(()=>{
     loadAll();
+    // Real-time polling every 30 seconds
+    const interval = setInterval(loadAll, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const parseRange = () => {

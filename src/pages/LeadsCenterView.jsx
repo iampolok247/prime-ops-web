@@ -49,7 +49,12 @@ export default function LeadsCenterView() {
     } catch (e) { setErr(e.message); }
   };
 
-  useEffect(()=>{ load(); }, [status]);
+  useEffect(()=>{
+    load();
+    // Real-time polling every 30 seconds (re-created on status change so it uses current filter)
+    const interval = setInterval(load, 30000);
+    return () => clearInterval(interval);
+  }, [status]);
 
   const filteredLeads = useMemo(() => {
     let result = [...leads];

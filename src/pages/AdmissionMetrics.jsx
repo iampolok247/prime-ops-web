@@ -24,7 +24,7 @@ export default function AdmissionMetrics() {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(false);
   const [admissionUsers, setAdmissionUsers] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(user?._id || 'me');
+  const [selectedUser, setSelectedUser] = useState('all');
   const [downloading, setDownloading] = useState(false);
 
   const isAdmin = user?.role === 'Admin' || user?.role === 'SuperAdmin';
@@ -41,6 +41,9 @@ export default function AdmissionMetrics() {
 
   useEffect(() => {
     fetchMetrics();
+    // Real-time polling every 30 seconds (re-created on filter change so it uses current filters)
+    const interval = setInterval(fetchMetrics, 30000);
+    return () => clearInterval(interval);
   }, [period, from, to, selectedUser]);
 
   function computeRange() {
@@ -342,7 +345,7 @@ export default function AdmissionMetrics() {
       </div>
 
       {/* Team Breakdown Table (when viewing all) */}
-      {selectedUser === 'all' && metrics?.metrics && Array.isArray(metrics.metrics) && metrics.metrics.length > 0 && (
+      {isAdmin && selectedUser === 'all' && metrics?.metrics && Array.isArray(metrics.metrics) && metrics.metrics.length > 0 && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">Team Breakdown</h2>
@@ -397,7 +400,7 @@ export default function AdmissionMetrics() {
       )}
 
       {/* Empty state */}
-      {!loading && metrics && (!Array.isArray(metrics.metrics) || metrics.metrics.length === 0) && selectedUser === 'all' && (
+      {isAdmin && !loading && metrics && (!Array.isArray(metrics.metrics) || metrics.metrics.length === 0) && selectedUser === 'all' && (
         <div className="bg-white rounded-lg p-8 text-center border border-gray-200">
           <p className="text-gray-600">No metrics data available for the selected period.</p>
         </div>

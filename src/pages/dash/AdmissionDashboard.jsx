@@ -1,5 +1,5 @@
 // web/src/pages/dash/AdmissionDashboard.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { api } from '../../lib/api.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { 
@@ -173,8 +173,14 @@ export default function AdmissionDashboard() {
   }, []);
 
   // Load all leads and batches once
+  const loadAllRef = useRef();
+  loadAllRef.current = loadAll;
+
   useEffect(()=> {
     loadAll();
+    // Real-time polling every 30 seconds (always uses latest filters via loadAllRef)
+    const interval = setInterval(() => loadAllRef.current(), 30000);
+    return () => clearInterval(interval);
   }, []);
 
   async function loadAll() {

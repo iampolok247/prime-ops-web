@@ -1,5 +1,5 @@
 // web/src/pages/dash/AdminOverview.jsx
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { api, fmtBDTEn } from '../../lib/api.js';
 import { 
   Wallet, 
@@ -133,7 +133,15 @@ export default function AdminOverview() {
     } catch(e) { setErr(e.message || 'Failed to load'); }
   };
 
-  useEffect(()=>{ load(); }, []);
+  const loadRef = useRef(load);
+  loadRef.current = load;
+
+  useEffect(()=>{
+    load();
+    // Real-time polling every 30 seconds (always uses latest filters via loadRef)
+    const interval = setInterval(() => loadRef.current(), 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const { from: rangeFrom, to: rangeTo } = parseRange();
 
