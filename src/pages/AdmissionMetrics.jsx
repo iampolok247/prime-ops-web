@@ -122,6 +122,7 @@ export default function AdmissionMetrics() {
     followUpCalls: 0,
     totalCalls: 0,
     admitted: 0,
+    interested: 0,
     notAdmitted: 0,
   };
 
@@ -131,17 +132,19 @@ export default function AdmissionMetrics() {
       display.newCalls = metrics.metrics.reduce((sum, m) => sum + (m.counselingCount || 0), 0);
       display.followUpCalls = metrics.metrics.reduce((sum, m) => sum + (m.followUpCount || 0), 0);
       display.admitted = metrics.metrics.reduce((sum, m) => sum + (m.admittedCount || 0), 0);
+      display.interested = metrics.metrics.reduce((sum, m) => sum + (m.interestedCount || 0), 0);
       display.notAdmitted = metrics.metrics.reduce((sum, m) => sum + (m.notAdmittedCount || 0), 0);
-      // Total calls = sum of all call activities (new + follow-up + admitted + not interested)
-      display.totalCalls = display.newCalls + display.followUpCalls + display.admitted + display.notAdmitted;
+      // Total calls = New Calls + Follow-up Calls only
+      display.totalCalls = display.newCalls + display.followUpCalls;
     } else {
       // Individual user view
       display.newCalls = metrics.counselingCount || 0;
       display.followUpCalls = metrics.followUpCount || 0;
       display.admitted = metrics.admittedCount || 0;
+      display.interested = metrics.interestedCount || 0;
       display.notAdmitted = metrics.notAdmittedCount || 0;
-      // Total calls = sum of all call activities
-      display.totalCalls = display.newCalls + display.followUpCalls + display.admitted + display.notAdmitted;
+      // Total calls = New Calls + Follow-up Calls only
+      display.totalCalls = display.newCalls + display.followUpCalls;
     }
   }
 
@@ -166,7 +169,8 @@ export default function AdmissionMetrics() {
       rows.push(['Follow-up Calls', display.followUpCalls]);
       rows.push(['Total Calls', display.totalCalls]);
       rows.push(['Admitted', display.admitted]);
-  rows.push(['Not Interested', display.notAdmitted]);
+      rows.push(['Interested', display.interested]);
+      rows.push(['Not Interested', display.notAdmitted]);
 
       const csvContent = rows.map((r) => r.map((c) => `"${String(c ?? '')}"`).join(',')).join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -334,7 +338,16 @@ export default function AdmissionMetrics() {
           textColor="text-green-600"
         />
 
-  {/* Not Interested (aggregates Not Admitted + Not Interested) */}
+        {/* Interested (called leads still active, based on priority tag) */}
+        <MetricCard
+          label="Interested"
+          value={display.interested}
+          icon={TrendingUp}
+          bgColor="bg-gradient-to-br from-yellow-50 to-yellow-100"
+          textColor="text-yellow-700"
+        />
+
+        {/* Not Interested */}
         <MetricCard
           label="Not Interested"
           value={display.notAdmitted}
@@ -359,6 +372,7 @@ export default function AdmissionMetrics() {
                   <th className="px-6 py-3 text-center font-semibold text-gray-700">Follow-up Calls</th>
                   <th className="px-6 py-3 text-center font-semibold text-gray-700">Total</th>
                   <th className="px-6 py-3 text-center font-semibold text-gray-700">Admitted</th>
+                  <th className="px-6 py-3 text-center font-semibold text-gray-700">Interested</th>
                   <th className="px-6 py-3 text-center font-semibold text-gray-700">Not Interested</th>
                 </tr>
               </thead>
@@ -384,6 +398,11 @@ export default function AdmissionMetrics() {
                     <td className="px-6 py-3 text-center">
                       <span className="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full font-semibold text-xs">
                         {m.admittedCount || 0}
+                      </span>
+                    </td>
+                    <td className="px-6 py-3 text-center">
+                      <span className="inline-block px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full font-semibold text-xs">
+                        {m.interestedCount || 0}
                       </span>
                     </td>
                     <td className="px-6 py-3 text-center">

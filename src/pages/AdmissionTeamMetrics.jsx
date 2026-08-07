@@ -95,6 +95,7 @@ export default function AdmissionTeamMetrics() {
         firstTimeCalls: statsResp.firstTimeCalls || 0,
         followUpCalls: statsResp.followUpCalls || 0,
         admitted: statsResp.admitted || 0,
+        interested: statsResp.interested || 0,
         notInterested: statsResp.notInterested || 0,
         perUserStats: statsResp.perUserStats || null
       });
@@ -126,15 +127,16 @@ export default function AdmissionTeamMetrics() {
       rows.push(['First Time Calls', metrics.firstTimeCalls]);
       rows.push(['Follow-up Calls', metrics.followUpCalls]);
       rows.push(['Admitted', metrics.admitted]);
+      rows.push(['Interested', metrics.interested]);
       rows.push(['Not Interested', metrics.notInterested]);
 
       // Add per-user breakdown if available
       if (metrics.perUserStats && metrics.perUserStats.length > 0) {
         rows.push([]);
         rows.push(['--- Per Team Member Breakdown ---']);
-        rows.push(['Name', 'Total Assigned', 'Remaining New', 'First Time Calls', 'Follow-up Calls', 'Admitted', 'Not Interested']);
+        rows.push(['Name', 'Total Assigned', 'Remaining New', 'First Time Calls', 'Follow-up Calls', 'Admitted', 'Interested', 'Not Interested']);
         metrics.perUserStats.forEach(u => {
-          rows.push([u.userName, u.totalAssignedLeads, u.remainingNewLeads, u.firstTimeCalls, u.followUpCalls, u.admitted, u.notInterested]);
+          rows.push([u.userName, u.totalAssignedLeads, u.remainingNewLeads, u.firstTimeCalls, u.followUpCalls, u.admitted, u.interested, u.notInterested]);
         });
       }
 
@@ -176,8 +178,9 @@ export default function AdmissionTeamMetrics() {
     firstTimeCalls: metrics.firstTimeCalls || 0,
     followUpCalls: metrics.followUpCalls || 0,
     admitted: metrics.admitted || 0,
+    interested: metrics.interested || 0,
     notInterested: metrics.notInterested || 0
-  } : { totalAssignedLeads: 0, remainingNewLeads: 0, firstTimeCalls: 0, followUpCalls: 0, admitted: 0, notInterested: 0 };
+  } : { totalAssignedLeads: 0, remainingNewLeads: 0, firstTimeCalls: 0, followUpCalls: 0, admitted: 0, interested: 0, notInterested: 0 };
 
   return (
     <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
@@ -269,8 +272,8 @@ export default function AdmissionTeamMetrics() {
         </div>
       </div>
 
-      {/* Metrics Grid - 6 Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      {/* Metrics Grid - 7 Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Assign Leads */}
         <MetricCard
           label="Total Assign Leads"
@@ -314,6 +317,15 @@ export default function AdmissionTeamMetrics() {
           icon={UserCheck}
           bgColor="bg-gradient-to-br from-green-50 to-green-100"
           textColor="text-green-600"
+        />
+
+        {/* Interested (called leads still active, based on priority tag) */}
+        <MetricCard
+          label="Interested"
+          value={display.interested}
+          icon={Users}
+          bgColor="bg-gradient-to-br from-yellow-50 to-yellow-100"
+          textColor="text-yellow-700"
         />
 
         {/* Not Interested */}
