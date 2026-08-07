@@ -29,6 +29,8 @@ export default function LeadHistoryModal({ lead, onClose, onUpdate }) {
 
   const isAdmission = user?.role === 'Admission';
   const canAddFollowUp = isAdmission && lead.status !== 'Admitted' && lead.status !== 'Not Admitted';
+  const canAddAdminComment = user?.role === 'Admin' || user?.role === 'SuperAdmin';
+  const [adminCommentText, setAdminCommentText] = useState('');
 
   const handleAddFollowUp = async () => {
     if (!followUpNote.trim() && !nextFollowUpDate) {
@@ -53,6 +55,28 @@ export default function LeadHistoryModal({ lead, onClose, onUpdate }) {
       }, 1500);
     } catch (e) {
       setErr(e.message || 'Failed to add follow-up');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddAdminComment = async () => {
+    if (!adminCommentText.trim()) {
+      setErr('Please enter a comment');
+      return;
+    }
+    try {
+      setSaving(true);
+      setErr(null);
+      await api.addLeadAdminComment(lead._id, adminCommentText.trim());
+      setMsg('Admin comment added');
+      setAdminCommentText('');
+      setTimeout(() => {
+        setMsg(null);
+        if (onUpdate) onUpdate();
+      }, 1500);
+    } catch (e) {
+      setErr(e.message || 'Failed to add admin comment');
     } finally {
       setSaving(false);
     }
@@ -201,6 +225,45 @@ export default function LeadHistoryModal({ lead, onClose, onUpdate }) {
             )}
           </div>
         </div>
+
+        {/* Admin Comments Section (visible to everyone who can view this lead's history) */}
+        <div className="mb-4">
+          <h4 className="font-bold text-navy mb-2">Admin Comments ({(lead.adminComments||[]).length})</h4>
+          <div className="space-y-2 max-h-60 overflow-y-auto">
+            {(lead.adminComments||[]).length === 0 ? (
+              <div className="text-gray-500 text-sm bg-gray-50 p-3 rounded-lg">No admin comments yet</div>
+            ) : (
+              (lead.adminComments||[]).map((c, idx)=> (
+                <div key={idx} className="bg-purple-50 rounded-lg p-3 border-l-4 border-purple-400">
+                  <div className="text-sm font-medium text-gray-700">{fmtDT(c.at)}</div>
+                  {c.by?.name && <div className="text-xs text-gray-500">by {c.by.name}</div>}
+                  <div className="text-sm text-gray-800 mt-1">{c.text}</div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Add Admin Comment Form (Only for Admin/SuperAdmin) */}
+        {canAddAdminComment && (
+          <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-4 mb-4">
+            <h4 className="font-bold text-navy mb-3">Add Admin Comment</h4>
+            <textarea
+              value={adminCommentText}
+              onChange={(e) => setAdminCommentText(e.target.value)}
+              className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 mb-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              rows={3}
+              placeholder="Enter a comment for the admission team..."
+            />
+            <button
+              onClick={handleAddAdminComment}
+              disabled={saving}
+              className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 font-medium"
+            >
+              {saving ? 'Saving...' : 'Add Admin Comment'}
+            </button>
+          </div>
+        )}
 
         {/* Add Follow-up Form (Only for Admission) */}
         {canAddFollowUp && (

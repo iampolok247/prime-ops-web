@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { api } from '../lib/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import LeadHistoryModal from '../components/LeadHistoryModal.jsx';
 
 export default function LeadsCenterView() {
   const { user } = useAuth();
@@ -104,11 +105,6 @@ export default function LeadsCenterView() {
     const courseSet = new Set(leads.map(l => l.interestedCourse).filter(Boolean));
     return Array.from(courseSet).sort();
   }, [leads]);
-
-  const formatDateTime = (date) => {
-    if (!date) return null;
-    return new Date(date).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
-  };
 
   return (
     <div>
@@ -236,46 +232,18 @@ export default function LeadsCenterView() {
       )}
 
       {showHistory && histLead && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="absolute inset-0 bg-black opacity-30" onClick={()=>setShowHistory(false)} />
-          <div className="bg-white rounded-xl p-6 z-10 w-full max-w-2xl shadow-lg max-h-[90vh] overflow-auto">
-            <h3 className="text-lg font-semibold mb-4">Lead History — {histLead.leadId}</h3>
-            <div className="grid grid-cols-1 gap-3">
-              <div className="flex items-start gap-2">
-                <span className="text-royal/70 min-w-[140px]">Created At:</span>
-                <strong>{formatDateTime(histLead.createdAt) || '-'}</strong>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-royal/70 min-w-[140px]">Assigned At:</span>
-                <strong>{histLead.assignedAt ? formatDateTime(histLead.assignedAt) : <span className="text-royal/50">Not yet assigned</span>}</strong>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-royal/70 min-w-[140px]">Counseling At:</span>
-                <strong>{histLead.counselingAt ? formatDateTime(histLead.counselingAt) : <span className="text-royal/50">Not yet in counseling</span>}</strong>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-royal/70 min-w-[140px]">Admitted At:</span>
-                <strong>{histLead.admittedAt ? formatDateTime(histLead.admittedAt) : <span className="text-royal/50">Not yet admitted</span>}</strong>
-              </div>
-              <div className="border-t pt-3 mt-2">
-                <div className="font-medium mb-2">Follow-ups ({(histLead.followUps||[]).length})</div>
-                <div className="pl-2">
-                  {(histLead.followUps||[]).length === 0 ? (<div className="text-royal/70 italic">No follow-ups yet</div>) : (
-                    (histLead.followUps||[]).map((f, i)=> (
-                      <div key={i} className="mb-3 p-2 bg-gray-50 rounded-lg">
-                        <div className="text-sm font-medium text-royal">{formatDateTime(f.at)}{f.by?.name && <span className="ml-2 text-blue-600">— {f.by.name}</span>}</div>
-                        <div className="text-sm text-royal/70 mt-1">{f.note || 'No notes'}</div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="mt-4 text-right">
-              <button onClick={()=>setShowHistory(false)} className="px-4 py-2 bg-royal text-white rounded-xl hover:bg-royal/90">Close</button>
-            </div>
-          </div>
-        </div>
+        <LeadHistoryModal
+          lead={histLead}
+          onClose={() => { setShowHistory(false); setHistLead(null); }}
+          onUpdate={async () => {
+            try {
+              const response = await api.getLeadHistory(histLead._id);
+              setHistLead(response.lead || response);
+            } catch (e) {
+              console.error('Failed to reload lead:', e);
+            }
+          }}
+        />
       )}
     </div>
   );

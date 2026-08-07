@@ -504,6 +504,15 @@ export const api = {
     );
     return handleJson(res, "Add follow-up failed");
   },
+  async addLeadAdminComment(id, text) {
+    const res = await authFetch(`${getApiBase()}/api/leads/${id}/admin-comment`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    return handleJson(res, "Add admin comment failed");
+  },
   async bulkUpdateLeadStatus(leadIds, status, notes) {
     console.log('[bulkUpdateLeadStatus] Starting with params:', { leadIds, status, notes });
     const body = { leadIds, status };
