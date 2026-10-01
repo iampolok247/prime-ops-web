@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { LayoutDashboard, ListChecks, Users, BookOpen, FolderOpen, Wallet, BarChart2, Film, CreditCard, Menu, X, Kanban, DollarSign, Video, Activity, MessageCircle, FileText, Target, Layers, ClipboardList, CheckSquare, ClipboardCheck, FileInput, Clock, Facebook, Inbox } from 'lucide-react';
+import { LayoutDashboard, ListChecks, Users, BookOpen, FolderOpen, Wallet, BarChart2, Film, CreditCard, Menu, X, Kanban, DollarSign, Video, Activity, MessageCircle, FileText, Target, Layers, ClipboardList, CheckSquare, ClipboardCheck, FileInput, Clock, Facebook, Megaphone } from 'lucide-react';
 
 const Item = ({ to, icon, label, onClick }) => (
   <NavLink
@@ -43,7 +43,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/courses', label: 'Courses', icon: <BookOpen size={18}/> },
       { to: '/batches', label: 'Batches', icon: <Layers size={18}/> },
       { to: '/leads-center-view', label: 'Leads Center', icon: <FolderOpen size={18}/> },
-      { to: '/meta-leads', label: 'Meta Leads Manager', icon: <Facebook size={18}/> },
+      { to: '/meta-leads', label: 'Meta Leads Center', icon: <Facebook size={18}/> },
+      { to: '/meta-crm/assigned', label: 'Meta Pipeline', icon: <Facebook size={18}/> },
+      { to: '/seminars', label: 'Seminar Notices', icon: <Megaphone size={18}/> },
       // Section: Reports
       { type: 'heading', title: 'Reports' },
       { to: '/admission/team-metrics', label: 'Admission Team Metrics', icon: <Activity size={18}/> },
@@ -73,7 +75,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/admission-targets', label: 'Targets', icon: <Target size={18}/> },
       { to: '/batches', label: 'Batches', icon: <Layers size={18}/> },
       { to: '/leads-center-view', label: 'Leads Center', icon: <FolderOpen size={18}/> },
-      { to: '/meta-leads', label: 'Meta Leads Manager', icon: <Facebook size={18}/> },
+      { to: '/meta-leads', label: 'Meta Leads Center', icon: <Facebook size={18}/> },
+      { to: '/meta-crm/assigned', label: 'Meta Pipeline', icon: <Facebook size={18}/> },
+      { to: '/seminars', label: 'Seminar Notices', icon: <Megaphone size={18}/> },
       // Section: Reports
       { type: 'heading', title: 'Reports' },
       { to: '/admission/team-metrics', label: 'Admission Team Metrics', icon: <Activity size={18}/> },
@@ -100,10 +104,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/lead-entry', label: 'Lead Entry / CSV', icon: <FolderOpen size={18}/> },
       { to: '/leads-center', label: 'Leads Center', icon: <FolderOpen size={18}/> },
       { to: '/dm-metrics', label: 'Cost / Social / SEO', icon: <BarChart2 size={18}/> },
+      { to: '/seminars', label: 'Seminar Notices', icon: <Megaphone size={18}/> },
       { type: 'heading', title: 'Meta Lead CRM' },
-      { to: '/meta-leads', label: 'Meta Leads Manager', icon: <Facebook size={18}/> },
-      { to: '/meta-leads/follow-up', label: 'Follow-Up Leads', icon: <Clock size={18}/> },
-      { to: '/meta-leads/analytics', label: 'Lead Analytics', icon: <BarChart2 size={18}/> },
+      { to: '/meta-leads', label: 'Meta Leads Center', icon: <Facebook size={18}/> },
       { to: '/meta-leads/capi-log', label: 'Meta CAPI Tracking', icon: <Activity size={18}/> },
     ],
     Admission: [
@@ -124,10 +127,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
   // Removed legacy Not Admitted view from sidebar
       { to: '/admission/fees', label: 'Admission Fees', icon: <FolderOpen size={18}/> },
       { type: 'heading', title: 'Meta Lead CRM' },
-      { to: '/meta-leads/queue',     label: 'My Queue',         icon: <Inbox size={18}/> },
-      { to: '/meta-leads/pipeline',  label: 'My Meta Pipeline', icon: <Facebook size={18}/> },
-      { to: '/meta-leads/follow-up', label: 'My Follow-Ups',    icon: <Clock size={18}/> },
-      { to: '/meta-leads/analytics', label: 'My Performance',   icon: <BarChart2 size={18}/> },
+      { to: '/meta-crm/assigned',       label: 'Meta Assigned Lead',  icon: <Facebook size={18}/> },
+      { to: '/meta-crm/follow-up',      label: 'Meta In Follow-Up',   icon: <Facebook size={18}/> },
+      { to: '/meta-crm/admitted',       label: 'Meta Admitted',       icon: <Facebook size={18}/> },
+      { to: '/meta-crm/not-interested', label: 'Meta Not Interested', icon: <Facebook size={18}/> },
     ],
     // Accountant role with Requisition support
     Accountant: [
@@ -206,6 +209,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       { to: '/batches', label: 'Batches', icon: <Layers size={18}/> },
       { to: '/leads-center-view', label: 'Leads Center', icon: <FolderOpen size={18}/> },
       { to: '/admission/assigned', label: 'Admission Pipeline', icon: <FolderOpen size={18}/> },
+      { to: '/meta-crm/assigned', label: 'Meta Pipeline', icon: <Facebook size={18}/> },
       { to: '/admission/fees', label: 'Admission Fees', icon: <Wallet size={18}/> },
       { to: '/accounting/fees', label: 'Fees Approval', icon: <CreditCard size={18}/> },
       { to: '/accounting/income', label: 'Income', icon: <DollarSign size={18}/> }

@@ -1,14 +1,18 @@
-// Meta CAPI send queue. Status changes (Counseling/In Follow Up/Admitted)
-// queue an event here as 'pending' — nothing auto-fires to Meta. DM reviews
-// the queue and sends selected leads or everything pending in one click.
+// Meta CAPI (CRM) send queue. Meta CRM lead stages — Lead (received),
+// Counseling, Admitted, and quality feedback (Disqualified / Not Interested) —
+// queue an event here as 'pending'; nothing auto-fires to Meta. DM reviews the
+// queue and sends selected leads or everything pending in one click.
+// Meta only accepts events up to 7 days old, so send at least once a week.
 import { useEffect, useState, useCallback } from 'react';
 import { Send, RefreshCw, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock3, Filter } from 'lucide-react';
 import api from '../../lib/api.js';
 
 const EVENT_PILL = {
-  Lead:                 'bg-blue-100 text-blue-700',
-  ViewContent:          'bg-orange-100 text-orange-700',
-  CompleteRegistration: 'bg-green-100 text-green-700',
+  Lead:             'bg-blue-100 text-blue-700',
+  Counseling:       'bg-orange-100 text-orange-700',
+  Admitted:         'bg-green-100 text-green-700',
+  Disqualified:     'bg-red-100 text-red-700',
+  'Not Interested': 'bg-yellow-100 text-yellow-800',
 };
 
 const STATUS_PILL = {
@@ -148,9 +152,7 @@ export default function MetaLeadsCapiLog() {
         <select value={eventFilter} onChange={e => setEventFilter(e.target.value)}
           className="text-sm border border-gray-200 rounded-xl px-3 py-1.5 focus:outline-none">
           <option value="">All Events</option>
-          <option value="Lead">Lead</option>
-          <option value="ViewContent">ViewContent</option>
-          <option value="CompleteRegistration">CompleteRegistration</option>
+          {Object.keys(EVENT_PILL).map(ev => <option key={ev} value={ev}>{ev}</option>)}
         </select>
       </div>
 

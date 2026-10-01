@@ -81,11 +81,8 @@ import ManualDuePage from './pages/ManualDuePage.jsx';
 import ManualDueApprovalPage from './pages/ManualDueApprovalPage.jsx';
 import LeaveApprovalPage from './pages/LeaveApprovalPage.jsx';
 import OpsAttendance from './pages/OpsAttendance.jsx';
-import MetaLeadsManager  from './pages/MetaLeads/MetaLeadsManager.jsx';
-import MetaLeadsPipeline from './pages/MetaLeads/MetaLeadsPipeline.jsx';
-import MetaLeadsQueue    from './pages/MetaLeads/MetaLeadsQueue.jsx';
-import MetaLeadsFollowUp from './pages/MetaLeads/MetaLeadsFollowUp.jsx';
-import MetaLeadsAnalytics from './pages/MetaLeads/MetaLeadsAnalytics.jsx';
+import MetaLeadsCenter   from './pages/MetaLeads/MetaLeadsCenter.jsx';
+import SeminarNotices    from './pages/SeminarNotices.jsx';
 import MetaLeadsCapiLog  from './pages/MetaLeads/MetaLeadsCapiLog.jsx';
 
 function Layout() {
@@ -239,18 +236,26 @@ export default function App() {
           {/* Requisition - accessible to all logged in users */}
           <Route path="/requisition" element={<RequisitionPage />} />
 
-          {/* Meta Lead CRM — Manager view (DM / Admin / SuperAdmin) */}
-          <Route element={<RoleRoute roles={['DigitalMarketing','Admin','SuperAdmin','ITAdmin']} />}>
-            <Route path="/meta-leads" element={<MetaLeadsManager />} />
+          {/* Seminar notices — DM posts, shown on every dashboard */}
+          <Route element={<RoleRoute roles={['DigitalMarketing','Admin','SuperAdmin']} />}>
+            <Route path="/seminars" element={<SeminarNotices />} />
+          </Route>
+
+          {/* Meta CRM — DM side: validate + assign (Meta Leads Center), CAPI queue */}
+          <Route element={<RoleRoute roles={['DigitalMarketing','Admin','SuperAdmin','ITAdmin','HeadOfCreative']} />}>
+            <Route path="/meta-leads" element={<MetaLeadsCenter />} />
+          </Route>
+          <Route element={<RoleRoute roles={['DigitalMarketing','Admin','SuperAdmin']} />}>
             <Route path="/meta-leads/capi-log" element={<MetaLeadsCapiLog />} />
           </Route>
 
-          {/* Meta Lead CRM — Counsellor pipeline (Admission + Admin oversight) */}
-          <Route element={<RoleRoute roles={['Admission','Admin','SuperAdmin','ITAdmin','DigitalMarketing']} />}>
-            <Route path="/meta-leads/pipeline"  element={<MetaLeadsPipeline />} />
-            <Route path="/meta-leads/queue"     element={<MetaLeadsQueue />} />
-            <Route path="/meta-leads/follow-up" element={<MetaLeadsFollowUp />} />
-            <Route path="/meta-leads/analytics" element={<MetaLeadsAnalytics />} />
+          {/* Meta CRM — Admission side: same pipeline as Admission, Meta CRM leads */}
+          <Route element={<RoleRoute roles={['Admission','Admin','SuperAdmin','ITAdmin']} />}>
+            <Route path="/meta-crm/assigned" element={<AdmissionPipeline variant="meta" />} />
+            <Route path="/meta-crm/follow-up" element={<AdmissionPipeline variant="meta" />} />
+            <Route path="/meta-crm/admitted" element={<AdmissionPipeline variant="meta" />} />
+            <Route path="/meta-crm/not-interested" element={<AdmissionPipeline variant="meta" />} />
+            <Route path="/meta-crm/archived" element={<AdmissionPipeline variant="meta" />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { api } from '../lib/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { QualityBadge } from '../lib/leadQuality.jsx';
 
 const fmtDT = (d) => { 
   if (!d) return '-'; 
@@ -18,7 +19,8 @@ const fmtDT = (d) => {
   } 
 };
 
-export default function LeadHistoryModal({ lead, onClose, onUpdate }) {
+// pipelineApi: `api` for regular leads, `metaPipelineApi` for Meta CRM leads
+export default function LeadHistoryModal({ lead, onClose, onUpdate, pipelineApi = api }) {
   const { user } = useAuth();
   const [followUpNote, setFollowUpNote] = useState('');
   const [nextFollowUpDate, setNextFollowUpDate] = useState('');
@@ -41,7 +43,7 @@ export default function LeadHistoryModal({ lead, onClose, onUpdate }) {
     try {
       setSaving(true);
       setErr(null);
-      await api.addLeadFollowUp(lead._id, {
+      await pipelineApi.addLeadFollowUp(lead._id, {
         note: followUpNote.trim(),
         nextFollowUpDate: nextFollowUpDate || undefined,
         priority: priority
@@ -68,7 +70,7 @@ export default function LeadHistoryModal({ lead, onClose, onUpdate }) {
     try {
       setSaving(true);
       setErr(null);
-      await api.addLeadAdminComment(lead._id, adminCommentText.trim());
+      await pipelineApi.addLeadAdminComment(lead._id, adminCommentText.trim());
       setMsg('Admin comment added');
       setAdminCommentText('');
       setTimeout(() => {
@@ -86,7 +88,7 @@ export default function LeadHistoryModal({ lead, onClose, onUpdate }) {
     if (!confirm('Mark this lead as Admitted?')) return;
     try {
       setSaving(true);
-      await api.updateLeadStatus(lead._id, 'Admitted');
+      await pipelineApi.updateLeadStatus(lead._id, 'Admitted');
       setMsg('Lead marked as Admitted');
       setTimeout(() => {
         if (onUpdate) onUpdate();
@@ -103,7 +105,7 @@ export default function LeadHistoryModal({ lead, onClose, onUpdate }) {
     if (reason === null) return; // User cancelled
     try {
       setSaving(true);
-      await api.updateLeadStatus(lead._id, 'Not Admitted', reason);
+      await pipelineApi.updateLeadStatus(lead._id, 'Not Admitted', reason);
       setMsg('Lead marked as Not Admitted');
       setTimeout(() => {
         if (onUpdate) onUpdate();
@@ -123,7 +125,7 @@ export default function LeadHistoryModal({ lead, onClose, onUpdate }) {
     try {
       setSaving(true);
       setErr(null);
-      const result = await api.undoAdmission(lead._id);
+      const result = await pipelineApi.undoAdmission(lead._id);
       setMsg('✅ Admission reversed successfully!');
       setTimeout(() => {
         if (onUpdate) onUpdate();
@@ -174,6 +176,14 @@ export default function LeadHistoryModal({ lead, onClose, onUpdate }) {
             <div><span className="text-gray-600">Course:</span> <strong>{lead.interestedCourse || '-'}</strong></div>
             <div><span className="text-gray-600">Status:</span> <strong className="text-indigo-600">{lead.status}</strong></div>
             <div><span className="text-gray-600">Assigned To:</span> <strong>{lead.assignedTo?.name || '-'}</strong></div>
+            {/* Meta CRM leads only */}
+            {(lead.metaCampaignName || lead.metaAdName) && (
+              <div className="col-span-2"><span className="text-gray-600">Campaign / Ad:</span> <strong>{lead.metaCampaignName || '-'}</strong>{lead.metaAdName ? ` · ${lead.metaAdName}` : ''}</div>
+            )}
+            {lead.leadQuality && (
+              <div className="col-span-2"><span className="text-gray-600">Lead Quality:</span> <QualityBadge quality={lead.leadQuality} reason={lead.qualityReason} />
+                {lead.qualityNote ? <span className="text-gray-600"> — {lead.qualityNote}</span> : null}</div>
+            )}
           </div>
         </div>
 
@@ -196,7 +206,7 @@ export default function LeadHistoryModal({ lead, onClose, onUpdate }) {
               <div className="text-sm text-gray-600 mt-1">Course: <strong>{lead.admittedToCourse.name}</strong></div>
             )}
             {lead.admittedToBatch && (
-              <div className="text-sm text-gray-600">Batch: <strong>{lead.admittedToBatch.name}</strong></div>
+              <div className="text-sm text-gray-600">Batch: <strong>{lead.admittedToBatch.name || lead.admittedToBatch.batchName}</strong></div>
             )}
           </div>
         </div>

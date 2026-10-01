@@ -2133,20 +2133,46 @@ export const api = {
     return handleJson(res, "Create attendance failed");
   },
 
-  // ── Meta Lead CRM ──────────────────────────────────────────────────────────
-  async listMetaLeads(params = {}) {
-    const qs = new URLSearchParams();
-    Object.entries(params).forEach(([k, v]) => { if (v != null && v !== '') qs.set(k, v); });
-    const res = await authFetch(`${getApiBase()}/api/meta-leads?${qs}`, { credentials: 'include' });
+  // ── Seminar notices (DM posts, everyone sees on dashboard) ────────────────
+  async listSeminars(view = 'upcoming') {
+    const res = await authFetch(`${getApiBase()}/api/seminars?view=${encodeURIComponent(view)}`, { credentials: 'include' });
+    return handleJson(res, 'Load seminars failed');
+  },
+  async createSeminar(payload) {
+    const res = await authFetch(`${getApiBase()}/api/seminars`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return handleJson(res, 'Create seminar failed');
+  },
+  async updateSeminar(id, payload) {
+    const res = await authFetch(`${getApiBase()}/api/seminars/${id}`, {
+      method: 'PATCH', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return handleJson(res, 'Update seminar failed');
+  },
+  async deleteSeminar(id) {
+    const res = await authFetch(`${getApiBase()}/api/seminars/${id}`, { method: 'DELETE', credentials: 'include' });
+    return handleJson(res, 'Delete seminar failed');
+  },
+
+  // ── Meta CRM — DM side (Meta Leads Center) ────────────────────────────────
+  // view: 'pending' | 'unassigned' | 'rejected' | a pipeline status
+  async listMetaLeads(view) {
+    const q = view ? `?view=${encodeURIComponent(view)}` : '';
+    const res = await authFetch(`${getApiBase()}/api/meta-leads${q}`, { credentials: 'include' });
     return handleJson(res, 'Load meta leads failed');
   },
   async getMetaLeadStats() {
     const res = await authFetch(`${getApiBase()}/api/meta-leads/stats`, { credentials: 'include' });
     return handleJson(res, 'Load meta lead stats failed');
   },
-  async getMetaLeadCourses() {
-    const res = await authFetch(`${getApiBase()}/api/meta-leads/courses`, { credentials: 'include' });
-    return handleJson(res, 'Load meta lead courses failed');
+  async getMetaTodayAssignments() {
+    const res = await authFetch(`${getApiBase()}/api/meta-leads/today-assignments`, { credentials: 'include' });
+    return handleJson(res, 'Load today assignments failed');
   },
   async createMetaLead(payload) {
     const res = await authFetch(`${getApiBase()}/api/meta-leads`, {
@@ -2156,17 +2182,39 @@ export const api = {
     });
     return handleJson(res, 'Create meta lead failed');
   },
-  async validateMetaLead(id, payload) {
-    const res = await authFetch(`${getApiBase()}/api/meta-leads/${id}/validate`, {
+  async updateMetaLead(id, payload) {
+    const res = await authFetch(`${getApiBase()}/api/meta-leads/${id}`, {
       method: 'PATCH', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
+    return handleJson(res, 'Update meta lead failed');
+  },
+  async deleteMetaLead(id) {
+    const res = await authFetch(`${getApiBase()}/api/meta-leads/${id}`, {
+      method: 'DELETE', credentials: 'include',
+    });
+    return handleJson(res, 'Delete meta lead failed');
+  },
+  async validateMetaLead(id, action, rejectionReason) {
+    const res = await authFetch(`${getApiBase()}/api/meta-leads/${id}/validate`, {
+      method: 'PATCH', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, rejectionReason }),
+    });
     return handleJson(res, 'Validate meta lead failed');
+  },
+  async bulkValidateMetaLeads(leadIds, action, rejectionReason) {
+    const res = await authFetch(`${getApiBase()}/api/meta-leads/bulk-validate`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leadIds, action, rejectionReason }),
+    });
+    return handleJson(res, 'Bulk validate failed');
   },
   async assignMetaLead(id, assignedTo) {
     const res = await authFetch(`${getApiBase()}/api/meta-leads/${id}/assign`, {
-      method: 'PATCH', credentials: 'include',
+      method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ assignedTo }),
     });
@@ -2180,36 +2228,11 @@ export const api = {
     });
     return handleJson(res, 'Bulk assign failed');
   },
-  async updateMetaLeadStatus(id, payload) {
-    const res = await authFetch(`${getApiBase()}/api/meta-leads/${id}/status`, {
-      method: 'PATCH', credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+  async rescoreMetaLeads() {
+    const res = await authFetch(`${getApiBase()}/api/meta-leads/rescore`, {
+      method: 'POST', credentials: 'include',
     });
-    return handleJson(res, 'Update meta lead status failed');
-  },
-  async bulkRescheduleMetaLeads(leadIds, { nextFollowUpDate, pushDays } = {}) {
-    const body = { leadIds };
-    if (nextFollowUpDate) body.nextFollowUpDate = nextFollowUpDate;
-    if (pushDays) body.pushDays = pushDays;
-    const res = await authFetch(`${getApiBase()}/api/meta-leads/bulk-reschedule`, {
-      method: 'PATCH', credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    return handleJson(res, 'Bulk reschedule failed');
-  },
-  async logMetaLeadTouch(id, { note, outcome } = {}) {
-    const res = await authFetch(`${getApiBase()}/api/meta-leads/${id}/log-touch`, {
-      method: 'PATCH', credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ note, outcome }),
-    });
-    return handleJson(res, 'Log touch failed');
-  },
-  async getMetaLead(id) {
-    const res = await authFetch(`${getApiBase()}/api/meta-leads/${id}`, { credentials: 'include' });
-    return handleJson(res, 'Load lead failed');
+    return handleJson(res, 'Rescore failed');
   },
   async getMetaLeadTeamStats(from, to, userId) {
     const params = new URLSearchParams();
@@ -2220,21 +2243,12 @@ export const api = {
     const res = await authFetch(`${getApiBase()}/api/reports/meta-lead-team-stats${q}`, { credentials: 'include' });
     return handleJson(res, 'Load Meta Lead team stats failed');
   },
-  async triggerRoundRobin() {
-    const res = await authFetch(`${getApiBase()}/api/meta-leads/round-robin/trigger`, {
-      method: 'POST', credentials: 'include',
-    });
-    return handleJson(res, 'Round-robin trigger failed');
-  },
-  async rescoreMetaLeads() {
-    const res = await authFetch(`${getApiBase()}/api/meta-leads/rescore`, {
-      method: 'POST', credentials: 'include',
-    });
-    return handleJson(res, 'Rescore failed');
-  },
-  async getMetaLeadRoutingLog() {
-    const res = await authFetch(`${getApiBase()}/api/meta-leads/routing-log`, { credentials: 'include' });
-    return handleJson(res, 'Load routing log failed');
+  async getMetaQualityReport(from, to) {
+    const params = new URLSearchParams();
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const res = await authFetch(`${getApiBase()}/api/meta-leads/quality-report?${params}`, { credentials: 'include' });
+    return handleJson(res, 'Load lead quality report failed');
   },
   async getMetaLeadCapiLog(params = {}) {
     const qs = new URLSearchParams();
@@ -2250,11 +2264,68 @@ export const api = {
     });
     return handleJson(res, 'Send CAPI events failed');
   },
-  async forceRescoreAllMetaLeads() {
-    const res = await authFetch(`${getApiBase()}/api/meta-leads/rescore-all`, {
-      method: 'POST', credentials: 'include',
-    });
-    return handleJson(res, 'Force rescore failed');
+};
+
+// Meta CRM — Admission side. Same method names as the admission pipeline API so
+// AdmissionPipeline / LeadHistoryModal can run on either pipeline; requests go
+// to /api/meta-crm/admission (same backend handlers, Meta CRM lead collection).
+const META_ADMISSION = () => `${getApiBase()}/api/meta-crm/admission`;
+const postJson = (url, body) => authFetch(url, {
+  method: 'POST', credentials: 'include',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(body || {}),
+});
+export const metaPipelineApi = {
+  ...api,
+  async getAdmissionLeadCounts() {
+    const res = await authFetch(`${META_ADMISSION()}/leads/counts`, { credentials: 'include' });
+    return handleJson(res, 'Load Meta pipeline counts failed');
+  },
+  async listAdmissionLeads(status) {
+    const q = status ? `?status=${encodeURIComponent(status)}` : '';
+    const res = await authFetch(`${META_ADMISSION()}/leads${q}`, { credentials: 'include' });
+    return handleJson(res, 'Load Meta pipeline leads failed');
+  },
+  // extra: { qualityReason, qualityNote } — structured lead-quality feedback (Not Interested)
+  async updateLeadStatus(id, status, notes, courseId, batchId, nextFollowUpDate, priority, extra = {}) {
+    const body = { status, ...extra };
+    if (notes !== undefined && notes !== null) body.notes = notes;
+    if (courseId !== undefined && courseId !== null) body.courseId = courseId;
+    if (batchId !== undefined && batchId !== null) body.batchId = batchId;
+    if (nextFollowUpDate) body.nextFollowUpDate = nextFollowUpDate;
+    if (priority) body.priority = priority;
+    const res = await postJson(`${META_ADMISSION()}/leads/${id}/status`, body);
+    return handleJson(res, 'Update lead status failed');
+  },
+  async undoAdmission(id) {
+    const res = await postJson(`${META_ADMISSION()}/leads/${id}/undo-admission`);
+    return handleJson(res, 'Undo admission failed');
+  },
+  async addLeadFollowUp(id, { note, nextFollowUpDate, priority }) {
+    const res = await postJson(`${META_ADMISSION()}/leads/${id}/follow-up`, { note, nextFollowUpDate, priority });
+    return handleJson(res, 'Add follow-up failed');
+  },
+  async bulkUpdateLeadStatus(leadIds, status, notes, extra = {}) {
+    const body = { leadIds, status, ...extra };
+    if (notes) body.notes = notes;
+    const res = await postJson(`${META_ADMISSION()}/leads/bulk-update`, body);
+    return handleJson(res, 'Bulk update leads failed');
+  },
+  async checkAdmissionFeeStatus(leadId) {
+    const res = await authFetch(`${META_ADMISSION()}/fees/status/${leadId}`, { credentials: 'include' });
+    return handleJson(res, 'Check fee status failed');
+  },
+  async createAdmissionFee(payload) {
+    const res = await postJson(`${META_ADMISSION()}/fees`, payload);
+    return handleJson(res, 'Create fee failed');
+  },
+  async getLeadHistory(id) {
+    const res = await authFetch(`${getApiBase()}/api/meta-leads/${id}/history`, { credentials: 'include' });
+    return handleJson(res, 'Load lead history failed');
+  },
+  async addLeadAdminComment(id, text) {
+    const res = await postJson(`${getApiBase()}/api/meta-leads/${id}/admin-comment`, { text });
+    return handleJson(res, 'Add admin comment failed');
   },
 };
 

@@ -1,42 +1,51 @@
 // web/src/pages/AdmissionPipeline.jsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { api } from '../lib/api.js';
+import { api, metaPipelineApi } from '../lib/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import LeadHistoryModal from '../components/LeadHistoryModal.jsx';
+import { QualityReasonSelect, QualityBadge } from '../lib/leadQuality.jsx';
 
 function fmtDT(d){ if (!d) return '-'; try { return new Date(d).toLocaleString(); } catch { return d; } }
 
-const STATUS_TABS = [
-  { key: 'Assigned', path: '/admission/assigned', label: 'Assigned Lead' },
-  { key: 'In Follow Up', path: '/admission/follow-up', label: 'In Follow-Up' },
-  { key: 'Admitted', path: '/admission/admitted', label: 'Admitted' },
-  { key: 'Not Interested', path: '/admission/not-interested', label: 'Not Interested' },
-  { key: 'Archived', path: '/admission/archived', label: 'Archived' }
+// variant 'regular' → Admission Pipeline (Lead), 'meta' → Meta Pipeline (Meta CRM leads).
+// Same UI and flow; only the API base, routes and the lead-quality feedback differ.
+const PIPELINES = {
+  regular: { title: 'Admission Pipeline', base: '/admission', api },
+  meta: { title: 'Meta Pipeline', base: '/meta-crm', api: metaPipelineApi }
+};
+const statusTabs = (base) => [
+  { key: 'Assigned', path: `${base}/assigned`, label: 'Assigned Lead' },
+  { key: 'In Follow Up', path: `${base}/follow-up`, label: 'In Follow-Up' },
+  { key: 'Admitted', path: `${base}/admitted`, label: 'Admitted' },
+  { key: 'Not Interested', path: `${base}/not-interested`, label: 'Not Interested' },
+  { key: 'Archived', path: `${base}/archived`, label: 'Archived' }
 ];
 
-export default function AdmissionPipeline() {
+export default function AdmissionPipeline({ variant = 'regular' }) {
   const { user } = useAuth();
   const loc = useLocation();
   const [counts, setCounts] = useState({});
+  const pipeline = PIPELINES[variant] || PIPELINES.regular;
+  const STATUS_TABS = statusTabs(pipeline.base);
 
   const active = useMemo(() => {
     const found = STATUS_TABS.find(t => t.path === loc.pathname);
     return found ? found.key : 'Assigned';
-  }, [loc.pathname]);
+  }, [loc.pathname]); // eslint-disable-line
 
   // Load counts on mount
   useEffect(() => {
     const loadCounts = async () => {
       try {
-        const { counts } = await api.getAdmissionLeadCounts();
+        const { counts } = await pipeline.api.getAdmissionLeadCounts();
         setCounts(counts || {});
       } catch (e) {
         console.error('Failed to load counts:', e);
       }
     };
     loadCounts();
-  }, []);
+  }, [variant]); // eslint-disable-line
 
   if (user?.role !== 'Admission' && user?.role !== 'Admin' && user?.role !== 'SuperAdmin' && user?.role !== 'ITAdmin') {
     return <div className="text-royal">Access denied</div>;
@@ -44,7 +53,7 @@ export default function AdmissionPipeline() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-navy mb-3">Admission Pipeline</h1>
+      <h1 className="text-2xl font-bold text-navy mb-3">{pipeline.title}</h1>
       <div className="flex gap-2 mb-4 flex-wrap">
         {STATUS_TABS.map(t => (
           <Link key={t.key} to={t.path}
@@ -61,12 +70,14 @@ export default function AdmissionPipeline() {
           <Link to="/admission/fees" className="ml-auto px-3 py-1.5 rounded-xl bg-gold text-navy font-semibold">Admission Fees</Link>
         )}
       </div>
-      <PipelineTable status={active} canAct={user?.role === 'Admission' || user?.role === 'ITAdmin' || user?.role === 'Admin' || user?.role === 'SuperAdmin'} user={user} />
+      <PipelineTable key={variant} variant={variant} status={active} canAct={user?.role === 'Admission' || user?.role === 'ITAdmin' || user?.role === 'Admin' || user?.role === 'SuperAdmin'} user={user} />
     </div>
   );
 }
 
-function PipelineTable({ status, canAct, user }) {
+function PipelineTable({ status, canAct, user, variant = 'regular' }) {
+  const isMeta = variant === 'meta';
+  const papi = (PIPELINES[variant] || PIPELINES.regular).api;
   const [rows, setRows] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [msg, setMsg] = useState(null);
@@ -79,6 +90,10 @@ function PipelineTable({ status, canAct, user }) {
   const [showNotInterestedModal, setShowNotInterestedModal] = useState(false);
   const [notInterestedNote, setNotInterestedNote] = useState('');
   const [notInterestedTarget, setNotInterestedTarget] = useState(null);
+  // Meta CRM: structured lead-quality reason (required for Not Interested / Bad Lead)
+  const [qualityReason, setQualityReason] = useState('');
+  const [badLeadOnly, setBadLeadOnly] = useState(false);
+  const [bulkQualityReason, setBulkQualityReason] = useState('');
   const [showHistory, setShowHistory] = useState(false);
   const [histLead, setHistLead] = useState(null);
   const [histLoading, setHistLoading] = useState(false);
@@ -130,7 +145,7 @@ function PipelineTable({ status, canAct, user }) {
 
   const load = async () => {
     try {
-      const { leads } = await api.listAdmissionLeads(status);
+      const { leads } = await papi.listAdmissionLeads(status);
       setRows(leads || []);
       // Extract unique courses from leads
       const coursesSet = new Set(leads?.filter(l => l.interestedCourse).map(l => l.interestedCourse) || []);
@@ -143,8 +158,8 @@ function PipelineTable({ status, canAct, user }) {
     setCoursesLoading(true);
     try {
       const [coursesData, batchesData] = await Promise.all([
-        api.listCourses(),
-        api.listBatches('Active') // Load only active batches
+        papi.listCourses(),
+        papi.listBatches('Active') // Load only active batches
       ]);
       setCourses(coursesData?.courses || []);
       setBatches(batchesData?.batches || []);
@@ -167,13 +182,15 @@ function PipelineTable({ status, canAct, user }) {
       console.log('NOT INTERESTED - Lead ID:', leadId);
       console.log('NOT INTERESTED - Reason:', reason);
       
-      const result = await api.updateLeadStatus(leadId, 'Not Interested', reason || '', '', '', '');
+      const result = await papi.updateLeadStatus(leadId, 'Not Interested', reason || '', '', '', '', undefined,
+        isMeta ? { qualityReason, qualityNote: reason || '' } : undefined);
       console.log('NOT INTERESTED - API Success, result:', result);
       
       setShowNotInterestedModal(false);
       setNotInterestedNote('');
       setNotInterestedTarget(null);
-      setMsg('Lead marked as Not Interested');
+      setQualityReason('');
+      setMsg(isMeta && badLeadOnly ? 'Lead marked as Bad Lead' : 'Lead marked as Not Interested');
       
       console.log('NOT INTERESTED - Reloading data...');
       await load();
@@ -199,7 +216,7 @@ function PipelineTable({ status, canAct, user }) {
       console.log('CONFIRM ADMISSION - Course ID:', courseId);
       console.log('CONFIRM ADMISSION - Batch ID:', batchId);
       
-      const result = await api.updateLeadStatus(leadId, 'Admitted', '', courseId, batchId, '');
+      const result = await papi.updateLeadStatus(leadId, 'Admitted', '', courseId, batchId, '');
       console.log('CONFIRM ADMISSION - API Success, result:', result);
       
       setShowAdmitModal(false);
@@ -227,7 +244,7 @@ function PipelineTable({ status, canAct, user }) {
   const act = async (id, action, notes = '', courseId = '', batchId = '', nextFollowUpDate = '') => {
     setMsg(null); setErr(null);
     try {
-      await api.updateLeadStatus(id, action, notes, courseId, batchId, nextFollowUpDate);
+      await papi.updateLeadStatus(id, action, notes, courseId, batchId, nextFollowUpDate);
       setMsg(`Status updated to ${action}`);
       setShowFollowModal(false);
       setFollowNote(''); setFollowTarget(null); setFollowNextDate('');
@@ -251,7 +268,7 @@ function PipelineTable({ status, canAct, user }) {
     
     try {
       // Move directly to "In Follow Up" with counseling note, priority, and follow-up date
-      await api.updateLeadStatus(
+      await papi.updateLeadStatus(
         counselingTarget, 
         'In Follow Up', 
         counselingNote.trim(), 
@@ -297,11 +314,18 @@ function PipelineTable({ status, canAct, user }) {
     setErr(null);
 
     try {
-      await api.bulkUpdateLeadStatus(selectedLeads, bulkMoveTargetStatus, bulkMoveNote.trim());
+      if (isMeta && bulkMoveTargetStatus === 'Not Interested' && !bulkQualityReason) {
+        setErr('Please select a lead quality reason');
+        setBulkMoveLoading(false);
+        return;
+      }
+      await papi.bulkUpdateLeadStatus(selectedLeads, bulkMoveTargetStatus, bulkMoveNote.trim(),
+        isMeta && bulkMoveTargetStatus === 'Not Interested' ? { qualityReason: bulkQualityReason } : undefined);
       setMsg(`Successfully moved ${selectedLeads.length} lead(s) to ${bulkMoveTargetStatus}`);
       setShowBulkMoveModal(false);
       setBulkMoveTargetStatus('');
       setBulkMoveNote('');
+      setBulkQualityReason('');
       setSelectedLeads([]);
       await load();
     } catch (e) {
@@ -314,7 +338,7 @@ function PipelineTable({ status, canAct, user }) {
   const checkFeeStatus = async (leadId) => {
     setCheckingFeeStatus(true);
     try {
-      const result = await api.checkAdmissionFeeStatus(leadId);
+      const result = await papi.checkAdmissionFeeStatus(leadId);
       setFeeStatus(result);
     } catch (e) {
       console.error('Failed to check fee status:', e);
@@ -355,7 +379,7 @@ function PipelineTable({ status, canAct, user }) {
         totalAmount: totalAmt,
         dueAmount: totalAmt - nowPay
       };
-      await api.createAdmissionFee(payload);
+      await papi.createAdmissionFee(payload);
       setFeeMsg('Fee submitted for review');
       setTimeout(() => {
         setShowFeesModal(false);
@@ -444,24 +468,31 @@ function PipelineTable({ status, canAct, user }) {
   const actions = (row) => {
     if (!canAct) return null;
     if (status === 'Assigned') {
-      return <ActionBtn onClick={()=>{ 
+      const start = <ActionBtn onClick={()=>{ 
         setCounselingTarget(row._id); 
         setCounselingNote(''); 
         setCounselingPriority('Interested'); 
         setShowCounselingModal(true); 
       }}>Start Counseling</ActionBtn>;
+      if (!isMeta) return start;
+      return (
+        <div className="flex gap-2">
+          {start}
+          <ActionBtn variant="danger" onClick={()=>{ setNotInterestedTarget(row._id); setNotInterestedNote(''); setQualityReason(''); setBadLeadOnly(true); setShowNotInterestedModal(true); }}>Bad Lead</ActionBtn>
+        </div>
+      );
     }
     if (status === 'In Follow Up') {
         return (
           <div className="flex gap-2">
             <ActionBtn onClick={()=>handleAdmitClick(row._id)}>Admitted</ActionBtn>
             <ActionBtn onClick={()=>{ setFollowTarget(row._id); setFollowNote(''); setFollowNextDate(''); setFollowPriority(row.priority || 'Interested'); setShowFollowModal(true); }}>Follow-Up Again</ActionBtn>
-            <ActionBtn variant="danger" onClick={()=>{ setNotInterestedTarget(row._id); setNotInterestedNote(''); setShowNotInterestedModal(true); }}>Not Interested</ActionBtn>
+            <ActionBtn variant="danger" onClick={()=>{ setNotInterestedTarget(row._id); setNotInterestedNote(''); setQualityReason(''); setBadLeadOnly(false); setShowNotInterestedModal(true); }}>Not Interested</ActionBtn>
             <ActionBtn onClick={async ()=>{
               try {
                 setErr(null);
                 setHistLoading(true);
-                const res = await api.getLeadHistory(row._id);
+                const res = await papi.getLeadHistory(row._id);
                 setHistLead(res.lead || res);
                 setShowHistory(true);
               } catch (e) { setErr(e.message); }
@@ -476,7 +507,7 @@ function PipelineTable({ status, canAct, user }) {
           try {
             setErr(null);
             setHistLoading(true);
-            const res = await api.getLeadHistory(row._id);
+            const res = await papi.getLeadHistory(row._id);
             setHistLead(res.lead || res);
             setShowHistory(true);
           } catch (e) { setErr(e.message); }
@@ -490,7 +521,7 @@ function PipelineTable({ status, canAct, user }) {
           try {
             setErr(null);
             setHistLoading(true);
-            const res = await api.getLeadHistory(row._id);
+            const res = await papi.getLeadHistory(row._id);
             setHistLead(res.lead || res);
             setShowHistory(true);
           } catch (e) { setErr(e.message); }
@@ -504,7 +535,7 @@ function PipelineTable({ status, canAct, user }) {
           try {
             setErr(null);
             setHistLoading(true);
-            const res = await api.getLeadHistory(row._id);
+            const res = await papi.getLeadHistory(row._id);
             setHistLead(res.lead || res);
             setShowHistory(true);
           } catch (e) { setErr(e.message); }
@@ -663,6 +694,15 @@ function PipelineTable({ status, canAct, user }) {
                 </select>
               </div>
 
+              {isMeta && bulkMoveTargetStatus === 'Not Interested' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Lead Quality Reason <span className="text-red-500">*</span>
+                  </label>
+                  <QualityReasonSelect value={bulkQualityReason} onChange={setBulkQualityReason} />
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Note (Optional)
@@ -693,7 +733,7 @@ function PipelineTable({ status, canAct, user }) {
                   type="button"
                   onClick={handleBulkMove}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400"
-                  disabled={bulkMoveLoading || !bulkMoveTargetStatus}
+                  disabled={bulkMoveLoading || !bulkMoveTargetStatus || (isMeta && bulkMoveTargetStatus === 'Not Interested' && !bulkQualityReason)}
                 >
                   {bulkMoveLoading ? 'Moving...' : `Move ${selectedLeads.length} Lead(s)`}
                 </button>
@@ -1086,7 +1126,7 @@ function PipelineTable({ status, canAct, user }) {
               <button type="button" onClick={async ()=>{
                 try {
                   setErr(null);
-                  await api.addLeadFollowUp(followTarget, { note: followNote, nextFollowUpDate: followNextDate, priority: followPriority });
+                  await papi.addLeadFollowUp(followTarget, { note: followNote, nextFollowUpDate: followNextDate, priority: followPriority });
                   setMsg('Follow-up added successfully');
                   setShowFollowModal(false);
                   setFollowNote('');
@@ -1105,6 +1145,7 @@ function PipelineTable({ status, canAct, user }) {
       {showHistory && histLead && (
         <LeadHistoryModal 
           lead={histLead} 
+          pipelineApi={papi}
           onClose={() => { setShowHistory(false); setHistLead(null); load(); }} 
         />
       )}
@@ -1113,13 +1154,22 @@ function PipelineTable({ status, canAct, user }) {
         <div className="fixed inset-0 flex items-center justify-center z-50">
           <div className="absolute inset-0 bg-black opacity-30" onClick={()=>setShowNotInterestedModal(false)} />
           <div className="bg-white rounded-xl p-4 z-10 w-full max-w-lg shadow-lg">
-            <h3 className="text-lg font-semibold mb-2">Reason for Not Interested</h3>
+            <h3 className="text-lg font-semibold mb-2">{isMeta && badLeadOnly ? 'Mark as Bad Lead' : 'Reason for Not Interested'}</h3>
+            {isMeta && (
+              <div className="mb-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Lead Quality Reason <span className="text-red-500">*</span>
+                </label>
+                <QualityReasonSelect value={qualityReason} onChange={setQualityReason} badOnly={badLeadOnly} />
+                <p className="text-xs text-gray-500 mt-1">This is sent to Meta so ads bring better leads. Pick the closest reason.</p>
+              </div>
+            )}
             <textarea 
-              rows={6} 
+              rows={isMeta ? 3 : 6} 
               className="w-full border rounded-xl px-3 py-2 mb-3" 
               value={notInterestedNote} 
               onChange={e=>setNotInterestedNote(e.target.value)} 
-              placeholder="Enter reason (optional)"
+              placeholder={isMeta ? 'Extra details (optional)' : 'Enter reason (optional)'}
             />
             <div className="flex justify-end gap-2">
               <button 
@@ -1134,6 +1184,10 @@ function PipelineTable({ status, canAct, user }) {
                 onClick={async ()=>{
                   if (!notInterestedTarget) {
                     alert('No lead selected');
+                    return;
+                  }
+                  if (isMeta && !qualityReason) {
+                    alert('Please select a lead quality reason');
                     return;
                   }
                   await handleNotInterested(notInterestedTarget, notInterestedNote);
@@ -1207,6 +1261,7 @@ function PipelineTable({ status, canAct, user }) {
           {status === 'In Follow Up' && <th className="p-3 text-left">Next Follow-Up Date</th>}
           {status === 'Admitted' && <th className="p-3 text-left">Admitted At</th>}
           {status === 'Archived' && <th className="p-3 text-left">Updated At</th>}
+          {isMeta && status === 'Not Interested' && <th className="p-3 text-left">Lead Quality</th>}
             <th className="p-3 text-left">Action</th>
             </tr>
           </thead>
@@ -1306,6 +1361,7 @@ function PipelineTable({ status, canAct, user }) {
                 </td>}
                 {status === 'Admitted' && <td className="p-3">{fmtDT(r.admittedAt || r.updatedAt)}</td>}
                 {status === 'Archived' && <td className="p-3">{fmtDT(r.updatedAt)}</td>}
+                {isMeta && status === 'Not Interested' && <td className="p-3"><QualityBadge quality={r.leadQuality} reason={r.qualityReason} /></td>}
                 <td className="p-3">{actions(r)}</td>
               </tr>
             ))}

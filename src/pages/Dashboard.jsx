@@ -14,8 +14,19 @@ import AdminOverview from './dash/AdminOverview.jsx';
 import AdmissionDashboard from './dash/AdmissionDashboard.jsx';
 import DMDashboard from './dash/DMDashboard.jsx';
 import MyLite from './dash/MyLite.jsx';
+import SeminarNoticeBoard from '../components/SeminarNoticeBoard.jsx';
 
+// Every role's dashboard gets the seminar notice board on top
 export default function Dashboard() {
+  return (
+    <>
+      <SeminarNoticeBoard />
+      <RoleDashboard />
+    </>
+  );
+}
+
+function RoleDashboard() {
   const { user } = useAuth();
   const role = user?.role;
 
