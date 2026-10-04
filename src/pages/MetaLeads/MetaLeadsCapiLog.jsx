@@ -2,7 +2,8 @@
 // Counseling, Admitted, and quality feedback (Disqualified / Not Interested) —
 // queue an event here as 'pending'; nothing auto-fires to Meta. DM reviews the
 // queue and sends selected leads or everything pending in one click.
-// Meta only accepts events up to 7 days old, so send at least once a week.
+// Pending events are also sent automatically every night at 11 PM; failed sends
+// stay pending and retry until Meta's 7-day limit.
 import { useEffect, useState, useCallback } from 'react';
 import { Send, RefreshCw, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock3, Filter } from 'lucide-react';
 import api from '../../lib/api.js';
@@ -74,7 +75,7 @@ export default function MetaLeadsCapiLog() {
     setSending(true);
     try {
       const res = await api.sendMetaLeadCapiEvents({ logIds: selected });
-      flash(`✅ Sent: ${res.sent}  ❌ Failed: ${res.failed}`);
+      flash(res.message || `✅ Sent: ${res.sent}  ❌ Failed: ${res.failed}`);
       setSelected([]);
       load(page);
     } catch { flash('Send failed'); }
@@ -86,7 +87,7 @@ export default function MetaLeadsCapiLog() {
     setSending(true);
     try {
       const res = await api.sendMetaLeadCapiEvents({ sendAll: true });
-      flash(`✅ Sent: ${res.sent}  ❌ Failed: ${res.failed}`);
+      flash(res.message || `✅ Sent: ${res.sent}  ❌ Failed: ${res.failed}`);
       setSelected([]);
       load(page);
     } catch { flash('Send failed'); }
@@ -97,7 +98,7 @@ export default function MetaLeadsCapiLog() {
     setSendingId(log._id);
     try {
       const res = await api.sendMetaLeadCapiEvents({ logIds: [log._id] });
-      flash(res.sent ? `✅ Sent — ${log.leadName}` : `❌ Failed — ${log.leadName}`);
+      flash(res.sent ? `✅ Sent — ${log.leadName}` : res.retrying ? `⏳ Will retry — ${log.leadName}` : (res.message && !res.configured ? res.message : `❌ Failed — ${log.leadName}`));
       load(page);
     } catch { flash('Send failed'); }
     finally { setSendingId(null); }
