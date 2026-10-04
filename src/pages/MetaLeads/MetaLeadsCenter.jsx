@@ -16,7 +16,8 @@ const VIEWS = [
   { key: 'Admitted', label: 'Admitted', count: s => s.byStatus?.Admitted },
   { key: 'Not Interested', label: 'Not Interested', count: s => s.byStatus?.['Not Interested'] },
   { key: 'rejected', label: 'Rejected', count: s => s.rejected },
-  { key: 'quality', label: '📉 Lead Quality Report' }
+  { key: 'quality', label: '📉 Lead Quality Report' },
+  { key: 'auto', label: '⚙️ Auto-Assign' }
 ];
 
 const TEMP_CLS = { Hot: 'bg-red-100 text-red-700', Warm: 'bg-orange-100 text-orange-700', Cold: 'bg-blue-100 text-blue-700' };
@@ -83,6 +84,8 @@ export default function MetaLeadsCenter() {
     try {
       if (view === 'quality') {
         setQuality(await api.getMetaQualityReport(fromDate, toDate));
+      } else if (view === 'auto') {
+        // AutoAssignSettings loads its own data
       } else {
         const { leads } = await api.listMetaLeads(view);
         setLeads(leads || []);
@@ -248,7 +251,7 @@ export default function MetaLeadsCenter() {
               <button onClick={() => { setFromDate(''); setToDate(''); }} className="ml-2 text-red-500 hover:text-red-700 text-sm font-medium" title="Clear date filter">✕</button>
             )}
           </div>
-          {view !== 'quality' && (
+          {!['quality', 'auto'].includes(view) && (
             <>
               <div className="border rounded-xl px-3 py-2 bg-white flex items-center">
                 <input type="search" placeholder="Search ID, name, phone, email, campaign (3+ chars)" value={searchQuery}
@@ -301,7 +304,9 @@ export default function MetaLeadsCenter() {
       {msg && <div className="mb-2 p-3 bg-green-100 text-green-700 rounded-xl">{msg}</div>}
       {err && <div className="mb-2 p-3 bg-red-100 text-red-600 rounded-xl">{err}</div>}
 
-      {view === 'quality' ? (
+      {view === 'auto' ? (
+        <AutoAssignSettings admissions={admissions} canManage={canManage} />
+      ) : view === 'quality' ? (
         <QualityReport data={quality} />
       ) : (
         <>
@@ -419,7 +424,10 @@ export default function MetaLeadsCenter() {
                         </span>
                       ) : <span className="text-royal/50 text-xs">Unscored</span>}
                     </td>
-                    <td className="p-3">{l.assignedTo ? l.assignedTo.name : '-'}</td>
+                    <td className="p-3">
+                      {l.assignedTo ? l.assignedTo.name : '-'}
+                      {l.autoAssigned && <span className="ml-1.5 px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[10px] font-semibold" title="Auto-assigned by course rule">AUTO</span>}
+                    </td>
                     {showQualityCol && <td className="p-3"><QualityBadge quality={l.leadQuality} reason={l.qualityReason} /></td>}
                     <td className="p-3">
                       <button disabled={histLoading} onClick={() => openHistory(l._id)} className="px-3 py-1 rounded-xl border hover:bg-[#f3f6ff]">
@@ -537,6 +545,102 @@ export default function MetaLeadsCenter() {
       {histLead && (
         <LeadHistoryModal lead={histLead} pipelineApi={metaPipelineApi} onClose={() => { setHistLead(null); load(); }} />
       )}
+    </div>
+  );
+}
+
+// One counsellor per course. New Meta leads for that course are assigned to them
+// the moment they arrive. Courses left on "DM assigns manually" (or whose
+// counsellor is on leave) wait in Pending Validation as before.
+function AutoAssignSettings({ admissions, canManage }) {
+  const [rows, setRows] = useState(null);
+  const [savingCourse, setSavingCourse] = useState(null);
+  const [note, setNote] = useState(null);
+  const [error, setError] = useState(null);
+  const [filter, setFilter] = useState('');
+
+  const load = async () => {
+    try { setRows((await api.getMetaCourseAssignments()).rows || []); }
+    catch (e) { setError(e.message); }
+  };
+  useEffect(() => { load(); }, []);
+
+  const save = async (courseName, counsellorId) => {
+    setSavingCourse(courseName); setNote(null); setError(null);
+    try {
+      await api.setMetaCourseAssignment(courseName, counsellorId);
+      const who = admissions.find(a => a._id === counsellorId)?.name;
+      setNote(counsellorId ? `✓ New "${courseName}" leads will go to ${who}` : `✓ "${courseName}" leads will wait for DM to assign`);
+      await load();
+    } catch (e) { setError(e.message); }
+    finally { setSavingCourse(null); }
+  };
+
+  if (!rows) return <div className="text-royal/70">Loading…</div>;
+  const shown = rows.filter(r => r.courseName.toLowerCase().includes(filter.trim().toLowerCase()));
+  const setCount = rows.filter(r => r.counsellor).length;
+
+  return (
+    <div className="space-y-3">
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-900">
+        <b>How it works:</b> when a new Meta lead arrives, OPS looks at its course. If a counsellor is set below,
+        the lead is assigned to them immediately (no validation step) and they get a notification.
+        If no counsellor is set — or the counsellor is marked <b>On Leave</b> — the lead waits in
+        <b> Pending Validation</b> for the DM. The course name must match the Meta form name.
+      </div>
+      {note && <div className="p-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm">{note}</div>}
+      {error && <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">{error}</div>}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <input type="search" value={filter} onChange={e => setFilter(e.target.value)} placeholder="Search course…"
+          className="border rounded-xl px-3 py-2 text-sm bg-white w-72" />
+        <span className="text-sm text-gray-600">{setCount} of {rows.length} courses auto-assigned</span>
+      </div>
+      <div className="bg-white rounded-2xl shadow-soft overflow-auto">
+        <table className="min-w-full text-sm">
+          <thead className="bg-[#f3f6ff] text-royal">
+            <tr>
+              <th className="text-left p-3">Course</th>
+              <th className="text-left p-3">Auto-assign to</th>
+              <th className="text-left p-3">Status</th>
+              <th className="text-left p-3">Last changed</th>
+            </tr>
+          </thead>
+          <tbody>
+            {shown.map(r => {
+              const c = r.counsellor;
+              return (
+                <tr key={r.courseName} className="border-t">
+                  <td className="p-3 font-medium text-gray-800">
+                    {r.courseName}
+                    {r.inactiveCourse && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">course inactive</span>}
+                  </td>
+                  <td className="p-3">
+                    <select
+                      value={c?._id || ''}
+                      disabled={!canManage || savingCourse === r.courseName}
+                      onChange={e => save(r.courseName, e.target.value)}
+                      className={`border rounded-xl px-3 py-2 min-w-[220px] ${c ? 'border-green-300 bg-green-50' : 'bg-white'}`}
+                    >
+                      <option value="">— DM assigns manually —</option>
+                      {admissions.map(a => <option key={a._id} value={a._id}>{a.name}</option>)}
+                    </select>
+                  </td>
+                  <td className="p-3">
+                    {savingCourse === r.courseName ? <span className="text-gray-500">Saving…</span>
+                      : !c ? <span className="text-gray-500">Waits for DM</span>
+                      : c.onLeave || c.isActive === false ? <span className="px-2 py-1 rounded-lg bg-orange-100 text-orange-700 text-xs font-medium">{c.name} is {c.onLeave ? 'on leave' : 'inactive'} — leads wait for DM</span>
+                      : <span className="px-2 py-1 rounded-lg bg-green-100 text-green-700 text-xs font-medium">Auto → {c.name}</span>}
+                  </td>
+                  <td className="p-3 text-xs text-gray-500">
+                    {r.updatedAt ? `${new Date(r.updatedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}${r.updatedBy?.name ? ` · ${r.updatedBy.name}` : ''}` : '-'}
+                  </td>
+                </tr>
+              );
+            })}
+            {shown.length === 0 && <tr><td colSpan={4} className="p-4 text-center text-royal/70">No courses</td></tr>}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

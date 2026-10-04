@@ -2243,6 +2243,18 @@ export const api = {
     const res = await authFetch(`${getApiBase()}/api/reports/meta-lead-team-stats${q}`, { credentials: 'include' });
     return handleJson(res, 'Load Meta Lead team stats failed');
   },
+  async getMetaCourseAssignments() {
+    const res = await authFetch(`${getApiBase()}/api/meta-leads/course-assignments`, { credentials: 'include' });
+    return handleJson(res, 'Load auto-assign settings failed');
+  },
+  async setMetaCourseAssignment(courseName, counsellorId) {
+    const res = await authFetch(`${getApiBase()}/api/meta-leads/course-assignments`, {
+      method: 'PUT', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ courseName, counsellorId: counsellorId || null }),
+    });
+    return handleJson(res, 'Save auto-assign failed');
+  },
   async getMetaQualityReport(from, to) {
     const params = new URLSearchParams();
     if (from) params.set('from', from);
