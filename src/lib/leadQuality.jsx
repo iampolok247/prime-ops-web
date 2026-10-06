@@ -11,6 +11,7 @@ export const BAD_LEAD_REASONS = [
   'Duplicate lead',
   'Asking for free',
   'Far from location',
+  'Others',
 ];
 
 export const LOST_LEAD_REASONS = [
